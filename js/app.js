@@ -45,12 +45,24 @@ window.crosscourse = app;
 
 // ---------- Routing ----------
 const NAV = [
-  { group: 'Workspace', items: [['overview', 'Overview', 'home'], ['decisions', 'Decisions', 'vote'], ['meetings', 'Meetings', 'video'], ['sync', 'Share & sync', 'sync']] },
-  { group: 'Understand', items: [['partners', 'Partners', 'users']] },
-  { group: 'Frame', items: [['frame', 'Design brief', 'frame'], ['charter', 'Charter', 'scroll']] },
-  { group: 'Explore & prototype', items: [['outcomes', 'Shared outcomes', 'target'], ['design', 'Experience', 'route'], ['assess', 'Assessment', 'checks']] },
-  { group: 'Test', items: [['review', 'Alignment review', 'shield'], ['schedule', 'Calendar & time', 'calendar'], ['language', 'Language', 'translate']] },
-  { group: 'Commit', items: [['release', 'Release & export', 'package'], ['log', 'Activity log', 'list']] }
+  { group: 'Course Blueprint', items: [
+    ['overview', '3-Pillar Blueprint', 'home'],
+    ['partners', 'Consortium Campuses', 'users'],
+    ['design', 'Weekly Arc & Activities', 'route'],
+    ['sync', 'Download Deliverables', 'download']
+  ] },
+  { group: 'Curriculum Foundations', items: [
+    ['frame', 'Driving Question & Vision', 'frame'],
+    ['charter', 'Consortium Charter', 'scroll'],
+    ['outcomes', 'Shared Outcomes', 'target'],
+    ['assess', 'Assessments & Rubric', 'checks']
+  ] },
+  { group: 'Coordination Tools', items: [
+    ['schedule', 'Calendar & Time Zones', 'calendar'],
+    ['meetings', 'Meetings', 'video'],
+    ['decisions', 'Consensus & Decisions', 'vote'],
+    ['review', 'Readiness Review', 'shield']
+  ] }
 ];
 
 function parseRoute() {

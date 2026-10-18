@@ -523,6 +523,27 @@ export function buildSyllabusHTML(p) {
     </tbody>
   </table>
 
+  <div style="margin-top: 2rem; padding: 1.25rem; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc;">
+    <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem;">Consortium Course Signatures & Institutional Verification (Fill after download)</h3>
+    <p style="margin: 0 0 1rem; font-size: 0.9rem; color: #64748b;">Signatures verifying course adoption, institutional equivalency, and cross-border curriculum alignment.</p>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+      <div style="padding-top: 0.5rem; border-top: 1px solid #94a3b8;">
+        <strong>Course Developer / Instructional Designer:</strong><br>
+        <span style="display: inline-block; margin-top: 1.5rem; color: #64748b; font-size: 0.85rem;">Signature: __________________________ &nbsp;&nbsp; Date: ___________</span>
+      </div>
+      <div style="padding-top: 0.5rem; border-top: 1px solid #94a3b8;">
+        <strong>Lead Campus Faculty Instructor (${esc(ps[0]?.institution || 'Lead University')}):</strong><br>
+        <span style="display: inline-block; margin-top: 1.5rem; color: #64748b; font-size: 0.85rem;">Signature: __________________________ &nbsp;&nbsp; Date: ___________</span>
+      </div>
+      ${ps.slice(1).map((x, idx) => `
+      <div style="padding-top: 0.5rem; border-top: 1px solid #94a3b8;">
+        <strong>Partner Campus ${idx + 2} Faculty Instructor (${esc(x.institution)}):</strong><br>
+        <span style="display: inline-block; margin-top: 1.5rem; color: #64748b; font-size: 0.85rem;">Signature: __________________________ &nbsp;&nbsp; Date: ___________</span>
+      </div>
+      `).join('')}
+    </div>
+  </div>
+
   <div class="footer">
     <p>Formulated and approved in Crosscourse under Release ${esc(rel.label)}.</p>
     <p>Conceptualized and developed by <a href="https://www.linkedin.com/in/beingbabu/" target="_blank" rel="noopener noreferrer">Professor Babu George</a>.</p>
@@ -635,6 +656,14 @@ ${p.charter.cohortLoss}
 
 ### 8. Cross-Country Mobility & Virtual Inclusivity
 ${p.charter.mobility || 'All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.'}
+
+---
+
+### Consortium Signatures & Institutional Verification (Fill after download)
+
+- **Course Developer / Instructional Designer:** ________________________________ (Signature & Date)
+- **Lead Campus Faculty Representative (${ps[0]?.institution || 'Lead Campus'}):** ________________________________ (Signature & Date)
+${ps.slice(1).map((x, i) => `- **Partner Campus ${i + 2} Faculty Representative (${x.institution}):** ________________________________ (Signature & Date)`).join('\n')}
 
 ---
 **Approved & Signed by All Participating Institutional Representatives.**

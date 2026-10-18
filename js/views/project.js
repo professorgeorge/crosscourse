@@ -6,14 +6,14 @@ import { fmtTime, tzAbbrev, termOverlap, buildICS } from '../time.js';
 import { packageHTML, packageMD } from './sync.js';
 import { partnerFormFields } from './home.js';
 import { propose, proposalsFor } from './proposals.js';
-import { aiEnabled } from '../ai.js';
+import { aiEnabled, runTask } from '../ai.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
 export const head = (title, sub = '', actions = '') => `<header class="page-head"><div><h1>${title}</h1>${sub ? `<p class="lede">${sub}</p>` : ''}</div>${actions ? `<div class="row gap wrap">${actions}</div>` : ''}</header>`;
 export const statusBadge = s => badge(({ draft: 'Draft', pending: 'Awaiting approval', approved: 'Approved', changed: 'Changed since approval', objection: 'Objection raised' })[s] || s, 'st-' + s);
 export const approvalBtn = (kind, id, title, status) => status === 'pending' ? `<a class="btn sm" href="#/p/${app.p.id}/decisions">${icon.vote} View approval</a>` : `<button class="btn sm" data-action="request-approval" data-kind="${kind}" data-id="${id}" data-title="${esc(title)}">${icon.vote} ${status === 'approved' ? 'Re-open for approval' : 'Request partner approval'}</button>`;
 
-import { getMobilityLabel } from '../autopilot.js';
+import { getMobilityLabel, realignProjectArc } from '../autopilot.js';
 
 // ================= Overview (3-Pillar Unified Blueprint) =================
 app.view('overview', {
@@ -47,6 +47,25 @@ app.view('overview', {
           <a class="btn" href="#/p/${p.id}/sync">${icon.sync} Share &amp; Sync</a>
         </div>
       </header>
+
+      <!-- AI Co-Design Assistant Quick Help (Zero Friction, Low Learning Curve) -->
+      <div class="card ai-assistant-hero-bar" style="margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4); background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.08)); border: 1px solid rgba(99, 102, 241, 0.35); border-radius: var(--radius-lg);">
+        <div class="row between wrap gap" style="align-items: center;">
+          <div class="row gap" style="align-items: center;">
+            <span style="font-size: 1.4rem; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: rgba(99, 102, 241, 0.15); border-radius: 50%;">✨</span>
+            <div>
+              <strong style="font-size: 0.95rem; color: var(--color-text);">AI Co-Design Assistant Ready</strong>
+              <p class="muted small" style="margin: 2px 0 0;">Zero learning curve: Click any quick action below to draft, align, or refine your consortium course with AI assistance.</p>
+            </div>
+          </div>
+          <div class="row gap wrap">
+            <button type="button" class="btn sm primary" data-action="ai-quick-refine-all">${icon.sparkle} 1-Click AI Polish (All Pillars)</button>
+            <button type="button" class="btn sm" data-action="ai-refine-driving-question">${icon.sparkle} Refine Driving Question</button>
+            <button type="button" class="btn sm" data-action="ai-draft-outcomes">${icon.sparkle} Draft Outcomes</button>
+            <button type="button" class="btn sm" data-action="ai-generate-arc">${icon.sparkle} Auto-Balance Weekly Arc</button>
+          </div>
+        </div>
+      </div>
 
       <!-- 3-Pillar Navigation Bar -->
       <nav class="blueprint-nav" aria-label="Course Blueprint Pillars">
@@ -126,8 +145,14 @@ app.view('overview', {
         <!-- Core Inquiry Vision & Value Test -->
         <section class="card">
           <div class="section-head">
-            <h2 style="font-size: 1.15rem; margin: 0;">Shared Driving Inquiry Vision</h2>
-            <a href="#/p/${p.id}/frame" class="btn sm">${icon.sparkle} Edit Design Brief</a>
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">Shared Driving Inquiry Vision</h2>
+              <span class="muted small">Joint inquiry challenge and pedagogical value test</span>
+            </div>
+            <div class="row gap wrap">
+              <button type="button" class="btn sm" data-action="ai-refine-driving-question">${icon.sparkle} AI: Refine Vision</button>
+              <a href="#/p/${p.id}/frame" class="btn sm ghost">${icon.edit || icon.sparkle} Edit Details</a>
+            </div>
           </div>
           <div class="grid2 gap" style="margin-top: var(--space-3);">
             <div style="background: var(--color-surface-2); padding: var(--space-3); border-radius: var(--radius-md);">
@@ -151,7 +176,10 @@ app.view('overview', {
               <h2 style="font-size: 1.15rem; margin: 0;">Consortium Charter &amp; Governance Compact</h2>
               <span class="muted small">Ratified decision rules across all ${p.partners.length} institutions</span>
             </div>
-            <a href="#/p/${p.id}/charter" class="btn sm">${icon.shield} View Full Charter</a>
+            <div class="row gap wrap">
+              <button type="button" class="btn sm" data-action="ai-refine-charter">${icon.sparkle} AI: Draft Charter Terms</button>
+              <a href="#/p/${p.id}/charter" class="btn sm ghost">${icon.shield} View Full Charter</a>
+            </div>
           </div>
           <div class="grid2 gap" style="margin-top: var(--space-3); font-size: 0.88rem;">
             <div>
@@ -194,7 +222,10 @@ app.view('overview', {
               <h2 style="font-size: 1.15rem; margin: 0;">Weekly Collaborative Learning Sequence</h2>
               <span class="muted small">Chronological arc with cohort tasks for every participating university</span>
             </div>
-            <a href="#/p/${p.id}/arc" class="btn sm">${icon.sparkle} Advanced Arc Editor</a>
+            <div class="row gap wrap">
+              <button type="button" class="btn sm" data-action="ai-generate-arc">${icon.sparkle} AI: Auto-Balance Weeks</button>
+              <a href="#/p/${p.id}/arc" class="btn sm ghost">${icon.sparkle} Advanced Arc Editor</a>
+            </div>
           </div>
 
           <div class="arc-timeline">
@@ -239,6 +270,13 @@ app.view('overview', {
                     <em>Contingency:</em> ${esc(a.contingency)}
                   </div>
                 ` : ''}
+
+                <div class="row between wrap gap" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--color-border); align-items: center;">
+                  <span class="muted small font-mono">${a.sync ? 'Live Session across Time Zones' : 'Flexible Asynchronous Workflow'}</span>
+                  <button type="button" class="btn sm text" data-action="ai-draft-week" data-id="${a.id}">
+                    ${icon.sparkle} AI: Elaborate Directions &amp; Roles
+                  </button>
+                </div>
               </div>
             `).join('')}
           </div>
@@ -337,47 +375,10 @@ app.view('overview', {
           </div>
         </div>
 
-        <!-- Consortium Course Signatures & Instructional Team (Fillable in Deliverables) -->
-        <div class="card" style="margin-top: var(--space-4); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
-          <div class="row between wrap gap" style="margin-bottom: var(--space-3); align-items: center;">
-            <div>
-              <h3 style="margin: 0; font-size: 1.1rem;">Consortium Course Signatures &amp; Instructional Team</h3>
-              <p class="muted small" style="margin: 4px 0 0;">Fill in designated faculty instructors, course developers, or institutional sign-offs. These dynamically populate your Syllabus and Charter deliverables.</p>
-            </div>
-            <span class="badge badge-ok">${p.partners.length} Campuses</span>
-          </div>
-
-          <div class="field" style="margin-bottom: var(--space-3);">
-            <label for="deliverable-course-developer" class="small"><strong>Course Developer / Instructional Designer (Optional)</strong></label>
-            <input id="deliverable-course-developer" name="courseDeveloper" placeholder="e.g. Dr. Alex Morgan, Senior Instructional Designer" value="${esc(p.developerName || '')}" data-action="update-course-developer">
-            <span class="muted small">If an instructional designer or curriculum developer designed this course on behalf of faculty, their attribution appears here.</span>
-          </div>
-
-          <div class="stack gap">
-            <label class="small"><strong>Campus Instructors &amp; Representatives (${p.partners.length} Universities)</strong></label>
-            <div class="grid2 gap">
-              ${p.partners.map((ptn, ptnIdx) => {
-                const color = ptn.color || S.PARTNER_COLORS[ptnIdx % S.PARTNER_COLORS.length];
-                return `
-                <div class="campus-intake-card" style="border-left: 4px solid ${color}; padding: var(--space-3); margin: 0;">
-                  <div class="row between wrap gap" style="margin-bottom: var(--space-2); align-items: center;">
-                    <div class="row gap" style="align-items: center;">
-                      <span class="campus-badge-dot" style="background: ${color};"></span>
-                      <strong>${esc(ptn.institution)}</strong>
-                    </div>
-                    <span class="muted small">${esc(ptn.country || 'International')}</span>
-                  </div>
-                  <div class="field" style="margin-bottom: var(--space-2);">
-                    <label class="small" for="ptn-inst-prof-${ptn.id}">Designated Faculty Instructor / Signatory</label>
-                    <input id="ptn-inst-prof-${ptn.id}" value="${esc(ptn.name || '')}" placeholder="e.g. Professor Name" data-action="update-deliverable-faculty" data-id="${ptn.id}">
-                  </div>
-                  <div class="field" style="margin: 0;">
-                    <label class="small" for="ptn-inst-course-${ptn.id}">Local Course Title or Department</label>
-                    <input id="ptn-inst-course-${ptn.id}" value="${esc(ptn.course?.title || '')}" placeholder="e.g. Department / Course Code" data-action="update-deliverable-course" data-id="${ptn.id}">
-                  </div>
-                </div>`;
-              }).join('')}
-            </div>
+        <div class="banner info" style="margin-top: var(--space-4);">
+          ${icon.shield}
+          <div>
+            <strong>Classroom-Ready Verification:</strong> All downloaded documents (Syllabus, Student Handouts, and Consortium Charter) include dedicated signature and verification lines for course developers and instructors across all ${p.partners.length} partner universities to enter after download.
           </div>
         </div>
       </div>` : ''}
@@ -751,6 +752,182 @@ app.register({
       if (!ptn.course) ptn.course = {};
       ptn.course.title = (el.value || '').trim();
       S.saveProject(app.p);
+    }
+  },
+  async 'ai-quick-refine-all'(d, el) {
+    const p = app.p;
+    if (!p) return;
+    const oldHtml = el ? el.innerHTML : '';
+    if (el) { el.disabled = true; el.innerHTML = '<span class="spinner"></span> Polishing...'; }
+    try {
+      const bRes = await runTask('brief', p);
+      if (bRes?.result) {
+        p.brief.challenge = bRes.result.challenge || p.brief.challenge;
+        p.brief.question = bRes.result.question || p.brief.question;
+        p.brief.whyInternational = bRes.result.whyInternational || p.brief.whyInternational;
+        p.brief.counterfactual = bRes.result.counterfactual || p.brief.counterfactual;
+      }
+      const cRes = await runTask('charter', p);
+      if (cRes?.result?.charter) {
+        Object.assign(p.charter, cRes.result.charter);
+      }
+      realignProjectArc(p, { durationWeeks: p.durationWeeks, visitFormat: p.visitFormat });
+      p.activities.forEach((act, idx) => {
+        if (!act.contributions) act.contributions = {};
+        p.partners.forEach((ptn, pIdx) => {
+          if (!act.contributions[ptn.id]) {
+            act.contributions[ptn.id] = pIdx === 0
+              ? 'Lead coordination, contextual case briefing, and synthesis workshop'
+              : `Share situated local data and collaborative peer critique from ${ptn.institution}`;
+          }
+        });
+        if (!act.instructions) {
+          act.instructions = `### Weekly Milestone Directions\n\n1. Review your international team's shared workspace and briefing notes.\n2. Complete your cohort's situated contribution for this week.\n3. Participate in asynchronous peer review with partner campus teammates.`;
+        }
+      });
+      p.updatedAt = S.now();
+      S.saveProject(p);
+      app.render();
+      toast(`AI Co-Design Assistant successfully polished all 3 pillars across ${p.partners.length} partner campuses!`, 'ok');
+    } catch (err) {
+      toast('Could not complete AI polish: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = oldHtml; }
+    }
+  },
+  async 'ai-refine-driving-question'(d, el) {
+    const p = app.p;
+    if (!p) return;
+    const oldHtml = el ? el.innerHTML : '';
+    if (el) { el.disabled = true; el.innerHTML = '<span class="spinner"></span> Refining...'; }
+    try {
+      const bRes = await runTask('brief', p);
+      if (bRes?.result) {
+        p.brief.challenge = bRes.result.challenge || p.brief.challenge;
+        p.brief.question = bRes.result.question || p.brief.question;
+        p.brief.whyInternational = bRes.result.whyInternational || p.brief.whyInternational;
+        p.brief.counterfactual = bRes.result.counterfactual || p.brief.counterfactual;
+        p.brief.updatedAt = S.now();
+        p.brief.updatedBy = app.me?.id || null;
+        S.saveProject(p);
+        app.render();
+        toast('Driving inquiry vision refined with AI assistance!', 'ok');
+      }
+    } catch (err) {
+      toast('Could not refine driving vision: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = oldHtml; }
+    }
+  },
+  async 'ai-refine-charter'(d, el) {
+    const p = app.p;
+    if (!p) return;
+    const oldHtml = el ? el.innerHTML : '';
+    if (el) { el.disabled = true; el.innerHTML = '<span class="spinner"></span> Drafting...'; }
+    try {
+      const cRes = await runTask('charter', p);
+      if (cRes?.result?.charter) {
+        Object.assign(p.charter, cRes.result.charter);
+        p.charter.updatedAt = S.now();
+        p.charter.updatedBy = app.me?.id || null;
+        S.saveProject(p);
+        app.render();
+        toast('Consortium charter terms updated with AI assistance!', 'ok');
+      }
+    } catch (err) {
+      toast('Could not update charter: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = oldHtml; }
+    }
+  },
+  async 'ai-draft-outcomes'(d, el) {
+    const p = app.p;
+    if (!p) return;
+    const oldHtml = el ? el.innerHTML : '';
+    if (el) { el.disabled = true; el.innerHTML = '<span class="spinner"></span> Drafting...'; }
+    try {
+      const oRes = await runTask('outcomes', p);
+      if (oRes?.result?.outcomes?.length) {
+        const oIds = ['out_1', 'out_2', 'out_3', 'out_4'];
+        p.outcomes = oRes.result.outcomes.slice(0, 4).map((o, idx) => ({
+          id: oIds[idx] || `out_${idx + 1}`,
+          text: o.text,
+          type: o.type || (idx % 2 === 1 ? 'intercultural' : 'disciplinary'),
+          evidence: o.evidence || 'Collaborative comparative dossier',
+          mappings: Object.fromEntries(p.partners.map((ptn, pIdx) => [
+            ptn.id,
+            pIdx === 0 ? ['lo_h1', 'lo_h2'] : [`lo_${ptn.id}_0`, `lo_${ptn.id}_1`]
+          ])),
+          status: 'approved',
+          updatedAt: S.now(),
+          updatedBy: app.me?.id || null
+        }));
+        S.saveProject(p);
+        app.render();
+        toast('Shared learning outcomes drafted with AI assistance!', 'ok');
+      }
+    } catch (err) {
+      toast('Could not draft outcomes: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = oldHtml; }
+    }
+  },
+  async 'ai-generate-arc'(d, el) {
+    const p = app.p;
+    if (!p) return;
+    const oldHtml = el ? el.innerHTML : '';
+    if (el) { el.disabled = true; el.innerHTML = '<span class="spinner"></span> Balancing...'; }
+    try {
+      realignProjectArc(p, { durationWeeks: p.durationWeeks, visitFormat: p.visitFormat });
+      p.activities.forEach((act) => {
+        if (!act.contributions) act.contributions = {};
+        p.partners.forEach((ptn, pIdx) => {
+          if (!act.contributions[ptn.id]) {
+            act.contributions[ptn.id] = pIdx === 0 
+              ? 'Lead coordination and comparative analysis'
+              : `Situated regional evidence and peer review from ${ptn.institution}`;
+          }
+        });
+      });
+      S.saveProject(p);
+      app.render();
+      toast('Weekly learning arc auto-balanced across all consortium campuses!', 'ok');
+    } catch (err) {
+      toast('Could not auto-balance arc: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = oldHtml; }
+    }
+  },
+  async 'ai-draft-week'(d, el) {
+    const p = app.p;
+    if (!p) return;
+    const act = p.activities.find(a => a.id === d.id);
+    if (!act) return;
+    const oldHtml = el ? el.innerHTML : '';
+    if (el) { el.disabled = true; el.innerHTML = '<span class="spinner"></span> Drafting...'; }
+    try {
+      const res = await runTask('instructions', p, { id: act.id });
+      if (res?.result?.instructions) {
+        act.instructions = res.result.instructions;
+        if (!act.summary) act.summary = `Collaborative milestone for ${act.title}.`;
+        if (!act.contributions) act.contributions = {};
+        p.partners.forEach((ptn, idx) => {
+          if (!act.contributions[ptn.id]) {
+            act.contributions[ptn.id] = idx === 0 
+              ? 'Lead coordination and context dossier' 
+              : `Participate in joint inquiry and share situated data from ${ptn.institution}`;
+          }
+        });
+        act.updatedAt = S.now();
+        act.updatedBy = app.me?.id || null;
+        S.saveProject(p);
+        app.render();
+        toast(`Drafted student instructions and roles for Week ${p.activities.indexOf(act) + 1}!`, 'ok');
+      }
+    } catch (err) {
+      toast('Could not draft week directions: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = oldHtml; }
     }
   }
 });

@@ -496,8 +496,7 @@ export function createAiPartnerDemo(options = {}) {
 
   const user = options.userProfile || {};
   const userTz = user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
-  const userCountry = user.country || 'United States';
-  const userInst = options.homeUniversity || options.homeInst || user.institution || 'Alcorn State University';
+  const userInst = options.homeUniversity || options.homeInst || user.institution || 'Lead University';
   const userName = user.name || 'Professor You';
   const userLang = user.language || 'English';
 
@@ -594,38 +593,34 @@ export function createAiPartnerDemo(options = {}) {
       workEnd: ptnPersona.workEnd,
       flexStart: ptnPersona.flexStart,
       flexEnd: ptnPersona.flexEnd,
-      contributes: ptnPersona.contributes,
+      contributes: `Situated case studies on ${topic.title}, local datasets, and student cohort perspectives from ${pCountry || pInst}.`,
       course: {
         title: `${topic.partnerCourseTitle} (Campus ${pIdx + 1})`,
         code: `${topic.partnerCourseCode}-${pIdx + 1}`,
         level: '3rd year Undergraduate / Master seminar',
         discipline: topic.discipline,
         studentsCount: 28,
-        purpose: `${ptnPersona.bio} Explores ${topic.title} with emphasis on territorial realities and participatory frameworks.`,
+        purpose: `Studies in ${topic.title} at ${pInst}, examining situated local evidence, comparative methodologies, and regional dynamics.`,
         priorities: 'Community-grounded inquiry, participatory methods, ethical accountability',
         interculturalAims: 'Question universalizing assumptions and share local traditions of knowledge.',
-        languages: `${ptnPersona.language} as primary working language; students have intermediate to high English comprehension.`,
+        languages: `${ptnPersona.language || 'English'} as working language; students collaborate in English with multilingual peer support.`,
         termStart: termStartStr,
         termEnd: termEndStr,
-        studentAvailability: ptnPersona.studentProfile,
+        studentAvailability: 'Daytime class meetings with flexible asynchronous group work scheduled throughout the week.',
         workloadHoursPerWeek: 3.5,
-        tech: ptnPersona.tech,
-        techRestrictions: ptnPersona.techRestrictions,
-        assessmentObligations: ptnPersona.assessmentObligations,
+        tech: ptnPersona.tech || 'Shared Google Workspace, Canvas / Moodle, Video Conferencing',
+        techRestrictions: 'Requires low-bandwidth mobile-friendly formats and asynchronous video alternatives.',
+        assessmentObligations: 'Continuous assessment with local departmental rubric.',
         accessibility: 'Requires low-bandwidth mobile-friendly formats and asynchronous video alternatives.',
         careTopics: 'Local communities and families of students are directly impacted by issues investigated.',
-        constraints: `Timezone differences (${ptnPersona.timezone}) and local term breaks.`,
+        constraints: `Time zone differences and local calendar alignment.`,
         hopes: `Build long-term reciprocal research and teaching bridges with ${userInst}.`,
-        breaks: ptnPersona.breaks.map((b, bi) => ({
-          id: `brk_${partnerId}_${bi}`,
-          label: b.label,
-          start: fmtYmd(addDays(nowD, b.offsetDays)),
-          end: fmtYmd(addDays(nowD, b.offsetDays + b.durationDays))
-        })),
-        localOutcomes: ptnPersona.localOutcomes.map((text, oi) => ({
-          id: `lo_${partnerId}_${oi}`,
-          text
-        }))
+        breaks: [],
+        localOutcomes: [
+          { id: `lo_${partnerId}_0`, text: `Examine regional case studies and institutional frameworks on ${topic.title} in ${pCountry || pInst}.` },
+          { id: `lo_${partnerId}_1`, text: 'Engage in constructive cross-border peer critique and comparative analysis.' },
+          { id: `lo_${partnerId}_2`, text: 'Synthesize multilateral evidence into joint deliverables and collaborative proposals.' }
+        ]
       },
       fieldStates: {
         title: 'confirmed',
@@ -964,132 +959,20 @@ export function createAiPartnerDemo(options = {}) {
     }
   ];
 
-  // Differences
-  p.differences = [
-    {
-      id: 'dif_1',
-      topic: 'Academic Calendar & Time Zone Offsets',
-      detail: `Time difference between ${userTz} and ${persona.timezone} requires deliberate live session windows. ${persona.city} has term breaks during weeks 5 and 9.`,
-      kind: 'hard',
-      status: 'open',
-      updatedAt: ago(3),
-      updatedBy: primaryPartner.id
-    },
-    {
-      id: 'dif_2',
-      topic: 'Digital Communication Channel Preference',
-      detail: `Campuses across the consortium utilize diverse communication tools (${primaryPartner.tech}), while ${userInst} prioritizes institutional LMS and email for official records.`,
-      kind: 'negotiable',
-      status: 'open',
-      updatedAt: ago(3),
-      updatedBy: primaryPartner.id
-    },
-    {
-      id: 'dif_3',
-      topic: 'Epistemological Traditions & Credible Evidence',
-      detail: `${userInst} emphasizes quantitative policy indices and formal legal frameworks, whereas international partner campuses incorporate community testimony, participatory diagnosis, and situated fieldwork.`,
-      kind: 'productive',
-      status: 'open',
-      updatedAt: ago(3),
-      updatedBy: primaryPartner.id
-    },
-    {
-      id: 'dif_4',
-      topic: 'Institutional Data Protection & Student Privacy',
-      detail: 'Confirming institutional compliance guidelines for student video recording and cross-border project file hosting.',
-      kind: 'unknown',
-      status: 'open',
-      updatedAt: ago(2),
-      updatedBy: homePartner.id
-    }
-  ];
+  // Differences (initialized clean for interactive co-design)
+  p.differences = [];
 
-  // Common Ground
-  p.commonGround = [
-    {
-      id: 'cg_1',
-      theme: topic.commonTheme,
-      evidence: 'Stated course purposes and syllabi priorities',
-      updatedAt: ago(4)
-    },
-    {
-      id: 'cg_2',
-      theme: 'All faculty aim to cultivate genuine critical inquiry rather than passive content reception.',
-      evidence: 'Context card hopes and priorities',
-      updatedAt: ago(4)
-    }
-  ];
+  // Common Ground (initialized clean for interactive co-design)
+  p.commonGround = [];
 
-  // Decisions
-  p.decisions = [
-    {
-      id: 'dec_1',
-      title: 'Approve Design Brief & Driving Question',
-      description: `Formal agreement on the joint challenge: "${topic.challenge}" and driving question: "${topic.question}".`,
-      type: 'shared',
-      affected: both,
-      approvals: Object.fromEntries(partnerObjects.map(ptn => [
-        ptn.id,
-        { status: 'approve', at: ago(2), note: `Approved from ${ptn.city || ptn.institution}. The driving question addresses our local priorities cleanly.` }
-      ])),
-      linked: { kind: 'brief', id: 'brief' },
-      createdBy: primaryPartner.id,
-      createdAt: ago(3),
-      updatedAt: ago(2),
-      updatedBy: primaryPartner.id
-    },
-    {
-      id: 'dec_2',
-      title: 'Agree on Student Communication & Collaboration Platforms',
-      description: `Option A: Use shared Google Workspace + Padlet (accessible, cloud-based).\nOption B: Use Moodle/Canvas guest accounts.\nOption C: Async messaging for student teams with email digests for faculty.`,
-      type: 'shared',
-      affected: both,
-      due: fmtYmd(addDays(nowD, 7)),
-      approvals: Object.fromEntries(partnerObjects.map(ptn => [
-        ptn.id,
-        {
-          status: 'approve',
-          at: ago(1),
-          note: `Option A with low-bandwidth async backups is our preferred balance across ${ptn.institution}. Let us know your thoughts!`
-        }
-      ])),
-      linked: null,
-      createdBy: primaryPartner.id,
-      createdAt: ago(2),
-      updatedAt: ago(1),
-      updatedBy: primaryPartner.id
-    }
-  ];
+  // Decisions (initialized clean for interactive co-design)
+  p.decisions = [];
 
-  // Comments
-  p.comments = [
-    {
-      id: 'cmt_1',
-      target: { kind: 'decisions', id: 'dec_2' },
-      author: primaryPartner.id,
-      text: `Greetings from ${primaryPartner.city || primaryPartner.institution}! I have set up our initial context card and draft proposal for our ${mode === 'course' ? 'joint course' : 'shared module'}. For our students here at ${primaryPartner.institution}, a lightweight web platform like Option A works best because many access course materials from mobile devices. Looking forward to our multilateral collaboration!`,
-      lang: primaryPartner.language,
-      at: ago(1)
-    }
-  ];
+  // Comments (initialized clean)
+  p.comments = [];
 
-  // Meetings
-  const meetingDate = addDays(nowD, 5);
-  meetingDate.setHours(14, 0, 0, 0);
-  p.meetings = [
-    {
-      id: 'mtg_1',
-      title: `Consortium Co-Design Session: ${instListStr}`,
-      start: meetingDate.toISOString(),
-      duration: 50,
-      link: `https://meet.jit.si/Crosscourse-consortium-demo`,
-      agenda: `1. Welcome & multi-campus institutional context walk-through (15m)\n2. Driving question and counterfactual test review (15m)\n3. Digital tools and multi-time zone agreements (10m)\n4. Next co-design action steps (10m)`,
-      notes: '',
-      attendees: both,
-      updatedAt: ago(2),
-      updatedBy: primaryPartner.id
-    }
-  ];
+  // Meetings (initialized clean)
+  p.meetings = [];
 
   // Glossary
   p.glossary = (topic.glossary || []).map((g, gi) => ({
@@ -1097,46 +980,15 @@ export function createAiPartnerDemo(options = {}) {
     term: g.term,
     definitions: g.defs,
     note: g.note || '',
-    updatedAt: ago(3)
+    updatedAt: S.now()
   }));
 
-  // Initial Assistant Proposal from the AI Partner
-  p.proposals = [
-    {
-      id: 'prop_ai_initial',
-      kind: 'coach',
-      title: `Initial Co-Design Advice from ${primaryPartner.name}`,
-      status: 'pending',
-      at: ago(1),
-      by: primaryPartner.id,
-      assumptions: [
-        `Assumes students from participating universities have 3 to 4 hours per week for collaborative activities.`,
-        `Assumes asynchronous coordination is primary with live synchronous touchpoints scheduled across mutual time zones.`
-      ],
-      result: {
-        stage: 'overview',
-        summary: `Professor ${primaryPartner.name} has reviewed your shared consortium workspace for "${topic.title}". Here are recommended immediate next steps to advance your co-design:`,
-        recommendations: [
-          `Review consortium context cards under Partners to see local calendar dates, time zones, and student strengths across all campuses.`,
-          `Check the Decision "Approve Design Brief & Driving Question" and cast your vote or suggest adjustments.`,
-          `Examine the Weekly Arc to ensure our schedule and communication plans are realistic for all cohorts.`
-        ],
-        suggestedActions: [
-          { label: 'View Consortium Context Cards', route: 'partners' },
-          { label: 'Review Driving Question', route: 'frame' },
-          { label: 'Vote on Decision 1', route: 'decisions' }
-        ]
-      }
-    }
-  ];
+  // Proposals (initialized clean, ready for on-demand AI assistance)
+  p.proposals = [];
 
   // Activity events
   p.events = [
-    { id: 'ev_1', at: ago(5), by: primaryPartner.id, type: 'change', summary: `Initialized consortium partnership: "${topic.title}" with ${allPartners.length} universities` },
-    { id: 'ev_2', at: ago(4), by: primaryPartner.id, type: 'change', summary: `Completed context cards for all participating campuses` },
-    { id: 'ev_3', at: ago(3), by: primaryPartner.id, type: 'change', summary: 'Drafted shared design brief and driving question' },
-    { id: 'ev_4', at: ago(2), by: primaryPartner.id, type: 'change', summary: 'Proposed Partnership Charter and multilateral response rhythm' },
-    { id: 'ev_5', at: ago(1), by: primaryPartner.id, type: 'change', summary: 'Approved: Approve Design Brief & Driving Question' }
+    { id: 'ev_1', at: S.now(), by: homePartner.id, type: 'create', summary: `Consortium co-design workspace initialized for "${topic.title}" with ${allPartners.length} universities` }
   ];
 
   return p;

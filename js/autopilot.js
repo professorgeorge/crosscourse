@@ -952,6 +952,7 @@ app.register({
       const visitSel = form.querySelector('select[name=visitFormat]');
       if (visitSel) visitSel.value = visit;
     }
+  },
   'customize-collab-format'() {
     const p = app.p;
     if (!p) return;

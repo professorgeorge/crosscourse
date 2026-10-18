@@ -34,7 +34,7 @@ app.view('home', {
       <section class="home-hero">
         <p class="eyebrow">Autonomous International Course Co-Design</p>
         <h1>Autonomous AI Co-Design for International Courses Across Partner Universities.</h1>
-        <p class="lede">Specify two partner universities and collaboration scope (either conversationally in natural language or through structured choices), and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
+        <p class="lede">Specify your partner universities (two or more, up to 9) and collaboration scope (either conversationally in natural language or through structured choices), and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
 
         <!-- Natural Language & Structured AI Co-Design Studio Card -->
         <div class="ai-prompt-studio card">
@@ -480,58 +480,41 @@ app.register({
       </div>
 
       <div class="field" style="margin-bottom: var(--space-3);">
-        <label><strong>5. Partner Universities (${partnerCampuses.length} Partner Campus${partnerCampuses.length > 1 ? 'es' : ''} in Consortium)</strong></label>
+        <div class="row between wrap gap" style="margin-bottom: var(--space-2); align-items: center;">
+          <label style="margin: 0;"><strong>5. Participating Universities Consortium</strong></label>
+          <span class="badge badge-ok">${campuses.length} Campuses in Consortium</span>
+        </div>
         <span class="muted small" style="display: block; margin-bottom: var(--space-2);">Pre-populated from your consortium intake. An AI partner professor will represent each international campus.</span>
         <div class="stack gap">
-          ${partnerCampuses.map(c => {
+          ${campuses.map(c => {
             const color = S.PARTNER_COLORS[(c.idx - 1) % S.PARTNER_COLORS.length];
+            const isLead = c.idx === 1;
             return `
             <div class="campus-intake-card" style="border-left: 4px solid ${color}; padding: var(--space-3); margin: 0;">
               <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: center;">
                 <div class="row gap" style="align-items: center;">
                   <span class="campus-badge-dot" style="background: ${color};"></span>
-                  <strong class="small">Campus ${c.idx} (Partner University)</strong>
+                  <strong class="small">${isLead ? 'Campus 1 (Lead Institution / You)' : `Campus ${c.idx} (Partner University)`}</strong>
                 </div>
               </div>
               <div class="grid3 gap">
                 <div class="field" style="margin: 0;">
                   <label class="small" for="modal-uni-${c.idx}-inst"><strong>University Name</strong></label>
-                  <input id="modal-uni-${c.idx}-inst" name="modal_uni_${c.idx}_inst" value="${esc(c.institution)}" required placeholder="e.g. Partner University ${c.idx}">
+                  <input id="modal-uni-${c.idx}-inst" name="modal_uni_${c.idx}_inst" value="${esc(c.institution)}" required placeholder="e.g. ${isLead ? 'Lead University' : 'Partner University ' + c.idx}">
                 </div>
                 <div class="field" style="margin: 0;">
                   <label class="small" for="modal-uni-${c.idx}-country">Country (Optional)</label>
                   <input id="modal-uni-${c.idx}-country" name="modal_uni_${c.idx}_country" value="${esc(c.country)}" placeholder="e.g. Country">
                 </div>
                 <div class="field" style="margin: 0;">
-                  <label class="small" for="modal-uni-${c.idx}-prof">Colleague Name (Optional)</label>
-                  <input id="modal-uni-${c.idx}-prof" name="modal_uni_${c.idx}_prof" value="${esc(c.faculty)}" placeholder="e.g. Dr. Colleague Name">
+                  <label class="small" for="modal-uni-${c.idx}-prof">Faculty / Colleague (Optional)</label>
+                  <input id="modal-uni-${c.idx}-prof" name="modal_uni_${c.idx}_prof" value="${esc(c.faculty)}" placeholder="e.g. Professor / Colleague Name">
                 </div>
               </div>
             </div>`;
           }).join('')}
         </div>
-      </div>
-
-      <fieldset class="field" style="margin-bottom: var(--space-3);">
-        <legend><strong>6. Course Developer & Lead Campus Context</strong></legend>
-        <p class="muted small" style="margin-top: 0; margin-bottom: var(--space-2);">
-          Crosscourse supports course developers, instructional designers, and academic coordinators designing on behalf of faculty, as well as instructing professors themselves.
-        </p>
-        <div class="grid3 gap">
-          <div class="field" style="margin: 0;">
-            <label for="ai-demo-myname"><strong>Your Name & Role</strong></label>
-            <input id="ai-demo-myname" name="myName" placeholder="e.g. Dr. Alex Morgan (Course Developer / Faculty Lead)" value="${esc(leadCampus.faculty || '')}" required>
-          </div>
-          <div class="field" style="margin: 0;">
-            <label for="ai-demo-myinst"><strong>Lead Institution (Campus 1)</strong></label>
-            <input id="ai-demo-myinst" name="myInst" placeholder="e.g. Lead University" value="${esc(leadCampus.institution || '')}" required>
-          </div>
-          <div class="field" style="margin: 0;">
-            <label for="ai-demo-mycountry">Location / Country (Optional)</label>
-            <input id="ai-demo-mycountry" name="myCountry" placeholder="e.g. United States" value="${esc(leadCampus.country || '')}">
-          </div>
-        </div>
-      </fieldset>`,
+      </div>`,
       actions: [
         { label: 'Cancel', value: null },
         { label: 'Start AI-Assisted Co-Design', value: 'ok', kind: 'primary', validate: f => f.reportValidity() }
@@ -559,7 +542,7 @@ app.register({
             const oldHtml = btnMobility.innerHTML;
             btnMobility.innerHTML = '<span class="spinner"></span> Structuring...';
             try {
-              const homeUni = dlg.querySelector('#ai-demo-myinst')?.value || '';
+              const homeUni = dlg.querySelector('#modal-uni-1-inst')?.value || '';
               const dWeeks = parseInt(dlg.querySelector('#ai-demo-duration')?.value, 10) || 5;
               const structured = await structureMobilityPrompt(raw, {
                 homeUniversity: homeUni,
@@ -592,8 +575,8 @@ app.register({
             const oldHtml = btnStruct.innerHTML;
             btnStruct.innerHTML = '<span class="spinner"></span> Structuring...';
             try {
-              const homeUni = dlg.querySelector('#ai-demo-myinst')?.value || '';
-              const partnerUnis = partnerCampuses.map(c => dlg.querySelector(`#modal-uni-${c.idx}-inst`)?.value || '').filter(Boolean).join(', ');
+              const homeUni = dlg.querySelector('#modal-uni-1-inst')?.value || '';
+              const partnerUnis = campuses.slice(1).map(c => dlg.querySelector(`#modal-uni-${c.idx}-inst`)?.value || '').filter(Boolean).join(', ');
               const mode = dlg.querySelector('input[name=mode]:checked')?.value || 'module';
               const dWeeks = parseInt(dlg.querySelector('#ai-demo-duration')?.value, 10) || (mode === 'course' ? 14 : 5);
               const structured = await structureRawPrompt(raw, {
@@ -623,18 +606,11 @@ app.register({
     const customVisitFormat = (d.customVisitFormat || '').trim();
     const effectiveVisit = (visitFormat === 'custom' && customVisitFormat) ? 'custom' : visitFormat;
 
-    const allUniversities = [
-      {
-        name: (d.myInst || leadCampus.institution || 'Lead University').trim(),
-        location: (d.myCountry || leadCampus.country || '').trim(),
-        faculty: (d.myName || leadCampus.faculty || 'Lead Faculty').trim()
-      },
-      ...partnerCampuses.map(c => ({
-        name: (d[`modal_uni_${c.idx}_inst`] || c.institution || `Partner University ${c.idx}`).trim(),
-        location: (d[`modal_uni_${c.idx}_country`] || c.country || '').trim(),
-        faculty: (d[`modal_uni_${c.idx}_prof`] || c.faculty || `Partner Colleague ${c.idx}`).trim()
-      }))
-    ];
+    const allUniversities = campuses.map(c => ({
+      name: (d[`modal_uni_${c.idx}_inst`] || c.institution || (c.idx === 1 ? 'Lead University' : `Partner University ${c.idx}`)).trim(),
+      location: (d[`modal_uni_${c.idx}_country`] || c.country || '').trim(),
+      faculty: (d[`modal_uni_${c.idx}_prof`] || c.faculty || (c.idx === 1 ? 'Lead Faculty' : `Partner Colleague ${c.idx}`)).trim()
+    }));
 
     const p = createAiPartnerDemo({
       mode: d.mode,
@@ -646,7 +622,7 @@ app.register({
       universities: allUniversities,
       homeUniversity: allUniversities[0].name,
       userProfile: {
-        name: d.myName || 'Course Developer / Faculty Lead',
+        name: allUniversities[0].faculty || 'Lead Faculty',
         institution: allUniversities[0].name
       }
     });

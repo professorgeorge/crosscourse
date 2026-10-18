@@ -336,6 +336,50 @@ app.view('overview', {
             </button>
           </div>
         </div>
+
+        <!-- Consortium Course Signatures & Instructional Team (Fillable in Deliverables) -->
+        <div class="card" style="margin-top: var(--space-4); padding: var(--space-4); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg);">
+          <div class="row between wrap gap" style="margin-bottom: var(--space-3); align-items: center;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.1rem;">Consortium Course Signatures &amp; Instructional Team</h3>
+              <p class="muted small" style="margin: 4px 0 0;">Fill in designated faculty instructors, course developers, or institutional sign-offs. These dynamically populate your Syllabus and Charter deliverables.</p>
+            </div>
+            <span class="badge badge-ok">${p.partners.length} Campuses</span>
+          </div>
+
+          <div class="field" style="margin-bottom: var(--space-3);">
+            <label for="deliverable-course-developer" class="small"><strong>Course Developer / Instructional Designer (Optional)</strong></label>
+            <input id="deliverable-course-developer" name="courseDeveloper" placeholder="e.g. Dr. Alex Morgan, Senior Instructional Designer" value="${esc(p.developerName || '')}" data-action="update-course-developer">
+            <span class="muted small">If an instructional designer or curriculum developer designed this course on behalf of faculty, their attribution appears here.</span>
+          </div>
+
+          <div class="stack gap">
+            <label class="small"><strong>Campus Instructors &amp; Representatives (${p.partners.length} Universities)</strong></label>
+            <div class="grid2 gap">
+              ${p.partners.map((ptn, ptnIdx) => {
+                const color = ptn.color || S.PARTNER_COLORS[ptnIdx % S.PARTNER_COLORS.length];
+                return `
+                <div class="campus-intake-card" style="border-left: 4px solid ${color}; padding: var(--space-3); margin: 0;">
+                  <div class="row between wrap gap" style="margin-bottom: var(--space-2); align-items: center;">
+                    <div class="row gap" style="align-items: center;">
+                      <span class="campus-badge-dot" style="background: ${color};"></span>
+                      <strong>${esc(ptn.institution)}</strong>
+                    </div>
+                    <span class="muted small">${esc(ptn.country || 'International')}</span>
+                  </div>
+                  <div class="field" style="margin-bottom: var(--space-2);">
+                    <label class="small" for="ptn-inst-prof-${ptn.id}">Designated Faculty Instructor / Signatory</label>
+                    <input id="ptn-inst-prof-${ptn.id}" value="${esc(ptn.name || '')}" placeholder="e.g. Professor Name" data-action="update-deliverable-faculty" data-id="${ptn.id}">
+                  </div>
+                  <div class="field" style="margin: 0;">
+                    <label class="small" for="ptn-inst-course-${ptn.id}">Local Course Title or Department</label>
+                    <input id="ptn-inst-course-${ptn.id}" value="${esc(ptn.course?.title || '')}" placeholder="e.g. Department / Course Code" data-action="update-deliverable-course" data-id="${ptn.id}">
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
       </div>` : ''}
 
       <!-- Collapsed Advanced Co-Design Diagnostics & Tools Drawer -->
@@ -670,7 +714,7 @@ app.register({
     const p = app.p;
     if (!p) return;
     const c = p.charter || {};
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(p.title)}: Consortium Charter</title><style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;max-width:850px;margin:40px auto;padding:0 24px;color:#222;}h1{border-bottom:2px solid #333;padding-bottom:10px;}table{width:100%;border-collapse:collapse;margin:20px 0;}th,td{border:1px solid #ddd;padding:10px;text-align:left;}th{background:#f9f9f9;width:30%;}.signatures{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:24px;}.sig-box{border-top:1px solid #666;padding-top:8px;margin-top:30px;}</style></head><body><h1>Multilateral Consortium Partnership Charter</h1><p><strong>Course:</strong> ${esc(p.title)}</p><p><strong>Participating Institutions (${p.partners.length} Campuses):</strong> ${p.partners.map(x => esc(`${x.institution} (${x.country})`)).join(', ')}</p><table><tr><th>Shared Purpose</th><td>${esc(c.purpose || 'Not set')}</td></tr><tr><th>Decision Rights & Quorum</th><td>${esc(c.decisionRights || 'Multilateral consensus')}</td></tr><tr><th>Languages</th><td>${esc(c.languages || 'Not set')}</td></tr><tr><th>Division of Responsibilities</th><td>${esc(c.division || 'Not set')}</td></tr><tr><th>Student Communications</th><td>${esc(c.studentComms || 'Not set')}</td></tr><tr><th>Attribution & IP</th><td>${esc(c.attribution || 'CC BY-NC')}</td></tr><tr><th>Dispute Resolution</th><td>${esc(c.disagreements || 'Asynchronous dialogue with escalating live review')}</td></tr><tr><th>Withdrawal & Parity</th><td>${esc(c.withdrawal || 'Two weeks notice')}</td></tr><tr><th>Contingency for Cohort Delays</th><td>${esc(c.cohortLoss || 'Archived briefings protect student credit')}</td></tr><tr><th>Mobility & Format</th><td>${esc(c.mobility || 'Collaborative format')}</td></tr></table><div class="signatures">${p.partners.map(x => `<div class="sig-box"><strong>${esc(x.name)}</strong><br>${esc(x.institution)} (${esc(x.country)})<br><span style="color:#777;font-size:0.85rem;">Representative Faculty Signature</span></div>`).join('')}</div></body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(p.title)}: Consortium Charter</title><style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;max-width:850px;margin:40px auto;padding:0 24px;color:#222;}h1{border-bottom:2px solid #333;padding-bottom:10px;}table{width:100%;border-collapse:collapse;margin:20px 0;}th,td{border:1px solid #ddd;padding:10px;text-align:left;}th{background:#f9f9f9;width:30%;}.signatures{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:24px;}.sig-box{border-top:1px solid #666;padding-top:8px;margin-top:30px;}</style></head><body><h1>Multilateral Consortium Partnership Charter</h1><p><strong>Course:</strong> ${esc(p.title)}</p><p><strong>Participating Institutions (${p.partners.length} Campuses):</strong> ${p.partners.map(x => esc(`${x.institution} (${x.country})`)).join(', ')}</p><table><tr><th>Shared Purpose</th><td>${esc(c.purpose || 'Not set')}</td></tr><tr><th>Decision Rights & Quorum</th><td>${esc(c.decisionRights || 'Multilateral consensus')}</td></tr><tr><th>Languages</th><td>${esc(c.languages || 'Not set')}</td></tr><tr><th>Division of Responsibilities</th><td>${esc(c.division || 'Not set')}</td></tr><tr><th>Student Communications</th><td>${esc(c.studentComms || 'Not set')}</td></tr><tr><th>Attribution & IP</th><td>${esc(c.attribution || 'CC BY-NC')}</td></tr><tr><th>Dispute Resolution</th><td>${esc(c.disagreements || 'Asynchronous dialogue with escalating live review')}</td></tr><tr><th>Withdrawal & Parity</th><td>${esc(c.withdrawal || 'Two weeks notice')}</td></tr><tr><th>Contingency for Cohort Delays</th><td>${esc(c.cohortLoss || 'Archived briefings protect student credit')}</td></tr><tr><th>Mobility & Format</th><td>${esc(c.mobility || 'Collaborative format')}</td></tr></table><div class="signatures">${p.developerName ? `<div class="sig-box"><strong>${esc(p.developerName)}</strong><br><span style="color:#666;font-size:0.85rem;">Course Developer / Instructional Designer</span><br><span style="color:#777;font-size:0.85rem;">Curriculum Architect Signature</span></div>` : `<div class="sig-box"><div style="border-bottom:1px dashed #aaa;height:22px;margin-bottom:6px;"></div><span style="color:#666;font-size:0.85rem;">Course Developer / Instructional Designer</span><br><span style="color:#777;font-size:0.85rem;">Curriculum Architect Signature (Fillable)</span></div>`}${p.partners.map(x => `<div class="sig-box"><strong>${esc(x.name || 'Designated Instructor')}</strong><br>${esc(x.institution)} (${esc(x.country || 'International')})<br><span style="color:#777;font-size:0.85rem;">Representative Faculty Signature</span></div>`).join('')}</div></body></html>`;
     download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-charter.html`, html, 'text/html');
   },
   'dl-pack-calendar-ics'() {
@@ -686,5 +730,27 @@ app.register({
     const p = app.p;
     if (!p) return;
     download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-consortium-course.json`, JSON.stringify(p, null, 2), 'application/json');
+  },
+  'update-course-developer'(d, el) {
+    if (!app.p) return;
+    app.p.developerName = (el.value || '').trim();
+    S.saveProject(app.p);
+  },
+  'update-deliverable-faculty'(d, el) {
+    if (!app.p) return;
+    const ptn = app.p.partners.find(x => x.id === el.dataset.id);
+    if (ptn) {
+      ptn.name = (el.value || '').trim();
+      S.saveProject(app.p);
+    }
+  },
+  'update-deliverable-course'(d, el) {
+    if (!app.p) return;
+    const ptn = app.p.partners.find(x => x.id === el.dataset.id);
+    if (ptn) {
+      if (!ptn.course) ptn.course = {};
+      ptn.course.title = (el.value || '').trim();
+      S.saveProject(app.p);
+    }
   }
 });

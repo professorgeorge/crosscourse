@@ -39,26 +39,77 @@ app.view('home', {
         <!-- Natural Language & Structured AI Co-Design Studio Card -->
         <div class="ai-prompt-studio card">
           <form id="ai-prompt-form" class="stack">
-            <!-- Dedicated Dual-University Controls -->
-            <div class="grid2 gap" style="padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-              <div class="field" style="margin: 0;">
-                <label for="prompt-home-uni" class="small" style="font-weight: 600;">
-                  1. Home University (University 1)
-                </label>
-                <input id="prompt-home-uni" name="homeUniversity" required placeholder="e.g. Alcorn State University">
+            <!-- Dynamic Partner Universities Consortium (2 to 9 Campuses) -->
+            <div class="card" style="padding: var(--space-4); background: var(--color-surface); border-radius: var(--radius-lg); border: 1px solid var(--color-border); margin: 0;">
+              <div class="row between wrap gap" style="margin-bottom: var(--space-3); align-items: center;">
+                <div>
+                  <h3 style="margin: 0; font-size: 1.05rem;">1. Partner Universities Consortium (2 to 9 Campuses)</h3>
+                  <span class="muted small">Add your lead institution and international partner universities. Time zones and multi-campus calendars are reconciled automatically.</span>
+                </div>
+                <span class="badge badge-ok" id="consortium-count-badge">2 Universities in Consortium</span>
               </div>
 
-              <div class="field" style="margin: 0;">
-                <label for="prompt-partner-uni" class="small" style="font-weight: 600;">
-                  2. Partner University (University 2)
-                </label>
-                <input id="prompt-partner-uni" name="partnerUniversity" required placeholder="e.g. Kyoto University">
+              <div id="campus-intake-list" class="stack gap">
+                <!-- Campus 1: Lead Institution (You) -->
+                <div class="campus-intake-card" data-idx="1" style="border-left: 4px solid #b4532a;">
+                  <div class="row between wrap gap" style="align-items: center; margin-bottom: var(--space-2);">
+                    <div class="row gap" style="align-items: center;">
+                      <span class="campus-badge-dot" style="background: #b4532a;"></span>
+                      <strong class="small">Campus 1 (Lead Institution / You)</strong>
+                    </div>
+                  </div>
+                  <div class="grid3 gap">
+                    <div class="field" style="margin: 0;">
+                      <label class="small" for="uni-1-inst"><strong>University Name</strong></label>
+                      <input id="uni-1-inst" name="uni_1_inst" required placeholder="e.g. Alcorn State University">
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label class="small" for="uni-1-country">Country (Optional)</label>
+                      <input id="uni-1-country" name="uni_1_country" placeholder="e.g. United States">
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label class="small" for="uni-1-prof">Lead Professor Name</label>
+                      <input id="uni-1-prof" name="uni_1_prof" placeholder="e.g. Professor Name">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Campus 2: Partner Institution -->
+                <div class="campus-intake-card" data-idx="2" style="border-left: 4px solid #2c6a8a;">
+                  <div class="row between wrap gap" style="align-items: center; margin-bottom: var(--space-2);">
+                    <div class="row gap" style="align-items: center;">
+                      <span class="campus-badge-dot" style="background: #2c6a8a;"></span>
+                      <strong class="small">Campus 2 (Partner University)</strong>
+                    </div>
+                  </div>
+                  <div class="grid3 gap">
+                    <div class="field" style="margin: 0;">
+                      <label class="small" for="uni-2-inst"><strong>University Name</strong></label>
+                      <input id="uni-2-inst" name="uni_2_inst" required placeholder="e.g. Kyoto University">
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label class="small" for="uni-2-country">Country (Optional)</label>
+                      <input id="uni-2-country" name="uni_2_country" placeholder="e.g. Japan">
+                    </div>
+                    <div class="field" style="margin: 0;">
+                      <label class="small" for="uni-2-prof">Colleague Name (Optional)</label>
+                      <input id="uni-2-prof" name="uni_2_prof" placeholder="e.g. Dr. Colleague Name">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row between wrap gap" style="margin-top: var(--space-3); align-items: center;">
+                <button type="button" class="btn sm" id="btn-add-campus" style="font-weight: 600;">
+                  ${icon.plus} Add Another Partner University (Up to 9)
+                </button>
+                <span class="muted small" id="campus-counter-hint">You can add up to 7 more partner universities to this consortium.</span>
               </div>
             </div>
 
             <!-- Scope Selection: Course Segment vs Whole New Course -->
             <fieldset class="field" style="margin: 0; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-              <legend class="small" style="font-weight: 600; margin-bottom: var(--space-2);">3. Collaboration Scope</legend>
+              <legend class="small" style="font-weight: 600; margin-bottom: var(--space-2);">2. Collaboration Scope</legend>
               <div class="row gap wrap">
                 <label class="choice small grow" style="margin: 0;">
                   <input type="radio" name="mode" value="module" checked>
@@ -75,14 +126,14 @@ app.view('home', {
             <div class="ai-customization-bar grid2 gap" style="padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
               <div class="field" style="margin: 0;">
                 <label for="prompt-dur-weeks" class="small" style="font-weight: 600;">
-                  4. Course Duration (Weeks)
+                  3. Course Duration (Weeks)
                 </label>
                 <input type="number" id="prompt-dur-weeks" name="durationWeeks" min="1" max="52" required placeholder="Number of weeks (e.g. 5 or 14)" value="5">
               </div>
 
               <div class="field" style="margin: 0;">
                 <label for="prompt-visit-format" class="small" style="font-weight: 600;">
-                  5. Cross-Country Mobility & Format
+                  4. Cross-Country Mobility & Format
                 </label>
                 <select id="prompt-visit-format" name="visitFormat">
                   <option value="virtual" selected>100% Fully Virtual Exchange (Online collaboration)</option>
@@ -102,7 +153,7 @@ app.view('home', {
             <div class="field" style="margin: 0;">
               <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: flex-end;">
                 <label for="course-prompt" class="ai-prompt-label" style="margin: 0;">
-                  ${icon.sparkle} <strong>6. Course Topic, Discipline, or Driving Inquiry Vision</strong>
+                  ${icon.sparkle} <strong>5. Course Topic, Discipline, or Driving Inquiry Vision</strong>
                 </label>
                 <button type="button" class="btn text sm" data-action="structure-raw-prompt" data-target="course-prompt" style="padding: 2px 8px; font-size: 0.82rem;" title="Convert rough or unstructured notes into a structured prompt">
                   ${icon.sparkle} Convert Rough Notes to Structured Prompt
@@ -114,39 +165,14 @@ app.view('home', {
               <textarea id="course-prompt" name="prompt" rows="4" required placeholder="e.g. Enter your topic, rough syllabus notes, or paste unformatted text here (e.g. Sustainable urban mobility and public transit equity across US and Brazil, 5-week module, student team comparative reports)..."></textarea>
             </div>
 
-            <!-- Optional Professor & Institutional Profiles -->
-            <details style="padding: var(--space-2) var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
-              <summary class="small muted" style="cursor: pointer; font-weight: 600;">
-                Optional: Add Professor Contact & Institutional Details
-              </summary>
-              <div class="grid2 gap" style="margin-top: var(--space-2);">
-                <div class="field" style="margin: 0;">
-                  <label for="prompt-my-name" class="small">Your Name</label>
-                  <input id="prompt-my-name" name="myName" placeholder="e.g. Professor Name">
-                </div>
-                <div class="field" style="margin: 0;">
-                  <label for="prompt-my-email" class="small">Your Email</label>
-                  <input id="prompt-my-email" name="myEmail" type="email" placeholder="e.g. professor@university.edu">
-                </div>
-                <div class="field" style="margin: 0;">
-                  <label for="prompt-partner-name" class="small">Partner Colleague Name</label>
-                  <input id="prompt-partner-name" name="partnerName" placeholder="e.g. Dr. Colleague Name">
-                </div>
-                <div class="field" style="margin: 0;">
-                  <label for="prompt-working-lang" class="small">Preferred Working Language</label>
-                  <input id="prompt-working-lang" name="workingLanguage" placeholder="e.g. English">
-                </div>
-              </div>
-            </details>
-
             <div class="row between wrap gap" style="margin-top: var(--space-3); align-items: center;">
-              <span class="muted small">All 5 deliverables (Syllabus HTML & PDF, Student Handout MD, Partnership Charter, .ics Calendar, and Project File) will be created immediately.</span>
+              <span class="muted small">All 5 deliverables (Syllabus HTML & PDF, Student Handout MD, Consortium Charter, .ics Calendar, and Project File) will be created immediately.</span>
               <div class="row gap wrap">
                 <button type="submit" class="btn primary lg" data-action="generate-from-prompt" style="min-width: 260px;">
                   ${icon.sparkle} Autonomously Generate Deliverables
                 </button>
                 <button type="button" class="btn ghost lg" data-action="open-ai-demo-modal">
-                  Co-Design with an AI Partner Professor...
+                  Co-Design with AI Partner Professors...
                 </button>
               </div>
             </div>
@@ -615,8 +641,24 @@ app.register({
       return;
     }
     const form = ta.closest('form') || document.getElementById('ai-prompt-form');
-    const homeUni = form?.querySelector('input[name=homeUniversity]')?.value || '';
-    const partnerUni = form?.querySelector('input[name=partnerUniversity]')?.value || '';
+    const universities = [];
+    if (form) {
+      const cards = form.querySelectorAll('.campus-intake-card');
+      cards.forEach((card, idx) => {
+        const inst = (card.querySelector('input[name$="_inst"]')?.value || '').trim();
+        const country = (card.querySelector('input[name$="_country"]')?.value || '').trim();
+        const prof = (card.querySelector('input[name$="_prof"]')?.value || '').trim();
+        if (inst) {
+          universities.push({
+            institution: inst,
+            country: country || (idx === 0 ? 'United States' : 'International'),
+            professor: prof || (idx === 0 ? 'Lead Professor' : `Colleague ${idx + 1}`)
+          });
+        }
+      });
+    }
+    const homeUni = universities[0]?.institution || 'Home University';
+    const partnerUnis = universities.slice(1).map(u => u.institution).join(', ') || 'Partner University';
     const mode = form?.querySelector('input[name=mode]:checked')?.value || 'module';
     const dWeeks = parseInt(form?.querySelector('input[name=durationWeeks]')?.value, 10) || (mode === 'course' ? 14 : 5);
 
@@ -626,7 +668,8 @@ app.register({
     try {
       const res = await structureRawPrompt(raw, {
         homeUniversity: homeUni,
-        partnerUniversity: partnerUni,
+        partnerUniversity: partnerUnis,
+        universities,
         mode,
         durationWeeks: dWeeks
       });
@@ -651,6 +694,88 @@ app.register({
     if (!(await confirmBox('Delete all local data?', 'This removes every project and setting from this browser. Partners keep their own copies.', 'Delete everything'))) return;
     for (const k of S.kv.keys()) if (k.startsWith('xc:')) S.kv.del(k);
     app.go('#/'); app.render();
+  }
+});
+
+function reindexCampusCards(list) {
+  const cards = list.querySelectorAll('.campus-intake-card');
+  cards.forEach((card, i) => {
+    const idx = i + 1;
+    card.dataset.idx = idx;
+    const color = S.PARTNER_COLORS[(idx - 1) % S.PARTNER_COLORS.length];
+    card.style.borderLeft = `4px solid ${color}`;
+    const dot = card.querySelector('.campus-badge-dot');
+    if (dot) dot.style.background = color;
+    const label = card.querySelector('strong.small');
+    if (label) {
+      label.textContent = idx === 1 ? 'Campus 1 (Lead Institution / You)' : `Campus ${idx} (Partner University)`;
+    }
+  });
+}
+
+function updateConsortiumBadges(list) {
+  const count = list.querySelectorAll('.campus-intake-card').length;
+  const badge = document.getElementById('consortium-count-badge');
+  if (badge) badge.textContent = `${count} Universities in Consortium`;
+  const hint = document.getElementById('campus-counter-hint');
+  if (hint) {
+    hint.textContent = count >= 9 ? 'Consortium full (9 partner universities).' : `You can add up to ${9 - count} more partner universities.`;
+  }
+}
+
+document.addEventListener('click', e => {
+  const addBtn = e.target.closest('#btn-add-campus');
+  if (addBtn) {
+    const list = document.getElementById('campus-intake-list');
+    if (!list) return;
+    const cards = list.querySelectorAll('.campus-intake-card');
+    if (cards.length >= 9) {
+      toast('Maximum of 9 partner universities reached for this consortium.', 'warn');
+      return;
+    }
+    const nextIdx = cards.length + 1;
+    const color = S.PARTNER_COLORS[(nextIdx - 1) % S.PARTNER_COLORS.length];
+    const newCard = document.createElement('div');
+    newCard.className = 'campus-intake-card';
+    newCard.dataset.idx = nextIdx;
+    newCard.style.borderLeft = `4px solid ${color}`;
+    newCard.innerHTML = `
+      <div class="row between wrap gap" style="align-items: center; margin-bottom: var(--space-2);">
+        <div class="row gap" style="align-items: center;">
+          <span class="campus-badge-dot" style="background: ${color};"></span>
+          <strong class="small">Campus ${nextIdx} (Partner University)</strong>
+        </div>
+        <button type="button" class="campus-remove-btn" title="Remove this university">✕ Remove</button>
+      </div>
+      <div class="grid3 gap">
+        <div class="field" style="margin: 0;">
+          <label class="small" for="uni-${nextIdx}-inst"><strong>University Name</strong></label>
+          <input id="uni-${nextIdx}-inst" name="uni_${nextIdx}_inst" required placeholder="e.g. Partner University ${nextIdx}">
+        </div>
+        <div class="field" style="margin: 0;">
+          <label class="small" for="uni-${nextIdx}-country">Country (Optional)</label>
+          <input id="uni-${nextIdx}-country" name="uni_${nextIdx}_country" placeholder="e.g. Country">
+        </div>
+        <div class="field" style="margin: 0;">
+          <label class="small" for="uni-${nextIdx}-prof">Colleague Name (Optional)</label>
+          <input id="uni-${nextIdx}-prof" name="uni_${nextIdx}_prof" placeholder="e.g. Dr. Colleague Name">
+        </div>
+      </div>
+    `;
+    list.appendChild(newCard);
+    updateConsortiumBadges(list);
+    return;
+  }
+
+  const removeBtn = e.target.closest('.campus-remove-btn');
+  if (removeBtn) {
+    const card = removeBtn.closest('.campus-intake-card');
+    const list = card ? card.closest('#campus-intake-list') : null;
+    if (card && list) {
+      card.remove();
+      reindexCampusCards(list);
+      updateConsortiumBadges(list);
+    }
   }
 });
 

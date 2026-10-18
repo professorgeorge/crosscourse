@@ -504,13 +504,22 @@ export function createAiPartnerDemo(options = {}) {
   const partnerInst = options.partnerUniversity || options.partnerInst || persona.institution;
   const partnerCountry = options.partnerCountry || persona.country;
 
-  // Partner 1: Home Professor (The User)
+  // Build raw list of 2 to 9 universities
+  const rawUniversities = (options.universities && options.universities.length >= 2)
+    ? options.universities
+    : [
+        { index: 1, institution: userInst, country: userCountry, professor: userName },
+        { index: 2, institution: partnerInst, country: partnerCountry, professor: options.partnerName || persona.name }
+      ];
+
+  // Campus 1: Home Professor (Lead Institution / User)
+  const leadUni = rawUniversities[0];
   const homePartner = S.blankPartner({
     id: 'ptn_home',
-    name: userName,
+    name: leadUni.professor || userName,
     email: user.email || 'professor@example.edu',
-    institution: userInst,
-    country: userCountry,
+    institution: leadUni.institution || userInst,
+    country: leadUni.country || userCountry,
     timezone: userTz,
     language: userLang,
     role: 'representative',
@@ -540,7 +549,7 @@ export function createAiPartnerDemo(options = {}) {
       accessibility: 'Screen-reader compatibility and flexible deadline grace periods.',
       careTopics: 'Students may hold personal connections to geopolitical or socio-economic aspects of the topic.',
       constraints: 'Institutional midterm grading deadline in week 7.',
-      hopes: `Learn directly from ${partnerInst} about their situated methodologies and local case dynamics.`,
+      hopes: `Learn directly from partner universities about their situated methodologies and local case dynamics.`,
       breaks: [
         { id: 'brk_h1', label: 'Mid-term break', start: fmtYmd(addDays(nowD, 28)), end: fmtYmd(addDays(nowD, 35)) }
       ],
@@ -559,70 +568,83 @@ export function createAiPartnerDemo(options = {}) {
     }
   }, 0);
 
-  // Partner 2: AI Simulation Partner Professor
-  const aiPartner = S.blankPartner({
-    id: 'ptn_ai',
-    name: persona.name,
-    email: persona.email,
-    institution: partnerInst,
-    country: partnerCountry,
-    city: persona.city,
-    timezone: persona.timezone,
-    language: persona.language,
-    role: 'representative',
-    status: 'active',
-    isAi: true,
-    aiPersona: persona.key,
-    workStart: persona.workStart,
-    workEnd: persona.workEnd,
-    flexStart: persona.flexStart,
-    flexEnd: persona.flexEnd,
-    contributes: persona.contributes,
-    course: {
-      title: topic.partnerCourseTitle,
-      code: topic.partnerCourseCode,
-      level: '3rd year Undergraduate / Master seminar',
-      discipline: topic.discipline,
-      studentsCount: 30,
-      purpose: `${persona.bio} Course explores ${topic.title} with emphasis on local territorial realities and participatory frameworks.`,
-      priorities: 'Community-grounded inquiry, participatory methods, ethical accountability',
-      interculturalAims: 'Question universalizing assumptions from abroad and share local traditions of knowledge.',
-      languages: `${persona.language} as primary working language; students have intermediate to high English comprehension.`,
-      termStart: termStartStr,
-      termEnd: termEndStr,
-      studentAvailability: persona.studentProfile,
-      workloadHoursPerWeek: 3.5,
-      tech: persona.tech,
-      techRestrictions: persona.techRestrictions,
-      assessmentObligations: persona.assessmentObligations,
-      accessibility: 'Requires low-bandwidth mobile-friendly formats and asynchronous video alternatives.',
-      careTopics: 'Local communities and families of students are directly impacted by issues investigated.',
-      constraints: `Timezone differences (${persona.timezone}) and local term breaks.`,
-      hopes: `Build long-term reciprocal research and teaching bridges with ${userInst}.`,
-      breaks: persona.breaks.map((b, bi) => ({
-        id: `brk_ai_${bi}`,
-        label: b.label,
-        start: fmtYmd(addDays(nowD, b.offsetDays)),
-        end: fmtYmd(addDays(nowD, b.offsetDays + b.durationDays))
-      })),
-      localOutcomes: persona.localOutcomes.map((text, oi) => ({
-        id: `lo_ai_${oi}`,
-        text
-      }))
-    },
-    fieldStates: {
-      title: 'confirmed',
-      purpose: 'confirmed',
-      termStart: 'confirmed',
-      termEnd: 'confirmed',
-      languages: 'confirmed',
-      techRestrictions: 'confirmed',
-      assessmentObligations: 'confirmed'
-    }
-  }, 1);
+  // Campuses 2 to N: Partner Universities (Up to 9 total)
+  const partnerObjects = rawUniversities.slice(1).map((u, idx) => {
+    const pIdx = idx + 1;
+    const partnerId = pIdx === 1 ? 'ptn_ai' : `ptn_ai_${pIdx + 1}`;
+    const ptnPersona = Object.assign({}, AI_PARTNER_PERSONAS[idx % AI_PARTNER_PERSONAS.length]);
+    const pName = u.professor?.trim() || (idx === 0 && options.partnerName?.trim() ? options.partnerName.trim() : ptnPersona.name);
+    const pInst = u.institution?.trim() || (idx === 0 ? partnerInst : ptnPersona.institution);
+    const pCountry = u.country?.trim() || (idx === 0 ? partnerCountry : ptnPersona.country);
 
-  p.partners = [homePartner, aiPartner];
-  p.aiPartnerId = aiPartner.id;
+    return S.blankPartner({
+      id: partnerId,
+      name: pName,
+      email: ptnPersona.email,
+      institution: pInst,
+      country: pCountry,
+      city: ptnPersona.city,
+      timezone: ptnPersona.timezone,
+      language: ptnPersona.language,
+      role: 'representative',
+      status: 'active',
+      isAi: true,
+      aiPersona: ptnPersona.key,
+      workStart: ptnPersona.workStart,
+      workEnd: ptnPersona.workEnd,
+      flexStart: ptnPersona.flexStart,
+      flexEnd: ptnPersona.flexEnd,
+      contributes: ptnPersona.contributes,
+      course: {
+        title: `${topic.partnerCourseTitle} (Campus ${pIdx + 1})`,
+        code: `${topic.partnerCourseCode}-${pIdx + 1}`,
+        level: '3rd year Undergraduate / Master seminar',
+        discipline: topic.discipline,
+        studentsCount: 28,
+        purpose: `${ptnPersona.bio} Explores ${topic.title} with emphasis on territorial realities and participatory frameworks.`,
+        priorities: 'Community-grounded inquiry, participatory methods, ethical accountability',
+        interculturalAims: 'Question universalizing assumptions and share local traditions of knowledge.',
+        languages: `${ptnPersona.language} as primary working language; students have intermediate to high English comprehension.`,
+        termStart: termStartStr,
+        termEnd: termEndStr,
+        studentAvailability: ptnPersona.studentProfile,
+        workloadHoursPerWeek: 3.5,
+        tech: ptnPersona.tech,
+        techRestrictions: ptnPersona.techRestrictions,
+        assessmentObligations: ptnPersona.assessmentObligations,
+        accessibility: 'Requires low-bandwidth mobile-friendly formats and asynchronous video alternatives.',
+        careTopics: 'Local communities and families of students are directly impacted by issues investigated.',
+        constraints: `Timezone differences (${ptnPersona.timezone}) and local term breaks.`,
+        hopes: `Build long-term reciprocal research and teaching bridges with ${userInst}.`,
+        breaks: ptnPersona.breaks.map((b, bi) => ({
+          id: `brk_${partnerId}_${bi}`,
+          label: b.label,
+          start: fmtYmd(addDays(nowD, b.offsetDays)),
+          end: fmtYmd(addDays(nowD, b.offsetDays + b.durationDays))
+        })),
+        localOutcomes: ptnPersona.localOutcomes.map((text, oi) => ({
+          id: `lo_${partnerId}_${oi}`,
+          text
+        }))
+      },
+      fieldStates: {
+        title: 'confirmed',
+        purpose: 'confirmed',
+        termStart: 'confirmed',
+        termEnd: 'confirmed',
+        languages: 'confirmed',
+        techRestrictions: 'confirmed',
+        assessmentObligations: 'confirmed'
+      }
+    }, pIdx);
+  });
+
+  const allPartners = [homePartner, ...partnerObjects];
+  const allIds = allPartners.map(x => x.id);
+  const primaryPartner = partnerObjects[0];
+
+  p.partners = allPartners;
+  p.aiPartnerId = primaryPartner.id;
 
   // Staged Design Brief
   p.brief = {
@@ -633,42 +655,44 @@ export function createAiPartnerDemo(options = {}) {
     counterfactual: topic.counterfactual,
     status: 'draft',
     updatedAt: ago(3),
-    updatedBy: aiPartner.id
+    updatedBy: primaryPartner.id
   };
 
   // Partnership Charter
   let mobilityClause = '';
   if (visitFormat === 'custom' && options.customVisitFormat) {
-    mobilityClause = `Custom International Mobility & Delivery Format: ${options.customVisitFormat}. Activities and institutional support are tailored accordingly across ${partnerInst} and the home campus.`;
+    mobilityClause = `Custom International Mobility & Delivery Format: ${options.customVisitFormat}. Activities and institutional support are tailored accordingly across all consortium campuses.`;
   } else if (visitFormat === 'student-visit') {
-    mobilityClause = `Blended Virtual + Student Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partnerInst} in ${persona.city}, ${persona.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
+    mobilityClause = `Blended Virtual + Student Immersion: Student cohort participates in an intensive reciprocal field study visit hosted at ${primaryPartner.institution} in ${primaryPartner.city || 'the host city'}, ${primaryPartner.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
   } else if (visitFormat === 'faculty-visit') {
-    mobilityClause = `Blended Virtual + Faculty Mobility: Visiting professor travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary. Student cohort collaboration remains online.`;
+    mobilityClause = `Blended Virtual + Faculty Mobility: Visiting professors travel to partner campuses for guest lectures and joint research colloquia. Host institutions assist with campus credentials and academic itineraries. Student cohort collaboration remains online.`;
   } else if (visitFormat === 'parallel-studios') {
-    mobilityClause = `Dual-Campus Parallel Studios: Cohorts work simultaneously in synchronized design studios or laboratories on their home campuses, connecting at scheduled milestones for joint peer reviews, data exchanges, and simultaneous prototype crits.`;
+    mobilityClause = `Multi-Campus Parallel Studios: Cohorts work simultaneously in synchronized design studios or laboratories across all consortium campuses, connecting at scheduled milestones for joint peer reviews, data exchanges, and simultaneous prototype crits.`;
   } else if (visitFormat === 'async-distributed') {
-    mobilityClause = `Asynchronous Distributed Teams: Designed specifically for large time-zone differentials. Collaboration occurs via structured asynchronous handoffs, pre-recorded briefings, annotated documents, and 24-hour cycle workflows with lightweight messaging.`;
+    mobilityClause = `Asynchronous Distributed Teams: Designed specifically for multi-campus time-zone differentials. Collaboration occurs via structured asynchronous handoffs, pre-recorded briefings, annotated documents, and 24-hour cycle workflows with lightweight messaging.`;
   } else if (visitFormat === 'field-practicum') {
     mobilityClause = `Virtual Preparation + Field Practicum: Cohorts complete collaborative virtual preparatory modules, followed by an intensive joint on-site practicum or community-based fieldwork with civic or industry partners in the host region.`;
   } else {
-    mobilityClause = `100% Fully Virtual Exchange: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
+    mobilityClause = `100% Fully Virtual Exchange: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions across all partner campuses. No international travel is required.`;
   }
 
+  const instListStr = allPartners.map(x => x.institution).join(', ');
+
   Object.assign(p.charter, {
-    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${durationWeeks} weeks, ${visitFormat}) where students from ${userInst} and ${partnerInst} investigate ${topic.title} together, designed for flexible multi-term deployment.`,
-    decisionRights: 'Substantive changes to shared deliverables, schedule, and outcomes require explicit approval from both representatives. Local grading remains sovereign at each institution.',
+    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${durationWeeks} weeks, ${visitFormat}) across ${instListStr} investigating ${topic.title} together, designed for flexible multi-term deployment.`,
+    decisionRights: 'Substantive changes to shared deliverables, schedule, and outcomes require multilateral consensus across participating faculty representatives. Local grading remains sovereign at each institution.',
     responseDays: 3,
-    languages: `Faculty coordination in English (with bilingual glossary support). Student team deliverables submitted with bilingual executive summaries.`,
-    division: `${userName} coordinates digital portfolio templates and synthesis rubrics; ${persona.name} coordinates local case dossiers and community inquiry guidelines.`,
+    languages: `Faculty coordination in English (with multilingual glossary support). Student team deliverables submitted with multilingual executive summaries.`,
+    division: `${userName} coordinates digital portfolio templates and synthesis rubrics; partner colleagues coordinate local case dossiers and community inquiry guidelines.`,
     studentComms: 'Each professor communicates directly with their own student cohort; shared joint announcements posted through the collaborative workspace.',
     attribution: 'All jointly created teaching resources licensed under Creative Commons CC BY-NC with mutual institutional credit.',
     disagreements: 'Articulate options asynchronously as a formal decision in Crosscourse. Meet for live dialogue if unresolved after 5 working days.',
     withdrawal: 'Two weeks advance notice; student grades protected via contingency dossier paths.',
-    cohortLoss: 'Pre-recorded video briefings and archived case studies preserve student credit if disruption occurs at either campus.',
+    cohortLoss: 'Pre-recorded video briefings and archived case studies preserve student credit if disruption occurs at any campus.',
     mobility: mobilityClause,
     status: 'draft',
     updatedAt: ago(2),
-    updatedBy: aiPartner.id
+    updatedBy: primaryPartner.id
   });
 
   // Shared Outcomes
@@ -676,13 +700,13 @@ export function createAiPartnerDemo(options = {}) {
   p.outcomes = [
     {
       id: o1,
-      text: `Students will be able to analyze and contrast how ${topic.title} is evaluated across ${userCountry} and ${persona.country}, synthesizing evidence from both regional contexts.`,
+      text: `Students will be able to analyze and contrast how ${topic.title} is evaluated across participating consortium contexts (${allPartners.map(x => x.country).filter(Boolean).join(', ')}), synthesizing evidence from all regional perspectives.`,
       type: 'disciplinary',
       evidence: 'Joint comparative synthesis dossier and collaborative case brief',
-      mappings: {
-        ptn_home: ['lo_h1', 'lo_h2'],
-        ptn_ai: ['lo_ai_0', 'lo_ai_1']
-      },
+      mappings: Object.fromEntries(allPartners.map((ptn, idx) => [
+        ptn.id,
+        idx === 0 ? ['lo_h1', 'lo_h2'] : [`lo_${ptn.id}_0`, `lo_${ptn.id}_1`]
+      ])),
       status: 'approved',
       updatedAt: ago(4),
       updatedBy: homePartner.id
@@ -692,31 +716,40 @@ export function createAiPartnerDemo(options = {}) {
       text: 'Students will be able to identify cultural and institutional assumptions in their own thinking and revise their interpretations after engaging with international partner evidence.',
       type: 'intercultural',
       evidence: 'Individual before-and-after reflective learning journal',
-      mappings: {
-        ptn_home: ['lo_h2'],
-        ptn_ai: ['lo_ai_1']
-      },
+      mappings: Object.fromEntries(allPartners.map((ptn, idx) => [
+        ptn.id,
+        idx === 0 ? ['lo_h2'] : [`lo_${ptn.id}_1`]
+      ])),
       status: 'approved',
       updatedAt: ago(4),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     },
     {
       id: o3,
-      text: 'Students will be able to negotiate bilingual project milestones, communication norms, and constructive disagreements in a multinational team.',
+      text: 'Students will be able to negotiate multilateral project milestones, communication norms, and constructive disagreements in a multinational team.',
       type: 'intercultural',
       evidence: 'Team working charter, collaborative process log, and peer feedback reflection',
-      mappings: {
-        ptn_home: ['lo_h3'],
-        ptn_ai: ['lo_ai_2']
-      },
+      mappings: Object.fromEntries(allPartners.map((ptn, idx) => [
+        ptn.id,
+        idx === 0 ? ['lo_h3'] : [`lo_${ptn.id}_2`]
+      ])),
       status: 'draft',
       updatedAt: ago(1),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     }
   ];
 
   // Activities along the collaborative arc
-  const both = ['ptn_home', 'ptn_ai'];
+  const both = allIds;
+  const buildContributions = (homeText, partnerTextGen) => {
+    const res = { ptn_home: homeText };
+    partnerObjects.forEach((ptn, idx) => {
+      res[ptn.id] = partnerTextGen(ptn, idx);
+    });
+    return res;
+  };
+  const defaultWorkload = Object.fromEntries(allPartners.map(x => [x.id, 3.5]));
+
   const act = (id, title, stage, startOffset, durDays, sync, owner, contributions, dependsOn, outcomes, extra = {}) => {
     const start = fmtYmd(addDays(nowD, startOffset));
     const end = fmtYmd(addDays(nowD, startOffset + durDays));
@@ -731,7 +764,7 @@ export function createAiPartnerDemo(options = {}) {
       end,
       participants: both,
       contributions,
-      workload: { ptn_home: 3, ptn_ai: 3 },
+      workload: defaultWorkload,
       owner,
       dependsOn,
       outcomes,
@@ -751,118 +784,118 @@ export function createAiPartnerDemo(options = {}) {
   if (durationWeeks <= 6) {
     // 4-activity accelerated schedule (e.g. 5 weeks)
     p.activities = [
-      act('act_1', 'Team introductions & cross-cultural working agreement', 'trust', 2, 6, true, 'ptn_ai', {
-        ptn_home: 'Students share short 90-second video introductions and their initial assumptions on the topic.',
-        ptn_ai: `Students share 90-second introductions describing their local reality in ${persona.city} and what they bring.`
-      }, [], [o3], {
+      act('act_1', 'Team introductions & cross-cultural working agreement', 'trust', 2, 6, true, primaryPartner.id, buildContributions(
+        'Students share short 90-second video introductions and their initial assumptions on the topic.',
+        (ptn) => `Students share 90-second video introductions describing local reality in ${ptn.city || ptn.institution} and cohort strengths.`
+      ), [], [o3], {
         summary: 'Multinational student teams meet, introduce themselves, and co-sign their team communication agreement.',
         status: 'approved',
-        instructions: `### Stage 1: Team Working Agreement\n\n1. Watch your partner teammates' introductory videos.\n2. In your shared document, agree upon your preferred messaging channel and expected response times.\n3. Note differences in local time zones (${userTz} vs ${persona.timezone}) and agree on meeting windows.`
+        instructions: `### Stage 1: Team Working Agreement\n\n1. Watch your partner teammates' introductory videos.\n2. In your shared document, agree upon your preferred messaging channel and expected response times.\n3. Note differences in local time zones across consortium campuses and agree on meeting windows.`
       }),
-      act('act_2', 'Local contextual inquiry & case dossier', 'local', 8, 8, false, 'ptn_home', {
-        ptn_home: `Prepares case briefing on ${userCountry} policy frameworks and local data sources.`,
-        ptn_ai: `Prepares situated field dossier from ${persona.country} including community interviews and local regulations.`
-      }, ['act_1'], [o1], {
+      act('act_2', 'Local contextual inquiry & case dossier', 'local', 8, 8, false, 'ptn_home', buildContributions(
+        `Prepares case briefing on ${userCountry} policy frameworks and local data sources.`,
+        (ptn) => `Prepares situated field dossier from ${ptn.country || 'partner region'} including community interviews and local regulations.`
+      ), ['act_1'], [o1], {
         summary: 'Each cohort produces a situated case dossier documenting how the topic manifests in their home region.',
         instructions: 'Document your regional case study using at least three observable evidence sources. Highlight what is documented, reported, or contested.'
       }),
-      isImmersion ? act('act_3', `In-Person Immersion & Field Lab at ${persona.institution}`, 'compare', 16, 7, true, 'ptn_ai', {
-        ptn_home: 'Participate in on-site community field visits, stakeholder interviews, and daily synthesis workshops.',
-        ptn_ai: 'Host partner student cohort, facilitate site visits, and coordinate community stakeholder discussions.'
-      }, ['act_2'], [o1, o2], {
-        summary: `Reciprocal in-person cross-country immersion week hosted at ${persona.institution} in ${persona.city}, ${persona.country}.`,
-        instructions: `### In-Person Field Study & Immersion Week\n\n1. **On-Site Field Visits:** Conduct scheduled community site visits and local institutional interviews in ${persona.city}.\n2. **Daily Synthesis Workshops:** Meet face-to-face in the host seminar rooms to map divergences in regional evidence.\n3. **Hybrid Inclusion:** Non-traveling team members connect via live-streamed briefings and participate in annotated daily field logs.\n4. **Deliverable:** Joint field synthesis matrix and preliminary capstone outline.`,
+      isImmersion ? act('act_3', `In-Person Immersion & Field Lab at ${primaryPartner.institution}`, 'compare', 16, 7, true, primaryPartner.id, buildContributions(
+        'Participate in on-site community field visits, stakeholder interviews, and daily synthesis workshops.',
+        (ptn, idx) => idx === 0 ? 'Host partner student cohorts, facilitate site visits, and coordinate community discussions.' : 'Participate in field visits, contribute regional data, and engage in daily workshops.'
+      ), ['act_2'], [o1, o2], {
+        summary: `Reciprocal in-person cross-country immersion week hosted at ${primaryPartner.institution} in ${primaryPartner.city || 'the host city'}, ${primaryPartner.country}.`,
+        instructions: `### In-Person Field Study & Immersion Week\n\n1. **On-Site Field Visits:** Conduct scheduled community site visits and local institutional interviews.\n2. **Daily Synthesis Workshops:** Meet face-to-face in host seminar rooms to map divergences in regional evidence.\n3. **Hybrid Inclusion:** Non-traveling team members connect via live-streamed briefings and participate in annotated daily field logs.\n4. **Deliverable:** Joint field synthesis matrix and preliminary capstone outline.`,
         contingency: 'Hybrid participation: Live-streamed field briefings and asynchronous annotated field logs preserve full credit for non-traveling students.'
-      }) : (isFacultyVisit ? act('act_3', 'Faculty Guest Colloquium & Cross-Cohort Critique', 'critique', 16, 7, true, 'ptn_ai', {
-        ptn_home: 'Participate in live guest symposium and present preliminary comparative analysis.',
-        ptn_ai: 'Faculty delivers guest keynote lectures; student cohorts critique partner proposals.'
-      }, ['act_2'], [o1, o2], {
-        summary: 'Faculty cross-country visit: visiting professor delivers guest lectures and facilitates joint critique.',
+      }) : (isFacultyVisit ? act('act_3', 'Faculty Guest Colloquium & Cross-Cohort Critique', 'critique', 16, 7, true, primaryPartner.id, buildContributions(
+        'Participate in live guest symposium and present preliminary comparative analysis.',
+        (ptn) => `Visiting professors from ${ptn.institution} deliver guest lectures and facilitate joint critique.`
+      ), ['act_2'], [o1, o2], {
+        summary: 'Faculty cross-country visit: visiting professors deliver guest lectures and facilitate joint critique.',
         instructions: 'Attend live joint colloquium and submit collaborative peer review notes.'
-      }) : act('act_3', 'Cross-cohort reciprocal analysis & critique', 'compare', 16, 8, false, 'ptn_ai', {
-        ptn_home: 'Analyzes partner dossier and formulates analytical questions challenging assumptions.',
-        ptn_ai: 'Critiques home dossier highlighting blind spots in institutional assumptions and community impacts.'
-      }, ['act_2'], [o1, o2], {
+      }) : act('act_3', 'Cross-cohort reciprocal analysis & critique', 'compare', 16, 8, false, primaryPartner.id, buildContributions(
+        'Analyzes partner dossiers and formulates analytical questions challenging assumptions.',
+        (ptn) => `Critiques comparative dossiers from ${ptn.institution} highlighting blind spots and regional policy divergence.`
+      ), ['act_2'], [o1, o2], {
         summary: 'Teams exchange dossiers, compare differences, and formulate constructive reciprocal critiques.'
       })),
-      act('act_4', 'Joint synthesis report & reflective debrief', 'cocreate', 24, 10, false, 'ptn_home', {
-        ptn_home: 'Co-authors joint recommendation and completes individual learning reflection.',
-        ptn_ai: 'Co-authors local applicability section and contributes non-English executive summary.'
-      }, ['act_3'], [o1, o2, o3], {
-        summary: 'Teams produce a single unified recommendation synthesizing insights from both hemispheres.'
+      act('act_4', 'Joint synthesis report & reflective debrief', 'cocreate', 24, 10, false, 'ptn_home', buildContributions(
+        'Co-authors joint recommendation and completes individual learning reflection.',
+        (ptn) => `Co-authors local applicability section and contributes regional case executive summary for ${ptn.country || 'partner campus'}.`
+      ), ['act_3'], [o1, o2, o3], {
+        summary: 'Teams produce a single unified recommendation synthesizing insights from all consortium campuses.'
       })
     ];
   } else if (durationWeeks <= 9) {
     // 5-activity accelerated term (e.g. 7 or 8 weeks)
     p.activities = [
-      act('act_1', 'Team introductions & cross-cultural working agreement', 'trust', 2, 7, true, 'ptn_ai', {
-        ptn_home: 'Video introductions and personal learning goals.',
-        ptn_ai: `Video introductions from ${persona.city} describing local community context.`
-      }, [], [o3], { summary: 'Cross-cohort trust building and team communication compact.', status: 'approved' }),
-      act('act_2', 'Local investigation & stakeholder case dossier', 'local', 10, 12, false, 'ptn_home', {
-        ptn_home: `Case briefing on ${userCountry} policy frameworks and local evidence.`,
-        ptn_ai: `Situated field dossier from ${persona.country} including stakeholder accounts.`
-      }, ['act_1'], [o1], { summary: 'Situated investigation in each home territory.' }),
-      act('act_3', 'Comparative framework & difference matrix', 'compare', 23, 10, false, 'ptn_ai', {
-        ptn_home: 'Identify structural commonalities and differing definitions of priority.',
-        ptn_ai: 'Highlight operational barriers and institutional divergence.'
-      }, ['act_2'], [o1, o2], { summary: 'Systematic comparison across both regional case studies.' }),
-      isImmersion ? act('act_4', `In-Person Immersion & Field Lab at ${persona.institution}`, 'cocreate', 34, 8, true, 'ptn_ai', {
-        ptn_home: 'Participate in on-site community field visits, stakeholder interviews, and joint studio drafting.',
-        ptn_ai: 'Host partner student cohort, coordinate site visits, and co-facilitate daily drafting sessions.'
-      }, ['act_3'], [o1, o2, o3], {
-        summary: `Reciprocal in-person cross-country immersion week hosted at ${persona.institution} in ${persona.city}, ${persona.country}.`,
-        instructions: `### In-Person Field Study & Immersion Week\n\n1. **Field Exploration:** Conduct on-site interviews and municipal site observations in ${persona.city}.\n2. **Joint Co-Creation Studio:** Work face-to-face to draft the collaborative capstone brief.\n3. **Hybrid Inclusion:** Synchronized video links and digital shared workspaces for remote cohort members.\n4. **Deliverable:** Completed draft policy brief and live presentation to faculty panel.`,
+      act('act_1', 'Team introductions & cross-cultural working agreement', 'trust', 2, 7, true, primaryPartner.id, buildContributions(
+        'Video introductions and personal learning goals.',
+        (ptn) => `Video introductions from ${ptn.city || ptn.institution} describing local community context.`
+      ), [], [o3], { summary: 'Cross-cohort trust building and team communication compact.', status: 'approved' }),
+      act('act_2', 'Local investigation & stakeholder case dossier', 'local', 10, 12, false, 'ptn_home', buildContributions(
+        `Case briefing on ${userCountry} policy frameworks and local evidence.`,
+        (ptn) => `Situated field dossier from ${ptn.country || 'partner region'} including stakeholder accounts.`
+      ), ['act_1'], [o1], { summary: 'Situated investigation in each home territory.' }),
+      act('act_3', 'Comparative framework & difference matrix', 'compare', 23, 10, false, primaryPartner.id, buildContributions(
+        'Identify structural commonalities and differing definitions of priority.',
+        (ptn) => `Highlight operational barriers and institutional divergence across ${ptn.institution}.`
+      ), ['act_2'], [o1, o2], { summary: 'Systematic comparison across all consortium regional case studies.' }),
+      isImmersion ? act('act_4', `In-Person Immersion & Field Lab at ${primaryPartner.institution}`, 'cocreate', 34, 8, true, primaryPartner.id, buildContributions(
+        'Participate in on-site community field visits, stakeholder interviews, and joint studio drafting.',
+        (ptn, idx) => idx === 0 ? 'Host partner student cohorts, coordinate site visits, and co-facilitate daily drafting sessions.' : 'Participate in field visits and joint studio drafting.'
+      ), ['act_3'], [o1, o2, o3], {
+        summary: `Reciprocal in-person cross-country immersion week hosted at ${primaryPartner.institution} in ${primaryPartner.city || 'the host city'}, ${primaryPartner.country}.`,
+        instructions: `### In-Person Field Study & Immersion Week\n\n1. **Field Exploration:** Conduct on-site interviews and municipal site observations.\n2. **Joint Co-Creation Studio:** Work face-to-face to draft the collaborative capstone brief.\n3. **Hybrid Inclusion:** Synchronized video links and digital shared workspaces for remote cohort members.\n4. **Deliverable:** Completed draft policy brief and live presentation to faculty panel.`,
         contingency: 'Hybrid participation: Synchronized live video streaming and annotated digital boards for non-traveling students.'
-      }) : (isFacultyVisit ? act('act_4', 'Faculty Guest Colloquium & Reciprocal Peer Critique', 'critique', 34, 8, true, 'ptn_ai', {
-        ptn_home: 'Attend guest lecture series and present team capstone proposals.',
-        ptn_ai: 'Faculty delivers guest keynote and facilitates structured peer critique.'
-      }, ['act_3'], [o2], { summary: 'Faculty cross-country visit: guest keynote lectures and interactive critique.' }) : act('act_4', 'Joint co-creation of strategic policy brief', 'cocreate', 34, 12, false, 'ptn_home', {
-        ptn_home: 'Draft policy synthesis and comparative governance recommendations.',
-        ptn_ai: 'Draft community implementation protocols and localization safeguards.'
-      }, ['act_3'], [o1, o3], { summary: 'Co-authoring a comprehensive final capstone brief.' })),
-      act('act_5', 'Individual learning reflection & institutional review', 'reflect', 47, 8, false, 'ptn_ai', {
-        ptn_home: 'Submit individual reflective learning memo.',
-        ptn_ai: 'Submit individual reflective learning memo and local course feedback.'
-      }, ['act_4'], [o2], { summary: 'Reflecting on cross-cultural learning gains and unexamined assumptions.' })
+      }) : (isFacultyVisit ? act('act_4', 'Faculty Guest Colloquium & Reciprocal Peer Critique', 'critique', 34, 8, true, primaryPartner.id, buildContributions(
+        'Attend guest lecture series and present team capstone proposals.',
+        (ptn) => `Faculty from ${ptn.institution} delivers guest keynote and facilitates structured peer critique.`
+      ), ['act_3'], [o2], { summary: 'Faculty cross-country visit: guest keynote lectures and interactive critique.' }) : act('act_4', 'Joint co-creation of strategic policy brief', 'cocreate', 34, 12, false, 'ptn_home', buildContributions(
+        'Draft policy synthesis and comparative governance recommendations.',
+        (ptn) => `Draft community implementation protocols and localization safeguards for ${ptn.country || 'partner campus'}.`
+      ), ['act_3'], [o1, o3], { summary: 'Co-authoring a comprehensive final capstone brief.' })),
+      act('act_5', 'Individual learning reflection & institutional review', 'reflect', 47, 8, false, primaryPartner.id, buildContributions(
+        'Submit individual reflective learning memo.',
+        (ptn) => `Submit individual reflective learning memo and local course feedback at ${ptn.institution}.`
+      ), ['act_4'], [o2], { summary: 'Reflecting on cross-cultural learning gains and unexamined assumptions.' })
     ];
   } else {
     // 6-activity full semester course collaboration (10 to 16 weeks)
     p.activities = [
-      act('act_1', 'Orientation, icebreaking & partnership compact', 'trust', 3, 7, true, 'ptn_ai', {
-        ptn_home: 'Video introductions and personal learning goals.',
-        ptn_ai: 'Video introductions and overview of local community context.'
-      }, [], [o3], { summary: 'Cross-cohort trust building and communication norms.', status: 'approved' }),
-      act('act_2', 'Local investigation & stakeholder mapping', 'local', 12, 14, false, 'ptn_home', {
-        ptn_home: `Stakeholder analysis from ${userCountry} institutional perspectives.`,
-        ptn_ai: `Field accounts and community stakeholder mapping in ${persona.country}.`
-      }, ['act_1'], [o1], { summary: 'Situated investigation in each home territory.' }),
-      act('act_3', 'Comparative framework & difference matrix', 'compare', 28, 12, false, 'ptn_ai', {
-        ptn_home: 'Identify structural commonalities and differing definitions of success.',
-        ptn_ai: 'Highlight operational barriers, informal systems, and policy divergence.'
-      }, ['act_2'], [o1, o2], { summary: 'Systematic comparison across both case studies.' }),
-      isImmersion ? act('act_4', `In-Person Immersion & Field Lab at ${persona.institution}`, 'compare', 42, 8, true, 'ptn_ai', {
-        ptn_home: 'Participate in on-site community field visits, stakeholder interviews, and live workshops.',
-        ptn_ai: 'Host partner student cohort, coordinate site visits, and facilitate campus working sessions.'
-      }, ['act_3'], [o1, o2], {
-        summary: `Reciprocal in-person cross-country immersion week hosted at ${persona.institution} in ${persona.city}, ${persona.country}.`,
-        instructions: `### In-Person Field Study & Immersion Week\n\n1. **On-Site Field Visits:** Conduct scheduled community site visits and local institutional interviews in ${persona.city}.\n2. **Daily Synthesis Workshops:** Meet face-to-face in the host seminar rooms to map divergences in regional evidence.\n3. **Hybrid Inclusion:** Non-traveling team members connect via live-streamed briefings and participate in annotated daily field logs.\n4. **Deliverable:** Joint field synthesis matrix and preliminary capstone outline.`,
+      act('act_1', 'Orientation, icebreaking & partnership compact', 'trust', 3, 7, true, primaryPartner.id, buildContributions(
+        'Video introductions and personal learning goals.',
+        (ptn) => `Video introductions from ${ptn.city || ptn.institution} and overview of local community context.`
+      ), [], [o3], { summary: 'Cross-cohort trust building and communication norms.', status: 'approved' }),
+      act('act_2', 'Local investigation & stakeholder mapping', 'local', 12, 14, false, 'ptn_home', buildContributions(
+        `Stakeholder analysis from ${userCountry} institutional perspectives.`,
+        (ptn) => `Field accounts and community stakeholder mapping in ${ptn.country || 'partner region'}.`
+      ), ['act_1'], [o1], { summary: 'Situated investigation in each home territory.' }),
+      act('act_3', 'Comparative framework & difference matrix', 'compare', 28, 12, false, primaryPartner.id, buildContributions(
+        'Identify structural commonalities and differing definitions of success.',
+        (ptn) => `Highlight operational barriers, informal systems, and policy divergence across ${ptn.institution}.`
+      ), ['act_2'], [o1, o2], { summary: 'Systematic comparison across all case studies.' }),
+      isImmersion ? act('act_4', `In-Person Immersion & Field Lab at ${primaryPartner.institution}`, 'compare', 42, 8, true, primaryPartner.id, buildContributions(
+        'Participate in on-site community field visits, stakeholder interviews, and live workshops.',
+        (ptn, idx) => idx === 0 ? 'Host partner student cohort, coordinate site visits, and facilitate campus working sessions.' : 'Participate in on-site field visits and collaborative sessions.'
+      ), ['act_3'], [o1, o2], {
+        summary: `Reciprocal in-person cross-country immersion week hosted at ${primaryPartner.institution} in ${primaryPartner.city || 'the host city'}, ${primaryPartner.country}.`,
+        instructions: `### In-Person Field Study & Immersion Week\n\n1. **On-Site Field Visits:** Conduct scheduled community site visits and local institutional interviews.\n2. **Daily Synthesis Workshops:** Meet face-to-face in host seminar rooms to map divergences in regional evidence.\n3. **Hybrid Inclusion:** Non-traveling team members connect via live-streamed briefings and participate in annotated daily field logs.\n4. **Deliverable:** Joint field synthesis matrix and preliminary capstone outline.`,
         contingency: 'Hybrid participation: Live-streamed field briefings and asynchronous annotated field logs preserve full credit for non-traveling students.'
-      }) : (isFacultyVisit ? act('act_4', 'Faculty Guest Colloquium & Reciprocal Critique', 'critique', 42, 10, true, 'ptn_ai', {
-        ptn_home: 'Present constructive critique of partner proposals during faculty visit.',
-        ptn_ai: 'Visiting professor delivers guest lectures and moderates peer dialogue.'
-      }, ['act_3'], [o2], { summary: 'Faculty cross-country visit: guest keynote lectures and interactive critique.' }) : act('act_4', 'Reciprocal critique session', 'critique', 42, 10, true, 'ptn_home', {
-        ptn_home: 'Present constructive critique of partner proposals.',
-        ptn_ai: 'Test partner feasibility against local socio-economic constraints.'
-      }, ['act_3'], [o2], { summary: 'Live and asynchronous peer critique testing ideas.' })),
-      act('act_5', 'Joint co-creation of strategic policy brief', 'cocreate', 54, 18, false, 'ptn_home', {
-        ptn_home: 'Draft policy synthesis, international benchmarking, and governance models.',
-        ptn_ai: 'Draft community implementation protocols and localization safeguards.'
-      }, ['act_4'], [o1, o3], { summary: 'Co-authoring a comprehensive final capstone artifact.' }),
-      act('act_6', 'Individual learning reflection & institutional review', 'reflect', 74, 10, false, 'ptn_ai', {
-        ptn_home: 'Submit individual reflective learning memo.',
-        ptn_ai: 'Submit individual reflective learning memo and local course feedback.'
-      }, ['act_5'], [o2], { summary: 'Reflecting on what shifted in student thinking.' })
+      }) : (isFacultyVisit ? act('act_4', 'Faculty Guest Colloquium & Reciprocal Critique', 'critique', 42, 10, true, primaryPartner.id, buildContributions(
+        'Present constructive critique of partner proposals during faculty visit.',
+        (ptn) => `Visiting professors from ${ptn.institution} deliver guest lectures and moderate peer dialogue.`
+      ), ['act_3'], [o2], { summary: 'Faculty cross-country visit: guest keynote lectures and interactive critique.' }) : act('act_4', 'Reciprocal critique session', 'critique', 42, 10, true, 'ptn_home', buildContributions(
+        'Present constructive critique of partner proposals.',
+        (ptn) => `Test partner feasibility against local socio-economic constraints at ${ptn.institution}.`
+      ), ['act_3'], [o2], { summary: 'Live and asynchronous peer critique testing ideas.' })),
+      act('act_5', 'Joint co-creation of strategic policy brief', 'cocreate', 54, 18, false, 'ptn_home', buildContributions(
+        'Draft policy synthesis, international benchmarking, and governance models.',
+        (ptn) => `Draft community implementation protocols and localization safeguards for ${ptn.country || 'partner region'}.`
+      ), ['act_4'], [o1, o3], { summary: 'Co-authoring a comprehensive final capstone artifact.' }),
+      act('act_6', 'Individual learning reflection & institutional review', 'reflect', 74, 10, false, primaryPartner.id, buildContributions(
+        'Submit individual reflective learning memo.',
+        (ptn) => `Submit individual reflective learning memo and local course feedback at ${ptn.institution}.`
+      ), ['act_5'], [o2], { summary: 'Reflecting on what shifted in student thinking.' })
     ];
   }
 
@@ -899,13 +932,10 @@ export function createAiPartnerDemo(options = {}) {
           }
         }
       ],
-      local: {
-        ptn_home: { weight: 25, notes: 'Evaluated locally with departmental rubric' },
-        ptn_ai: { weight: 30, notes: persona.assessmentObligations }
-      },
+      local: Object.fromEntries(allPartners.map(ptn => [ptn.id, { weight: Math.round(100 / allPartners.length), notes: ptn.isAiPartner ? (ptn.persona ? ptn.persona.assessmentObligations : 'Evaluated with departmental rubric') : 'Evaluated locally with departmental rubric' }])),
       status: 'draft',
       updatedAt: ago(2),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     },
     {
       id: 'asm_2',
@@ -927,10 +957,7 @@ export function createAiPartnerDemo(options = {}) {
           }
         }
       ],
-      local: {
-        ptn_home: { weight: 15, notes: 'Individual memo' },
-        ptn_ai: { weight: 20, notes: 'Portfolio component' }
-      },
+      local: Object.fromEntries(allPartners.map(ptn => [ptn.id, { weight: Math.round(100 / (allPartners.length * 2)), notes: 'Individual reflection memo' }])),
       status: 'draft',
       updatedAt: ago(2),
       updatedBy: homePartner.id
@@ -946,25 +973,25 @@ export function createAiPartnerDemo(options = {}) {
       kind: 'hard',
       status: 'open',
       updatedAt: ago(3),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     },
     {
       id: 'dif_2',
       topic: 'Digital Communication Channel Preference',
-      detail: `Students at ${persona.institution} rely heavily on mobile-first communication (${persona.tech}), while ${userInst} prioritizes institutional LMS and email for official records.`,
+      detail: `Campuses across the consortium utilize diverse communication tools (${primaryPartner.tech}), while ${userInst} prioritizes institutional LMS and email for official records.`,
       kind: 'negotiable',
       status: 'open',
       updatedAt: ago(3),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     },
     {
       id: 'dif_3',
       topic: 'Epistemological Traditions & Credible Evidence',
-      detail: `${userInst} emphasizes quantitative policy indices and formal legal frameworks, whereas ${persona.institution} incorporates community testimony, participatory diagnosis, and situated fieldwork.`,
+      detail: `${userInst} emphasizes quantitative policy indices and formal legal frameworks, whereas international partner campuses incorporate community testimony, participatory diagnosis, and situated fieldwork.`,
       kind: 'productive',
       status: 'open',
       updatedAt: ago(3),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     },
     {
       id: 'dif_4',
@@ -987,7 +1014,7 @@ export function createAiPartnerDemo(options = {}) {
     },
     {
       id: 'cg_2',
-      theme: 'Both faculty aim to cultivate genuine critical inquiry rather than passive content reception.',
+      theme: 'All faculty aim to cultivate genuine critical inquiry rather than passive content reception.',
       evidence: 'Context card hopes and priorities',
       updatedAt: ago(4)
     }
@@ -1001,14 +1028,15 @@ export function createAiPartnerDemo(options = {}) {
       description: `Formal agreement on the joint challenge: "${topic.challenge}" and driving question: "${topic.question}".`,
       type: 'shared',
       affected: both,
-      approvals: {
-        ptn_ai: { status: 'approve', at: ago(2), note: `Approved from ${persona.city}. The driving question addresses our local priorities cleanly.` }
-      },
+      approvals: Object.fromEntries(partnerObjects.map(ptn => [
+        ptn.id,
+        { status: 'approve', at: ago(2), note: `Approved from ${ptn.city || ptn.institution}. The driving question addresses our local priorities cleanly.` }
+      ])),
       linked: { kind: 'brief', id: 'brief' },
-      createdBy: aiPartner.id,
+      createdBy: primaryPartner.id,
       createdAt: ago(3),
       updatedAt: ago(2),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     },
     {
       id: 'dec_2',
@@ -1017,18 +1045,19 @@ export function createAiPartnerDemo(options = {}) {
       type: 'shared',
       affected: both,
       due: fmtYmd(addDays(nowD, 7)),
-      approvals: {
-        ptn_ai: {
+      approvals: Object.fromEntries(partnerObjects.map(ptn => [
+        ptn.id,
+        {
           status: 'approve',
           at: ago(1),
-          note: `Option A with low-bandwidth async backups is our preferred balance. Let me know your thoughts!`
+          note: `Option A with low-bandwidth async backups is our preferred balance across ${ptn.institution}. Let us know your thoughts!`
         }
-      },
+      ])),
       linked: null,
-      createdBy: aiPartner.id,
+      createdBy: primaryPartner.id,
       createdAt: ago(2),
       updatedAt: ago(1),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     }
   ];
 
@@ -1037,9 +1066,9 @@ export function createAiPartnerDemo(options = {}) {
     {
       id: 'cmt_1',
       target: { kind: 'decisions', id: 'dec_2' },
-      author: aiPartner.id,
-      text: `Greetings from ${persona.city}! I have set up our initial context card and draft proposal for our ${mode === 'course' ? 'joint course' : 'shared module'}. For our students here at ${persona.institution}, a lightweight web platform like Option A works best because many access course materials from mobile phones. Looking forward to your thoughts!`,
-      lang: persona.language,
+      author: primaryPartner.id,
+      text: `Greetings from ${primaryPartner.city || primaryPartner.institution}! I have set up our initial context card and draft proposal for our ${mode === 'course' ? 'joint course' : 'shared module'}. For our students here at ${primaryPartner.institution}, a lightweight web platform like Option A works best because many access course materials from mobile devices. Looking forward to our multilateral collaboration!`,
+      lang: primaryPartner.language,
       at: ago(1)
     }
   ];
@@ -1050,15 +1079,15 @@ export function createAiPartnerDemo(options = {}) {
   p.meetings = [
     {
       id: 'mtg_1',
-      title: `Co-Design Session: ${persona.name} & ${userName}`,
+      title: `Consortium Co-Design Session: ${instListStr}`,
       start: meetingDate.toISOString(),
       duration: 50,
-      link: `https://meet.jit.si/Crosscourse-${persona.key}-demo`,
-      agenda: `1. Welcome & institutional context card walk-through (15m)\n2. Driving question and counterfactual test review (15m)\n3. Digital tools and time zone agreements (10m)\n4. Next co-design action steps (10m)`,
+      link: `https://meet.jit.si/Crosscourse-consortium-demo`,
+      agenda: `1. Welcome & multi-campus institutional context walk-through (15m)\n2. Driving question and counterfactual test review (15m)\n3. Digital tools and multi-time zone agreements (10m)\n4. Next co-design action steps (10m)`,
       notes: '',
       attendees: both,
       updatedAt: ago(2),
-      updatedBy: aiPartner.id
+      updatedBy: primaryPartner.id
     }
   ];
 
@@ -1076,24 +1105,24 @@ export function createAiPartnerDemo(options = {}) {
     {
       id: 'prop_ai_initial',
       kind: 'coach',
-      title: `Initial Co-Design Advice from ${persona.name}`,
+      title: `Initial Co-Design Advice from ${primaryPartner.name}`,
       status: 'pending',
       at: ago(1),
-      by: aiPartner.id,
+      by: primaryPartner.id,
       assumptions: [
-        `Assumes students from ${userInst} and ${persona.institution} have 3 to 4 hours per week for collaborative activities.`,
-        `Assumes asynchronous coordination is primary with 1 or 2 live synchronous touchpoints.`
+        `Assumes students from participating universities have 3 to 4 hours per week for collaborative activities.`,
+        `Assumes asynchronous coordination is primary with live synchronous touchpoints scheduled across mutual time zones.`
       ],
       result: {
         stage: 'overview',
-        summary: `Professor ${persona.name} has reviewed your shared partnership workspace for "${topic.title}". Here are the recommended immediate next steps to advance your co-design:`,
+        summary: `Professor ${primaryPartner.name} has reviewed your shared consortium workspace for "${topic.title}". Here are recommended immediate next steps to advance your co-design:`,
         recommendations: [
-          `Review ${persona.name}’s institutional context card under Partners to see local calendar dates and student strengths.`,
+          `Review consortium context cards under Partners to see local calendar dates, time zones, and student strengths across all campuses.`,
           `Check the Decision "Approve Design Brief & Driving Question" and cast your vote or suggest adjustments.`,
-          `Examine the 4 differences highlighted on the Design Brief board to ensure our schedule and communication plans are realistic.`
+          `Examine the Weekly Arc to ensure our schedule and communication plans are realistic for all cohorts.`
         ],
         suggestedActions: [
-          { label: 'View Partner Context Card', route: `partners/${aiPartner.id}` },
+          { label: 'View Consortium Context Cards', route: 'partners' },
           { label: 'Review Driving Question', route: 'frame' },
           { label: 'Vote on Decision 1', route: 'decisions' }
         ]
@@ -1103,11 +1132,11 @@ export function createAiPartnerDemo(options = {}) {
 
   // Activity events
   p.events = [
-    { id: 'ev_1', at: ago(5), by: aiPartner.id, type: 'change', summary: `Initialized AI simulation partnership: "${topic.title}"` },
-    { id: 'ev_2', at: ago(4), by: aiPartner.id, type: 'change', summary: `Completed context card for ${persona.name} (${persona.institution})` },
-    { id: 'ev_3', at: ago(3), by: aiPartner.id, type: 'change', summary: 'Drafted shared design brief and driving question' },
-    { id: 'ev_4', at: ago(2), by: aiPartner.id, type: 'change', summary: 'Proposed Partnership Charter and response rhythm' },
-    { id: 'ev_5', at: ago(1), by: aiPartner.id, type: 'change', summary: 'Approved: Approve Design Brief & Driving Question' }
+    { id: 'ev_1', at: ago(5), by: primaryPartner.id, type: 'change', summary: `Initialized consortium partnership: "${topic.title}" with ${allPartners.length} universities` },
+    { id: 'ev_2', at: ago(4), by: primaryPartner.id, type: 'change', summary: `Completed context cards for all participating campuses` },
+    { id: 'ev_3', at: ago(3), by: primaryPartner.id, type: 'change', summary: 'Drafted shared design brief and driving question' },
+    { id: 'ev_4', at: ago(2), by: primaryPartner.id, type: 'change', summary: 'Proposed Partnership Charter and multilateral response rhythm' },
+    { id: 'ev_5', at: ago(1), by: primaryPartner.id, type: 'change', summary: 'Approved: Approve Design Brief & Driving Question' }
   ];
 
   return p;

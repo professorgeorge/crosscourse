@@ -176,7 +176,7 @@ app.view('release', {
   }
 });
 
-function packageHTML(p, rel, studentOnly = false) {
+export function packageHTML(p, rel, studentOnly = false) {
   const draft = !rel;
   const outIdx = id => p.outcomes.findIndex(o => o.id === id) + 1;
   const ps = active(p);
@@ -212,7 +212,7 @@ function packageHTML(p, rel, studentOnly = false) {
   <p class="meta" style="margin-top:40px">Produced with Crosscourse. AI-assisted content was reviewed and approved by the teaching partners named above${draft ? ' (pending)' : ''}.</p></body></html>`;
 }
 
-function packageMD(p) {
+export function packageMD(p) {
   const ps = active(p);
   return `# ${p.title}\n\n${ps.map(x => `- **${x.institution}** (${x.country}): ${x.name}, ${x.course.title || ''}`).join('\n')}\n\n## Design brief\n\n**Challenge:** ${p.brief.challenge}\n\n**Question:** ${p.brief.question}\n\n**Why international:** ${p.brief.whyInternational}\n\n## Shared outcomes\n\n${p.outcomes.map((o, i) => `${i + 1}. (${o.type}) ${o.text}\n   - Evidence: ${o.evidence}`).join('\n')}\n\n## Learning sequence\n\n${p.activities.map(a => `### ${a.title}\n\n- Stage: ${S.STAGES.find(s => s.key === a.stage)?.label}\n- Dates: ${a.start || '?'} → ${a.end || '?'} (${a.sync ? 'live' : 'async'})\n- Owner: ${pn(p, a.owner)?.institution || 'Not set'}\n${(a.participants || []).map(id => `- ${pn(p, id)?.institution}: ${a.contributions?.[id] || 'Not set'}`).join('\n')}\n- Contingency: ${a.contingency || 'Not set'}\n\n${a.instructions || a.summary || ''}\n`).join('\n')}\n## Assessment\n\n${p.assessments.map(s => `### ${s.title}\n\n${(s.criteria || []).map(c => `- **${c.name}**: ${c.description}`).join('\n')}`).join('\n\n')}\n`;
 }

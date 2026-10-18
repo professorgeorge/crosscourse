@@ -34,7 +34,7 @@ export const kv = {
 export const uid = (p = '') => p + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 8);
 export const now = () => new Date().toISOString();
 
-export const PARTNER_COLORS = ['#b4532a', '#2c6a8a', '#8a6a12', '#6d4a8e', '#2e7656', '#a03a66'];
+export const PARTNER_COLORS = ['#b4532a', '#2c6a8a', '#8a6a12', '#6d4a8e', '#2e7656', '#a03a66', '#d97706', '#0284c7', '#4f46e5'];
 
 export const STAGES = [
   { key: 'trust', label: 'Establish trust', hint: 'Introductions, team agreements, communication norms' },

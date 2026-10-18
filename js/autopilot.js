@@ -807,8 +807,6 @@ app.register({
     if (!form) return;
     const formData = new FormData(form);
     const promptText = (formData.get('prompt') || '').trim();
-    const homeUniversity = (formData.get('homeUniversity') || '').trim() || 'Home University';
-    const partnerUniversity = (formData.get('partnerUniversity') || '').trim() || 'Partner University';
     const mode = formData.get('mode') || 'module';
     const durationWeeks = parseInt(formData.get('durationWeeks'), 10) || 5;
     const visitFormat = formData.get('visitFormat') || 'virtual';
@@ -823,17 +821,51 @@ app.register({
       return;
     }
 
+    // Extract all 2 to 9 universities from campus intake cards
+    const campusCards = form.querySelectorAll('.campus-intake-card');
+    const universities = [];
+    if (campusCards.length > 0) {
+      campusCards.forEach((c, idx) => {
+        const instInput = c.querySelector('input[name$="_inst"]');
+        const countryInput = c.querySelector('input[name$="_country"]');
+        const profInput = c.querySelector('input[name$="_prof"]');
+        const inst = (instInput?.value || '').trim();
+        const country = (countryInput?.value || '').trim();
+        const prof = (profInput?.value || '').trim();
+        if (inst || idx === 0) {
+          universities.push({
+            index: idx + 1,
+            institution: inst || (idx === 0 ? 'Home University' : `Partner University ${idx + 1}`),
+            country: country || (idx === 0 ? 'United States' : 'International'),
+            professor: prof || (idx === 0 ? (myName || 'Lead Professor') : `Partner Colleague ${idx + 1}`)
+          });
+        }
+      });
+    }
+
+    if (universities.length < 2) {
+      const fallbackHome = (formData.get('homeUniversity') || '').trim() || 'Home University';
+      const fallbackPartner = (formData.get('partnerUniversity') || '').trim() || 'Partner University';
+      universities.length = 0;
+      universities.push({ index: 1, institution: fallbackHome, country: 'United States', professor: myName || 'Professor You' });
+      universities.push({ index: 2, institution: fallbackPartner, country: 'International', professor: partnerName || 'Dr. Colleague Name' });
+    }
+
+    const homeUniversity = universities[0].institution;
+    const partnerInstitutions = universities.slice(1).map(u => u.institution).join(', ');
+    const partnerUniversity = universities[1]?.institution || 'Partner University';
+
     const durText = `${durationWeeks} weeks`;
     const mobilityLabel = getMobilityLabel(visitFormat, customVisitFormat);
     const steps = [
-      { title: 'Interpreting course specifications & academic parameters', detail: `${homeUniversity} ↔ ${partnerUniversity} · ${mode === 'course' ? 'Whole Course' : 'Course Segment'}` },
+      { title: 'Interpreting consortium specifications & parameters', detail: `${universities.length} Universities: ${homeUniversity} and partner campuses · ${mode === 'course' ? 'Whole Course' : 'Course Segment'}` },
       { title: 'Calibrating duration & cross-country mobility format', detail: `Duration: ${durText} · Mobility: ${mobilityLabel}` },
-      { title: 'Harmonizing institutional contexts & curricula', detail: `Aligning ${homeUniversity} with ${partnerUniversity} for flexible multi-term deployment.` },
+      { title: 'Harmonizing institutional contexts across consortium', detail: `Aligning ${universities.length} campuses for flexible multi-term deployment.` },
       { title: 'Drafting mutual learning brief & driving inquiry question', detail: 'Formulating core international challenge and counterfactual test.' },
       { title: 'Mapping shared intercultural & disciplinary outcomes', detail: 'Linking shared outcomes to each institution\'s curriculum.' },
       { title: 'Sequencing collaborative learning arc & weekly milestones', detail: 'Balancing live and async activities with fallback contingencies.' },
       { title: 'Formulating student instructions & evaluation rubrics', detail: 'Generating weekly directions and 4-level grading rubrics.' },
-      { title: 'Signing institutional partnership charter & agreement', detail: `Binding bilateral agreement between ${homeUniversity} and ${partnerUniversity}.` },
+      { title: 'Signing institutional partnership charter & agreement', detail: `Binding multilateral consortium agreement across ${universities.length} universities.` },
       { title: 'Freezing approved release candidate & classroom kit', detail: 'Zero intermediate human intervention: final deliverables ready.' }
     ];
 
@@ -865,7 +897,7 @@ app.register({
       </header>
       <div class="modal-body">
         <p class="lede" style="margin-bottom: var(--space-3);">
-          AI is autonomously co-developing the complete course package for <strong>${esc(homeUniversity)}</strong> and <strong>${esc(partnerUniversity)}</strong>. Evergreen & reusable across academic terms. No intermediate manual steps required.
+          AI is autonomously co-developing the complete course package for a consortium of <strong>${universities.length} partner universities</strong> (${esc(homeUniversity)} and partner campuses). Evergreen & reusable across academic terms. No intermediate manual steps required.
         </p>
         <div id="prompt-gen-steps">${renderSteps(0)}</div>
       </div>
@@ -878,12 +910,13 @@ app.register({
     const genPromise = generateCourseFromPrompt(promptText, {
       homeUniversity,
       partnerUniversity,
+      universities,
       mode,
       durationWeeks,
       visitFormat: (visitFormat === 'custom' && customVisitFormat) ? 'custom' : visitFormat,
       customVisitFormat,
       userProfile: {
-        name: myName || 'Professor You',
+        name: myName || universities[0]?.professor || 'Professor You',
         email: myEmail || '',
         institution: homeUniversity
       },
@@ -1115,6 +1148,7 @@ function buildProjectFromHeuristic(prompt, mode, user, options = {}) {
     term,
     homeUniversity: homeInst,
     partnerUniversity: partnerInst,
+    universities: options.universities,
     partnerName: options.partnerName,
     workingLanguage: options.workingLanguage,
     topicKey: matchedTopic ? matchedTopic.key : 'custom',
@@ -1154,12 +1188,20 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
   const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
   const ago = h => new Date(Date.now() - h * 3600000).toISOString();
 
+  const rawUniversities = (options.universities && options.universities.length >= 2)
+    ? options.universities
+    : [
+        { index: 1, institution: homeInst, country: user.userCountry || 'United States', professor: user.userName || 'Professor You' },
+        { index: 2, institution: partnerInst, country: aiP.country || 'International', professor: options.partnerName || aiP.name || 'Dr. International Colleague' }
+      ];
+
+  const leadUni = rawUniversities[0];
   const homePartner = S.blankPartner({
     id: 'ptn_home',
-    name: user.userName || 'Professor You',
+    name: leadUni.professor || user.userName || 'Professor You',
     email: user.email || 'professor@example.edu',
-    institution: homeInst,
-    country: user.userCountry || 'United States',
+    institution: leadUni.institution || homeInst,
+    country: leadUni.country || user.userCountry || 'United States',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
     language: options.workingLanguage || 'English',
     role: 'representative',
@@ -1189,45 +1231,55 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
     }
   }, 0);
 
-  const aiPartner = S.blankPartner({
-    id: 'ptn_ai',
-    name: options.partnerName || aiP.name || 'Dr. International Colleague',
-    email: 'partner@univ.edu',
-    institution: partnerInst,
-    country: aiP.country || 'International',
-    city: aiP.city || 'Partner City',
-    timezone: aiP.timezone || 'UTC',
-    language: aiP.language || options.workingLanguage || 'English',
-    role: 'representative',
-    status: 'active',
-    isAi: true,
-    contributes: aiP.contributes || 'Situated field cases and institutional perspectives.',
-    course: {
-      title: aiP.courseTitle || 'Comparative Seminar',
-      code: aiP.courseCode || 'GLO 300',
-      level: 'Undergraduate seminar',
-      discipline: aiP.discipline || 'Higher Education',
-      studentsCount: 28,
-      purpose: aiP.studentProfile || 'Situated contextual inquiry',
-      priorities: 'Community-grounded analysis',
-      interculturalAims: 'Question universal assumptions and share local traditions',
-      languages: aiP.language || options.workingLanguage || 'English',
-      termStart: termStartStr,
-      termEnd: termEndStr,
-      workloadHoursPerWeek: 3.5,
-      tech: 'Campus LMS, Video conferencing',
-      techRestrictions: 'Mobile-friendly formats preferred',
-      assessmentObligations: 'Continuous evaluation and final deliverable',
-      breaks: [],
-      localOutcomes: [
-        { id: 'lo_ai_1', text: 'Apply regional methodologies to analyze local data.' },
-        { id: 'lo_ai_2', text: 'Collaborate respectfully in multinational teams.' }
-      ]
-    }
-  }, 1);
+  const partnerObjects = rawUniversities.slice(1).map((u, idx) => {
+    const pIdx = idx + 1;
+    const partnerId = pIdx === 1 ? 'ptn_ai' : `ptn_ai_${pIdx + 1}`;
+    const ptnPersona = Object.assign({}, AI_PARTNER_PERSONAS[idx % AI_PARTNER_PERSONAS.length]);
+    return S.blankPartner({
+      id: partnerId,
+      name: u.professor || (idx === 0 ? (options.partnerName || aiP.name || ptnPersona.name) : ptnPersona.name),
+      email: ptnPersona.email,
+      institution: u.institution || (idx === 0 ? partnerInst : ptnPersona.institution),
+      country: u.country || (idx === 0 ? (aiP.country || ptnPersona.country) : ptnPersona.country),
+      city: ptnPersona.city,
+      timezone: ptnPersona.timezone,
+      language: ptnPersona.language || options.workingLanguage || 'English',
+      role: 'representative',
+      status: 'active',
+      isAi: true,
+      contributes: (idx === 0 && aiP.contributes) ? aiP.contributes : ptnPersona.contributes,
+      course: {
+        title: `${aiP.courseTitle || 'Comparative Seminar'} (Campus ${pIdx + 1})`,
+        code: `${aiP.courseCode || 'GLO 300'}-${pIdx + 1}`,
+        level: 'Undergraduate / Master seminar',
+        discipline: aiP.discipline || 'Higher Education',
+        studentsCount: 28,
+        purpose: (idx === 0 && aiP.studentProfile) ? aiP.studentProfile : ptnPersona.studentProfile,
+        priorities: 'Community-grounded analysis and cross-cultural synthesis',
+        interculturalAims: 'Question universal assumptions and share local traditions',
+        languages: ptnPersona.language || options.workingLanguage || 'English',
+        termStart: termStartStr,
+        termEnd: termEndStr,
+        workloadHoursPerWeek: 3.5,
+        tech: 'Campus LMS, Video conferencing',
+        techRestrictions: 'Mobile-friendly formats preferred',
+        assessmentObligations: 'Continuous evaluation and final deliverable',
+        breaks: [],
+        localOutcomes: [
+          { id: `lo_${partnerId}_1`, text: 'Apply regional methodologies to analyze local data.' },
+          { id: `lo_${partnerId}_2`, text: 'Collaborate respectfully in multinational teams.' }
+        ]
+      }
+    }, pIdx);
+  });
 
-  p.partners = [homePartner, aiPartner];
-  p.aiPartnerId = aiPartner.id;
+  const allPartners = [homePartner, ...partnerObjects];
+  const allIds = allPartners.map(x => x.id);
+  const both = allIds;
+  const primaryPartner = partnerObjects[0];
+
+  p.partners = allPartners;
+  p.aiPartnerId = primaryPartner.id;
 
   p.brief = {
     id: 'brief',
@@ -1241,13 +1293,14 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
   };
 
   const mobilityClause = getMobilityDescription(p.visitFormat, partnerInst, aiP.country || 'International', options.customVisitFormat);
+  const instNames = allPartners.map(x => x.institution).join(', ');
 
   p.charter = {
-    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${p.durationWeeks} weeks, ${getMobilityLabel(p.visitFormat, options.customVisitFormat)}) between ${homePartner.institution} and ${aiPartner.institution}, designed for flexible multi-term deployment.`,
-    decisionRights: 'Substantive changes require affirmative agreement from both faculty representatives. Local grading is sovereign.',
+    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${p.durationWeeks} weeks, ${getMobilityLabel(p.visitFormat, options.customVisitFormat)}) across ${instNames}, designed for flexible multi-term deployment.`,
+    decisionRights: 'Substantive changes require multilateral consensus across participating faculty representatives. Local grading is sovereign.',
     responseDays: 3,
     languages: `Faculty coordination in ${options.workingLanguage || 'English'}; student teams support bilingual collaboration.`,
-    division: `${homePartner.name} coordinates synthesis templates; ${aiPartner.name} coordinates regional case dossiers.`,
+    division: `${homePartner.name} coordinates synthesis templates; partner colleagues coordinate regional case dossiers.`,
     studentComms: 'Faculty advise their own cohort; joint announcements posted in shared workspace.',
     attribution: 'Shared materials licensed under CC BY-NC with mutual credit.',
     disagreements: 'Articulate asynchronously; meet live if unresolved after 5 days.',
@@ -1265,10 +1318,10 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
     text: o.text,
     type: o.type || (i === 1 ? 'intercultural' : 'disciplinary'),
     evidence: o.evidence || 'Joint project dossier',
-    mappings: {
-      ptn_home: ['lo_h1'],
-      ptn_ai: ['lo_ai_1']
-    },
+    mappings: Object.fromEntries(allPartners.map((ptn, idx) => [
+      ptn.id,
+      idx === 0 ? ['lo_h1'] : [`lo_${ptn.id}_1`]
+    ])),
     status: 'approved',
     approvedAt: S.now(),
     updatedAt: S.now()
@@ -1276,16 +1329,19 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
 
   if (!p.outcomes.length) {
     p.outcomes = [
-      { id: 'out_1', text: 'Analyze and contrast regional evidence from both contexts.', type: 'disciplinary', evidence: 'Joint dossier', mappings: { ptn_home: ['lo_h1'], ptn_ai: ['lo_ai_1'] }, status: 'approved' },
-      { id: 'out_2', text: 'Collaborate effectively across different institutional frameworks.', type: 'intercultural', evidence: 'Process reflection', mappings: { ptn_home: ['lo_h2'], ptn_ai: ['lo_ai_2'] }, status: 'approved' }
+      { id: 'out_1', text: 'Analyze and contrast regional evidence from both contexts.', type: 'disciplinary', evidence: 'Joint dossier', mappings: Object.fromEntries(allPartners.map((ptn, idx) => [ptn.id, idx === 0 ? ['lo_h1'] : [`lo_${ptn.id}_1`]])), status: 'approved' },
+      { id: 'out_2', text: 'Collaborate effectively across different institutional frameworks.', type: 'intercultural', evidence: 'Process reflection', mappings: Object.fromEntries(allPartners.map((ptn, idx) => [ptn.id, idx === 0 ? ['lo_h2'] : [`lo_${ptn.id}_2`]])), status: 'approved' }
     ];
   }
 
-  const both = ['ptn_home', 'ptn_ai'];
   p.activities = (parsed.activities || []).map((a, i) => {
     const startD = addDays(nowD, i * 10 + 3);
     const endD = addDays(startD, a.durationDays || 8);
     const actId = `act_${i + 1}`;
+    const contributions = { ptn_home: a.homeContribution || 'Home student cohort contribution.' };
+    partnerObjects.forEach(ptn => {
+      contributions[ptn.id] = a.partnerContribution || `${ptn.institution} cohort contribution.`;
+    });
     return {
       id: actId,
       title: a.title,
@@ -1296,12 +1352,9 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
       start: fmtYmd(startD),
       end: fmtYmd(endD),
       participants: both,
-      contributions: {
-        ptn_home: a.homeContribution || 'Home student cohort contribution.',
-        ptn_ai: a.partnerContribution || 'Partner student cohort contribution.'
-      },
-      workload: { ptn_home: 3, ptn_ai: 3 },
-      owner: i % 2 === 0 ? 'ptn_ai' : 'ptn_home',
+      contributions,
+      workload: Object.fromEntries(allPartners.map(x => [x.id, 3.5])),
+      owner: i % 2 === 0 ? primaryPartner.id : 'ptn_home',
       dependsOn: i > 0 ? [`act_${i}`] : [],
       outcomes: [p.outcomes[0]?.id || 'out_1'],
       tools: 'Google Drive, Padlet, Jitsi/Zoom',
@@ -1315,10 +1368,10 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
 
   if (!p.activities.length) {
     p.activities = [
-      { id: 'act_1', title: 'Team Introductions & Communication Compact', stage: 'trust', sync: true, start: fmtYmd(addDays(nowD, 3)), end: fmtYmd(addDays(nowD, 10)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_ai', summary: 'Student introductions and team charter.', instructions: activityStudentInstructions(p, { stage: 'trust' }), contingency: 'Asynchronous video exchange.', status: 'approved' },
-      { id: 'act_2', title: 'Local Case Dossier', stage: 'local', sync: false, start: fmtYmd(addDays(nowD, 12)), end: fmtYmd(addDays(nowD, 24)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_home', summary: 'Regional field dossier.', instructions: activityStudentInstructions(p, { stage: 'local' }), contingency: 'Pre-recorded briefing.', status: 'approved' },
-      { id: 'act_3', title: 'Reciprocal Comparative Critique', stage: 'compare', sync: false, start: fmtYmd(addDays(nowD, 26)), end: fmtYmd(addDays(nowD, 38)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_ai', summary: 'Reciprocal analysis.', instructions: activityStudentInstructions(p, { stage: 'compare' }), contingency: 'Annotated document exchange.', status: 'approved' },
-      { id: 'act_4', title: 'Joint Synthesis & Recommendation', stage: 'cocreate', sync: false, start: fmtYmd(addDays(nowD, 40)), end: fmtYmd(addDays(nowD, 54)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_home', summary: 'Collaborative final deliverable.', instructions: activityStudentInstructions(p, { stage: 'cocreate' }), contingency: 'Asynchronous submission.', status: 'approved' }
+      { id: 'act_1', title: 'Team Introductions & Communication Compact', stage: 'trust', sync: true, start: fmtYmd(addDays(nowD, 3)), end: fmtYmd(addDays(nowD, 10)), participants: both, workload: Object.fromEntries(allPartners.map(x => [x.id, 3.5])), owner: primaryPartner.id, summary: 'Student introductions and team charter.', instructions: activityStudentInstructions(p, { stage: 'trust' }), contingency: 'Asynchronous video exchange.', status: 'approved' },
+      { id: 'act_2', title: 'Local Case Dossier', stage: 'local', sync: false, start: fmtYmd(addDays(nowD, 12)), end: fmtYmd(addDays(nowD, 24)), participants: both, workload: Object.fromEntries(allPartners.map(x => [x.id, 3.5])), owner: 'ptn_home', summary: 'Regional field dossier.', instructions: activityStudentInstructions(p, { stage: 'local' }), contingency: 'Pre-recorded briefing.', status: 'approved' },
+      { id: 'act_3', title: 'Reciprocal Comparative Critique', stage: 'compare', sync: false, start: fmtYmd(addDays(nowD, 26)), end: fmtYmd(addDays(nowD, 38)), participants: both, workload: Object.fromEntries(allPartners.map(x => [x.id, 3.5])), owner: primaryPartner.id, summary: 'Reciprocal analysis.', instructions: activityStudentInstructions(p, { stage: 'compare' }), contingency: 'Annotated document exchange.', status: 'approved' },
+      { id: 'act_4', title: 'Joint Synthesis & Recommendation', stage: 'cocreate', sync: false, start: fmtYmd(addDays(nowD, 40)), end: fmtYmd(addDays(nowD, 54)), participants: both, workload: Object.fromEntries(allPartners.map(x => [x.id, 3.5])), owner: 'ptn_home', summary: 'Collaborative final deliverable.', instructions: activityStudentInstructions(p, { stage: 'cocreate' }), contingency: 'Asynchronous submission.', status: 'approved' }
     ];
   }
 
@@ -1340,10 +1393,7 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
           beginning: c.beginning || 'Incomplete.'
         }
       })),
-      local: {
-        ptn_home: { weight: 25, notes: 'Counted towards course grade.' },
-        ptn_ai: { weight: 25, notes: 'Counted towards course grade.' }
-      },
+      local: Object.fromEntries(allPartners.map(x => [x.id, { weight: 25, notes: 'Counted towards course grade.' }])),
       status: 'approved',
       approvedAt: S.now(),
       updatedAt: S.now()
@@ -1363,10 +1413,10 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
       description: `Formal agreement on the joint challenge: "${p.brief.challenge}".`,
       type: 'shared',
       affected: both,
-      approvals: {
-        ptn_home: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() },
-        ptn_ai: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() }
-      },
+      approvals: Object.fromEntries(allPartners.map(ptn => [
+        ptn.id,
+        { status: 'approve', note: 'Approved under multilateral consortium consensus.', at: S.now() }
+      ])),
       linked: { kind: 'brief', id: 'brief' }
     },
     {
@@ -1375,10 +1425,10 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
       description: 'Formal agreement on the weekly activity sequence and assessment criteria.',
       type: 'shared',
       affected: both,
-      approvals: {
-        ptn_home: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() },
-        ptn_ai: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() }
-      },
+      approvals: Object.fromEntries(allPartners.map(ptn => [
+        ptn.id,
+        { status: 'approve', note: 'Approved under multilateral consortium consensus.', at: S.now() }
+      ])),
       linked: null
     }
   ];
@@ -1575,7 +1625,7 @@ Home Professor: ${userName} at ${homeUniversity} (${userCountry})${options.partn
       const parsed = parseJSON(responseText);
 
       if (parsed && parsed.title && parsed.partner) {
-        project = buildProjectFromAiJson(parsed, mode, { userName, email: options.userProfile?.email, userInst: homeUniversity, userCountry }, { durationWeeks, visitFormat, customVisitFormat: options.customVisitFormat, term, homeUniversity, partnerUniversity, partnerName: options.partnerName, workingLanguage: options.workingLanguage });
+        project = buildProjectFromAiJson(parsed, mode, { userName, email: options.userProfile?.email, userInst: homeUniversity, userCountry }, { durationWeeks, visitFormat, customVisitFormat: options.customVisitFormat, term, homeUniversity, partnerUniversity, universities: options.universities, partnerName: options.partnerName, workingLanguage: options.workingLanguage });
       }
     } catch (err) {
       console.warn('Live AI generation failed or returned invalid format, falling back to heuristic engine:', err);
@@ -1583,7 +1633,7 @@ Home Professor: ${userName} at ${homeUniversity} (${userCountry})${options.partn
   }
 
   if (!project) {
-    project = buildProjectFromHeuristic(prompt, mode, { userName, email: options.userProfile?.email, userInst: homeUniversity, userCountry }, { durationWeeks, visitFormat, customVisitFormat: options.customVisitFormat, term, homeUniversity, partnerUniversity, partnerName: options.partnerName, workingLanguage: options.workingLanguage });
+    project = buildProjectFromHeuristic(prompt, mode, { userName, email: options.userProfile?.email, userInst: homeUniversity, userCountry }, { durationWeeks, visitFormat, customVisitFormat: options.customVisitFormat, term, homeUniversity, partnerUniversity, universities: options.universities, partnerName: options.partnerName, workingLanguage: options.workingLanguage });
   }
 
   project.durationWeeks = durationWeeks;

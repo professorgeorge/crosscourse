@@ -1,8 +1,9 @@
 import { app } from '../app.js';
 import * as S from '../store.js';
-import { esc, icon, field, chip, badge, modal, toast, fmtAgo, pickFile, confirmBox, empty, renderCoach } from '../ui.js';
+import { esc, icon, field, chip, badge, modal, toast, fmtAgo, pickFile, confirmBox, empty, renderCoach, md, download } from '../ui.js';
 import { stageProgress, releaseGate, decisionStatus, runChecks } from '../checks.js';
-import { fmtTime, tzAbbrev, termOverlap } from '../time.js';
+import { fmtTime, tzAbbrev, termOverlap, buildICS } from '../time.js';
+import { packageHTML, packageMD } from './sync.js';
 import { partnerFormFields } from './home.js';
 import { propose, proposalsFor } from './proposals.js';
 import { aiEnabled } from '../ai.js';
@@ -12,154 +13,355 @@ export const head = (title, sub = '', actions = '') => `<header class="page-head
 export const statusBadge = s => badge(({ draft: 'Draft', pending: 'Awaiting approval', approved: 'Approved', changed: 'Changed since approval', objection: 'Objection raised' })[s] || s, 'st-' + s);
 export const approvalBtn = (kind, id, title, status) => status === 'pending' ? `<a class="btn sm" href="#/p/${app.p.id}/decisions">${icon.vote} View approval</a>` : `<button class="btn sm" data-action="request-approval" data-kind="${kind}" data-id="${id}" data-title="${esc(title)}">${icon.vote} ${status === 'approved' ? 'Re-open for approval' : 'Request partner approval'}</button>`;
 
-// ================= Overview =================
+import { getMobilityLabel } from '../autopilot.js';
+
+// ================= Overview (3-Pillar Unified Blueprint) =================
 app.view('overview', {
   render({ p, me }) {
     const s = app.settings;
+    const curPillar = app._activePillar || 1;
     const lastSeen = s.lastSeen[p.id] || '1970';
     const since = p.events.filter(e => e.at > lastSeen && e.by !== me?.id).slice(-12).reverse();
     const myDecisions = me ? p.decisions.filter(d => { const st = decisionStatus(p, d); return st.waiting.includes(me.id) && st.status !== 'approved'; }) : [];
     const pending = p.proposals.filter(x => x.status === 'pending');
     const conflicts = (p.conflicts || []).filter(c => !c.resolved);
-    const stages = stageProgress(p);
     const gate = releaseGate(p);
     const F = runChecks(p);
     const blockers = F.filter(f => f.severity === 'blocker').length, discuss = F.filter(f => f.severity === 'discuss').length, missing = F.filter(f => f.severity === 'missing').length;
     const ov = termOverlap(p.partners);
     const nowD = new Date();
-    const myCard = me ? Object.values(me.course).filter(v => typeof v === 'string' ? v.trim() : Array.isArray(v) && v.length).length : 0;
-    const todo = [];
-    if (!me) todo.push(`<li><button class="link" data-action="choose-identity">Choose which partner you are</button> so your edits and approvals are attributed.</li>`);
-    if (me && myCard < 8) todo.push(`<li><a href="#/p/${p.id}/partners/${me.id}">Complete your context card</a> <span class="muted">(${myCard} of ${S.COURSE_FIELDS.length + 2} fields)</span></li>`);
-    if (p.partners.length < 2) todo.push(`<li><a href="#/p/${p.id}/partners">Invite at least one international partner</a></li>`);
-    for (const d of myDecisions) todo.push(`<li><a href="#/p/${p.id}/decisions/${d.id}">Your approval is needed: ${esc(d.title)}</a>${d.due ? ` <span class="muted">· due ${esc(d.due)}</span>` : ''}</li>`);
-    if (pending.length) todo.push(`<li><a href="#/p/${p.id}/decisions">${pending.length} assistant proposal${pending.length > 1 ? 's' : ''} to review</a></li>`);
-    if (conflicts.length) todo.push(`<li><a href="#/p/${p.id}/sync">${conflicts.length} merge conflict${conflicts.length > 1 ? 's' : ''} to check</a></li>`);
+    const acts = (p.activities || []).slice().sort((a, b) => (a.start || '9').localeCompare(b.start || '9'));
+    const liveActs = acts.filter(a => a.sync).length;
+    const asyncActs = acts.length - liveActs;
 
     return `<div class="page">
       <header class="page-head">
         <div class="grow">
-          <p class="eyebrow">${p.mode === 'course' ? 'Co-developed course' : 'Shared international module'}</p>
+          <p class="eyebrow">${p.mode === 'course' ? 'Co-Developed Course' : 'Shared International Module'} · ${p.partners.length} Universities Consortium</p>
           <h1 class="editable"><input class="title-input" data-model="title" value="${esc(p.title)}" aria-label="Project title"></h1>
           <div class="chips">${p.partners.map(x => chip(x, { me: x.id === me?.id })).join('')}</div>
         </div>
         <div class="row gap wrap">
-          <button class="btn" data-action="open-download-pack">${icon.download} Download Course Pack</button>
-          <a class="btn" href="#/p/${p.id}/sync">${icon.sync} Send update to partners</a>
-          <a class="btn primary" href="#/p/${p.id}/meetings">${icon.video} Plan a live session</a>
+          <button class="btn primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
+          <button class="btn" data-action="customize-collab-format">${icon.plus} Pacing &amp; Format</button>
+          <a class="btn" href="#/p/${p.id}/sync">${icon.sync} Share &amp; Sync</a>
         </div>
       </header>
 
-      <ol class="stages" aria-label="Design-thinking progress">${stages.map((st, i) => `<li class="${st.done ? 'done' : ''}"><a href="#/p/${p.id}/${st.route}"><span class="num">${st.done ? icon.check : i + 1}</span><span>${st.label}</span></a></li>`).join('')}</ol>
+      <!-- 3-Pillar Navigation Bar -->
+      <nav class="blueprint-nav" aria-label="Course Blueprint Pillars">
+        <button type="button" class="blueprint-tab ${curPillar === 1 ? 'active' : ''}" data-action="switch-blueprint-pillar" data-pillar="1">
+          <strong>${icon.users} Pillar 1: Consortium &amp; Vision</strong>
+          <span class="subtext">${p.partners.length} Universities · Driving Challenge &amp; Charter</span>
+        </button>
+        <button type="button" class="blueprint-tab ${curPillar === 2 ? 'active' : ''}" data-action="switch-blueprint-pillar" data-pillar="2">
+          <strong>${icon.sparkle} Pillar 2: Weekly Arc &amp; Activities</strong>
+          <span class="subtext">${acts.length} Milestones (${liveActs} live, ${asyncActs} async)</span>
+        </button>
+        <button type="button" class="blueprint-tab ${curPillar === 3 ? 'active' : ''}" data-action="switch-blueprint-pillar" data-pillar="3">
+          <strong>${icon.download} Pillar 3: Classroom Deliverables</strong>
+          <span class="subtext">5 Ready-to-Use Packages · Syllabus, Handouts &amp; Calendar</span>
+        </button>
+      </nav>
 
-      ${p.isAiSimulation && !p.isAutopilotCompleted ? `
-      <div class="card ai-assist-partner-banner" style="margin-bottom: var(--space-3); border-left: 3px solid var(--color-primary);">
-        <div class="row between wrap gap" style="align-items: center;">
-          <div class="grow">
-            <div class="row gap" style="align-items: center; margin-bottom: 4px;">
-              <span class="badge badge-live">AI Partner: Active</span>
-              <strong>Co-Designing with ${esc(pn(p, p.aiPartnerId)?.name || 'International Colleague')}</strong>
-            </div>
-            <p class="muted small" style="margin: 0;">
-              Partner institution: <strong>${esc(pn(p, p.aiPartnerId)?.institution || '')}</strong> (${esc(pn(p, p.aiPartnerId)?.country || '')}) · 
-              Mode: <strong>Interactive AI Assistance</strong> (collaborate step-by-step across all design stages without autopilot).
-            </p>
-          </div>
-          <div class="row gap wrap">
-            <a class="btn sm primary" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} View Partner Context Card</a>
-            <a class="btn sm" href="#/p/${p.id}/frame">${icon.sparkle} Frame Design Brief</a>
-            <button class="btn sm ghost" data-action="open-download-pack">${icon.download} Course Pack</button>
-          </div>
-        </div>
-      </div>` : (p.isAutopilotCompleted ? `
-      <div class="card autopilot-banner" style="margin-bottom: var(--space-3);">
-        <div class="row between wrap gap" style="align-items: center;">
-          <div class="grow">
-            <div class="row gap" style="align-items: center; margin-bottom: 4px;">
-              <span class="badge badge-ok">Autonomous Deliverables Ready</span>
-              <strong>Autonomous Co-Design: ${esc(pn(p, p.aiPartnerId)?.name || 'International Colleague')}</strong>
-            </div>
-            <p class="muted small" style="margin: 0;">
-              Partner institution: <strong>${esc(pn(p, p.aiPartnerId)?.institution || '')}</strong> (${esc(pn(p, p.aiPartnerId)?.country || '')}) · 
-              Scope: <strong>${p.mode === 'course' ? 'Co-developed whole course' : 'Shared international module'}</strong>.
-              All design deliverables are fully drafted, aligned, and ready for your classroom.
-            </p>
-          </div>
-          <div class="row gap wrap">
-            <button class="btn sm primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
-            <a class="btn sm ghost" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} Partner Context</a>
-          </div>
-        </div>
-      </div>` : `
-      <div class="card" style="margin-bottom: var(--space-3);">
-        <div class="row between wrap gap" style="align-items: center;">
-          <div>
-            <strong>Ready-to-Use Course Pack & Syllabus</strong>
-            <p class="muted small" style="margin: 0;">Download classroom-ready syllabus, student guide, and calendar for this course.</p>
-          </div>
-          <button class="btn sm primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
-        </div>
-      </div>`)}
-
-      <div class="card collab-format-card" style="margin-bottom: var(--space-4); border-left: 3px solid var(--color-primary);">
-        <div class="row between wrap gap" style="align-items: center;">
-          <div class="grow">
-            <div class="row gap wrap" style="align-items: center; margin-bottom: 4px;">
+      <!-- Pillar 1 Content: Consortium & Vision -->
+      ${curPillar === 1 ? `
+      <div class="stack gap">
+        <!-- Quick Consortium Scope & Alignment Bar -->
+        <div class="card collab-format-card" style="margin: 0; padding: var(--space-3) var(--space-4);">
+          <div class="row between wrap gap" style="align-items: center;">
+            <div class="row gap wrap" style="align-items: center;">
+              <span class="badge badge-ok">${p.partners.length} Campuses in Consortium</span>
               <span class="badge ${p.durationWeeks <= 7 ? 'badge-live' : 'badge-ok'}">${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Semester'})</span>
-              <span class="badge ${p.visitFormat === 'student-visit' || p.visitFormat === 'faculty-visit' ? 'badge-ok' : 'badge-async'}">
-                ${p.visitFormat === 'student-visit' ? 'In-Person Student Immersion Week' : (p.visitFormat === 'faculty-visit' ? 'Faculty Cross-Country Exchange' : '100% Fully Virtual')}
+              <span class="badge badge-async">${getMobilityLabel(p.visitFormat, p.customVisitFormat)}</span>
+            </div>
+            <div class="row gap wrap">
+              <button class="btn sm" data-action="customize-collab-format">${icon.plus} Customize Duration &amp; Mobility</button>
+              <button class="btn sm ghost" data-action="ai-resync-format">${icon.sparkle} AI: Re-Align Arc</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Campus Cards (2 to 9 Universities) -->
+        <section class="card">
+          <div class="section-head" style="margin-bottom: var(--space-3);">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">Participating Universities &amp; Cohort Profiles</h2>
+              <p class="muted small" style="margin: 4px 0 0;">Each institution maintains sovereign grading while collaborating within shared learning milestones.</p>
+            </div>
+            <a href="#/p/${p.id}/partners" class="btn sm">${icon.eye} View Full Context Cards</a>
+          </div>
+
+          <div class="campus-grid">
+            ${p.partners.map((x, idx) => `
+              <div class="campus-intake-card" style="border-left: 4px solid ${x.color || S.PARTNER_COLORS[idx % S.PARTNER_COLORS.length]}; padding: var(--space-3);">
+                <div class="row between wrap gap" style="align-items: baseline; margin-bottom: 6px;">
+                  <strong style="font-size: 0.95rem; color: var(--color-text);">${esc(x.institution)}</strong>
+                  <span class="badge ${idx === 0 ? 'badge-ok' : 'badge-async'}" style="font-size: 11px;">
+                    ${idx === 0 ? 'Lead Institution' : `Partner Campus ${idx + 1}`}
+                  </span>
+                </div>
+                <div style="font-size: 0.85rem; margin-bottom: 4px;">
+                  Faculty: <strong>${esc(x.name || 'Faculty Representative')}</strong>
+                  ${x.country ? ` · <span class="muted">${esc(x.country)}</span>` : ''}
+                </div>
+                <div style="font-size: 0.82rem; color: var(--color-text-muted); margin-bottom: 6px;">
+                  Course: <strong>${esc(x.course?.title || 'Collaborative Seminar')}</strong> (${esc(x.course?.code || 'INT')})
+                </div>
+                <div class="row between wrap gap" style="font-size: 0.8rem; background: var(--color-surface-2); padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;">
+                  <span>Time Zone: <strong>${esc(tzAbbrev(x.timezone))}</strong></span>
+                  <span class="mono">${fmtTime(nowD, x.timezone, { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <p style="font-size: 0.82rem; color: var(--color-text-muted); margin: 0; line-height: 1.4;">
+                  <strong>Cohort:</strong> ${esc((x.course?.purpose || x.contributes || '').slice(0, 120))}${((x.course?.purpose || x.contributes || '').length > 120) ? '...' : ''}
+                </p>
+                <div style="margin-top: 8px;">
+                  <a href="#/p/${p.id}/partners/${x.id}" class="small" style="font-weight: 500;">Edit Campus Profile &rarr;</a>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+
+        <!-- Core Inquiry Vision & Value Test -->
+        <section class="card">
+          <div class="section-head">
+            <h2 style="font-size: 1.15rem; margin: 0;">Shared Driving Inquiry Vision</h2>
+            <a href="#/p/${p.id}/frame" class="btn sm">${icon.sparkle} Edit Design Brief</a>
+          </div>
+          <div class="grid2 gap" style="margin-top: var(--space-3);">
+            <div style="background: var(--color-surface-2); padding: var(--space-3); border-radius: var(--radius-md);">
+              <span class="muted small" style="text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Core Shared Challenge</span>
+              <p style="margin: 6px 0 0; font-size: 1rem; font-weight: 500;">${esc(p.brief?.challenge || 'International collaborative inquiry')}</p>
+            </div>
+            <div style="background: var(--color-surface-2); padding: var(--space-3); border-radius: var(--radius-md);">
+              <span class="muted small" style="text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">Driving Inquiry Question</span>
+              <p style="margin: 6px 0 0; font-size: 1rem; font-weight: 500; color: var(--color-primary);">${esc(p.brief?.question || 'How do our regional cohorts investigate this challenge together?')}</p>
+            </div>
+          </div>
+          <div style="margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--color-border); font-size: 0.9rem; line-height: 1.5;">
+            <strong>Pedagogical Value Test:</strong> ${esc(p.brief?.counterfactual || 'Without this cross-country partnership, students would analyze the topic only through a single domestic lens.')}
+          </div>
+        </section>
+
+        <!-- Multilateral Consortium Charter -->
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">Consortium Charter &amp; Governance Compact</h2>
+              <span class="muted small">Ratified decision rules across all ${p.partners.length} institutions</span>
+            </div>
+            <a href="#/p/${p.id}/charter" class="btn sm">${icon.shield} View Full Charter</a>
+          </div>
+          <div class="grid2 gap" style="margin-top: var(--space-3); font-size: 0.88rem;">
+            <div>
+              <strong>Consortium Purpose:</strong>
+              <p class="muted" style="margin: 4px 0 10px;">${esc(p.charter?.purpose || '')}</p>
+              <strong>Decision Rights &amp; Sovereignty:</strong>
+              <p class="muted" style="margin: 4px 0 0;">${esc(p.charter?.decisionRights || 'Multilateral consensus for shared deliverables; local grading sovereign.')}</p>
+            </div>
+            <div>
+              <strong>Communication &amp; Languages:</strong>
+              <p class="muted" style="margin: 4px 0 10px;">${esc(p.charter?.languages || 'English for coordination with multilingual support.')}</p>
+              <strong>Delivery &amp; Mobility Format:</strong>
+              <p class="muted" style="margin: 4px 0 0;">${esc(p.charter?.mobility || getMobilityLabel(p.visitFormat))}</p>
+            </div>
+          </div>
+        </section>
+      </div>` : ''}
+
+      <!-- Pillar 2 Content: Weekly Arc & Multi-Campus Activities -->
+      ${curPillar === 2 ? `
+      <div class="stack gap">
+        <div class="card collab-format-card" style="margin: 0; padding: var(--space-3) var(--space-4);">
+          <div class="row between wrap gap" style="align-items: center;">
+            <div>
+              <strong>${acts.length} Milestones across ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks</strong>
+              <span class="muted small" style="margin-left: 8px;">
+                ${ov.ok ? `Shared teaching window: ${ov.start} to ${ov.end} (${ov.weeks} shared weeks)` : 'Aligned schedule across all partner campuses'}
               </span>
             </div>
-            <strong>Collaboration Format & Pacing:</strong>
-            <span class="muted small">
-              ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} weeks · ${p.visitFormat === 'student-visit' ? `Hybrid with in-person student field study in ${esc(pn(p, p.partners[1]?.id)?.country || 'partner country')}` : (p.visitFormat === 'faculty-visit' ? 'Hybrid with faculty cross-country exchange' : '100% fully virtual online collaboration (no travel required)')}.
-            </span>
-          </div>
-          <div class="row gap wrap">
-            <button class="btn sm" data-action="customize-collab-format">${icon.plus} Customize Duration & Visit...</button>
-            <button class="btn sm ghost" data-action="ai-resync-format">${icon.sparkle} AI: Re-Align Schedule & Arc</button>
+            <div class="row gap wrap">
+              <button class="btn sm" data-action="customize-collab-format">${icon.plus} Re-Space Weeks</button>
+              <button class="btn sm ghost" data-action="ai-resync-format">${icon.sparkle} AI: Auto-Balance</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      ${renderCoach({
-        stage: 'Overview & Guidance',
-        title: 'Course Co-Design Coach',
-        goal: 'Welcome! This dashboard orchestrates your international co-design workflow across institutional contexts. Follow the 8-stage progress tracker above, resolve pending approvals, and keep calendars synchronized.',
-        actions: [{ action: 'ai-coach', data: { stage: 'overview' }, label: 'Coach guidance for our next step', icon: 'sparkle' }],
-        tips: [
-          'Have both partner faculty chosen their identity so edits and votes are recorded?',
-          'Are there any open blockers flagged in the Alignment box?',
-          'Have you agreed on an update-exchange rhythm in Share & sync?'
-        ]
-      })}
-      ${proposalsFor(p, ['coach'])}
+        <section class="card" style="padding: var(--space-4);">
+          <div class="section-head" style="margin-bottom: var(--space-3);">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">Weekly Collaborative Learning Sequence</h2>
+              <span class="muted small">Chronological arc with cohort tasks for every participating university</span>
+            </div>
+            <a href="#/p/${p.id}/arc" class="btn sm">${icon.sparkle} Advanced Arc Editor</a>
+          </div>
 
-      <div class="dash">
-        <section class="card span2">
-          <div class="section-head"><h2>Waiting on you</h2></div>
-          ${todo.length ? `<ul class="todo">${todo.join('')}</ul>` : `<p class="muted">Nothing needs your action right now.</p>`}
-        </section>
-        <section class="card">
-          <div class="section-head"><h2>Alignment</h2><a href="#/p/${p.id}/review" class="small">Review ${icon.arrow}</a></div>
-          <div class="kpis"><div class="kpi ${blockers ? 'bad' : ''}"><strong>${blockers}</strong><span>blockers</span></div><div class="kpi"><strong>${discuss}</strong><span>to discuss</span></div><div class="kpi"><strong>${missing}</strong><span>missing</span></div></div>
-          <p class="small muted">${ov.ok ? `${ov.weeks} shared teaching weeks · ${esc(ov.start)} → ${esc(ov.end)}` : esc(ov.reason || '')}</p>
-        </section>
+          <div class="arc-timeline">
+            ${acts.map((a, i) => `
+              <div class="arc-week-card">
+                <div class="row between wrap gap" style="align-items: baseline; margin-bottom: 8px;">
+                  <div class="row gap wrap" style="align-items: center;">
+                    <span class="badge ${a.sync ? 'badge-live' : 'badge-async'}">${a.sync ? 'Live Session' : 'Asynchronous'}</span>
+                    <strong style="font-size: 1.05rem;">Week ${i + 1}: ${esc(a.title)}</strong>
+                  </div>
+                  <span class="muted small font-mono">${a.start || ''} &rarr; ${a.end || ''}</span>
+                </div>
+                ${a.summary ? `<p style="margin: 0 0 10px; font-size: 0.92rem; color: var(--color-text);">${esc(a.summary)}</p>` : ''}
 
-        <section class="card span2">
-          <div class="section-head"><h2>Since your last visit</h2>${since.length ? `<button class="btn sm ghost" data-action="mark-seen">Mark all as read</button>` : ''}</div>
-          ${since.length ? `<ul class="feed">${since.map(e => `<li><span class="dot" style="--c:${pn(p, e.by)?.color || 'var(--color-text-faint)'}"></span><span><strong>${esc(pn(p, e.by)?.name || 'Someone')}</strong> ${esc(e.summary)}</span><time class="muted small">${fmtAgo(e.at)}</time></li>`).join('')}</ul>` : `<p class="muted">No new activity from partners. When a partner sends you an update file, open it in <a href="#/p/${p.id}/sync">Share &amp; sync</a> and their changes appear here.</p>`}
-        </section>
-        <section class="card">
-          <div class="section-head"><h2>Partners now</h2></div>
-          <ul class="clock-list">${p.partners.map(x => `<li>${chip(x, { small: true })}<span class="mono">${fmtTime(nowD, x.timezone, { weekday: 'short' })}</span><span class="muted small">${esc(tzAbbrev(x.timezone))}</span></li>`).join('')}</ul>
-        </section>
+                <!-- Multi-Campus Cohort Contributions -->
+                <div style="margin: 10px 0; padding: var(--space-2) var(--space-3); background: var(--color-surface-2); border-radius: var(--radius-md);">
+                  <span class="small" style="font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text-muted);">Cohort Roles Across Campuses:</span>
+                  <div class="arc-cohort-pills">
+                    ${p.partners.map((ptn, ptnIdx) => {
+                      const roleText = a.contributions?.[ptn.id] || (ptn.id === a.owner ? 'Lead coordination and briefing' : 'Collaborative critique and synthesis');
+                      const pColor = ptn.color || S.PARTNER_COLORS[ptnIdx % S.PARTNER_COLORS.length];
+                      return `
+                        <div class="cohort-pill" style="border-left: 3px solid ${pColor};">
+                          <span class="campus-badge-dot" style="background: ${pColor};"></span>
+                          <strong>${esc(ptn.institution)}:</strong>
+                          <span style="color: var(--color-text);">${esc(roleText)}</span>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
 
-        <section class="card span3">
-          <div class="section-head"><h2>Release gate</h2><span class="muted small">${gate.filter(g => g.ok).length} of ${gate.length} met</span></div>
-          <ul class="gate">${gate.map(g => `<li class="${g.ok ? 'ok' : ''}"><span class="tick">${g.ok ? icon.check : ''}</span><span>${esc(g.label)}<small>${esc(g.detail)}</small></span></li>`).join('')}</ul>
+                ${a.instructions ? `
+                  <div style="margin-top: 10px; font-size: 0.88rem; line-height: 1.5; color: var(--color-text-muted);">
+                    <strong style="color: var(--color-text);">Student Directions:</strong>
+                    <div style="margin-top: 4px;">${md(a.instructions)}</div>
+                  </div>
+                ` : ''}
+
+                ${a.contingency ? `
+                  <div style="margin-top: 8px; font-size: 0.82rem; color: var(--color-text-faint);">
+                    <em>Contingency:</em> ${esc(a.contingency)}
+                  </div>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
         </section>
-      </div>
+      </div>` : ''}
+
+      <!-- Pillar 3 Content: Classroom Deliverables -->
+      ${curPillar === 3 ? `
+      <div class="stack gap">
+        <div class="card collab-format-card" style="margin: 0; padding: var(--space-4); background: var(--color-surface-2);">
+          <div class="row between wrap gap" style="align-items: center;">
+            <div>
+              <h2 style="font-size: 1.25rem; margin: 0 0 4px;">Ready-to-Teach Classroom Deliverables</h2>
+              <p class="muted small" style="margin: 0;">Everything is approved, formatted, and ready for your classroom LMS. No further manual steps required.</p>
+            </div>
+            <button class="btn primary lg" data-action="open-download-pack">
+              ${icon.download} Download Complete Pack (.ZIP)
+            </button>
+          </div>
+        </div>
+
+        <div class="deliverable-grid">
+          <!-- 1. Syllabus -->
+          <div class="deliverable-card">
+            <div>
+              <div class="row between wrap gap" style="margin-bottom: 8px;">
+                <span class="badge badge-ok">Ready to Distribute</span>
+                <span class="muted small">HTML / PDF</span>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">1. Approved Course Syllabus</h3>
+              <p class="muted small" style="line-height: 1.4;">Complete multi-campus syllabus with driving challenge, curriculum alignment matrix across all ${p.partners.length} universities, weekly arc, and 4-level rubric.</p>
+            </div>
+            <button class="btn primary" data-action="open-syllabus-print" style="width: 100%;">
+              ${icon.download} Print or Save Syllabus PDF
+            </button>
+          </div>
+
+          <!-- 2. Student Guide -->
+          <div class="deliverable-card">
+            <div>
+              <div class="row between wrap gap" style="margin-bottom: 8px;">
+                <span class="badge badge-ok">Ready for LMS</span>
+                <span class="muted small">Markdown (.MD)</span>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">2. Student Activity Guide &amp; Handouts</h3>
+              <p class="muted small" style="line-height: 1.4;">Week-by-week instructions, team working compact templates, and step-by-step assignments for student teams.</p>
+            </div>
+            <button class="btn" data-action="dl-pack-student-guide" style="width: 100%;">
+              ${icon.download} Download Handouts (.MD)
+            </button>
+          </div>
+
+          <!-- 3. Charter -->
+          <div class="deliverable-card">
+            <div>
+              <div class="row between wrap gap" style="margin-bottom: 8px;">
+                <span class="badge badge-ok">Ratified</span>
+                <span class="muted small">HTML Document</span>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">3. Consortium Partnership Charter</h3>
+              <p class="muted small" style="line-height: 1.4;">Official multilateral inter-institutional agreement specifying decision protocols, sovereign grading, and IP attribution.</p>
+            </div>
+            <button class="btn" data-action="dl-pack-charter-html" style="width: 100%;">
+              ${icon.download} Download Charter (.HTML)
+            </button>
+          </div>
+
+          <!-- 4. Calendar -->
+          <div class="deliverable-card">
+            <div>
+              <div class="row between wrap gap" style="margin-bottom: 8px;">
+                <span class="badge badge-live">Synchronized</span>
+                <span class="muted small">iCalendar (.ICS)</span>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">4. Synchronized Consortium Calendar</h3>
+              <p class="muted small" style="line-height: 1.4;">Universal calendar feed with all live sessions, handoff windows, and project milestones across all time zones.</p>
+            </div>
+            <button class="btn" data-action="dl-pack-calendar-ics" style="width: 100%;">
+              ${icon.download} Download Calendar (.ICS)
+            </button>
+          </div>
+
+          <!-- 5. Portable Project File -->
+          <div class="deliverable-card">
+            <div>
+              <div class="row between wrap gap" style="margin-bottom: 8px;">
+                <span class="badge badge-async">Exportable</span>
+                <span class="muted small">JSON</span>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">5. Portable Crosscourse File</h3>
+              <p class="muted small" style="line-height: 1.4;">Complete backup file of this course. Share with colleagues or reload on any device running Crosscourse.</p>
+            </div>
+            <button class="btn" data-action="dl-pack-project-json" style="width: 100%;">
+              ${icon.download} Export Project (.JSON)
+            </button>
+          </div>
+        </div>
+      </div>` : ''}
+
+      <!-- Collapsed Advanced Co-Design Diagnostics & Tools Drawer -->
+      <details class="card" style="margin-top: var(--space-4); background: var(--color-surface-2);">
+        <summary style="cursor: pointer; font-weight: 600; padding: var(--space-2) 0;">
+          ${icon.check} Advanced Co-Design Diagnostics &amp; Alignment Tools (${blockers} blockers, ${gate.filter(g => g.ok).length}/${gate.length} release criteria met)
+        </summary>
+        <div class="dash" style="margin-top: var(--space-3);">
+          <section class="card span2">
+            <div class="section-head"><h2>Waiting on you</h2></div>
+            ${myDecisions.length ? `<ul class="todo">${myDecisions.map(d => `<li><a href="#/p/${p.id}/decisions/${d.id}">Approval needed: ${esc(d.title)}</a></li>`).join('')}</ul>` : `<p class="muted">All approvals and context cards up to date.</p>`}
+          </section>
+          <section class="card">
+            <div class="section-head"><h2>Alignment Health</h2><a href="#/p/${p.id}/review" class="small">Review &rarr;</a></div>
+            <div class="kpis"><div class="kpi ${blockers ? 'bad' : ''}"><strong>${blockers}</strong><span>blockers</span></div><div class="kpi"><strong>${discuss}</strong><span>discuss</span></div><div class="kpi"><strong>${missing}</strong><span>missing</span></div></div>
+          </section>
+          <section class="card span2">
+            <div class="section-head"><h2>Recent Consortium Events</h2></div>
+            ${since.length ? `<ul class="feed">${since.map(e => `<li><span><strong>${esc(pn(p, e.by)?.name || 'Consortium Member')}</strong> ${esc(e.summary)}</span></li>`).join('')}</ul>` : `<p class="muted">No recent events.</p>`}
+          </section>
+          <section class="card">
+            <div class="section-head"><h2>Campus Clocks</h2></div>
+            <ul class="clock-list">${p.partners.map(x => `<li>${chip(x, { small: true })}<span class="mono">${fmtTime(nowD, x.timezone, { weekday: 'short' })}</span></li>`).join('')}</ul>
+          </section>
+        </div>
+      </details>
     </div>`;
   }
 });
@@ -436,5 +638,53 @@ app.view('charter', {
         <div class="banner info">${icon.shield}<span>Built-in decision rules: consequential shared decisions need explicit approval from each affected institution’s representative. Silence is never treated as approval, and the most active editor never becomes owner by default.</span></div>
       </section>
     </div>`;
+  }
+});
+
+app.register({
+  'switch-blueprint-pillar'(d, el) {
+    app._activePillar = parseInt(el?.dataset?.pillar, 10) || 1;
+    app.render();
+  },
+  'open-syllabus-print'() {
+    const p = app.p;
+    if (!p) return;
+    const html = packageHTML(p, null, false);
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { try { w.print(); } catch (err) {} }, 500);
+    } else {
+      download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-syllabus.html`, html, 'text/html');
+    }
+  },
+  'dl-pack-student-guide'() {
+    const p = app.p;
+    if (!p) return;
+    const content = packageMD(p);
+    download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-student-guide.md`, content, 'text/markdown');
+  },
+  'dl-pack-charter-html'() {
+    const p = app.p;
+    if (!p) return;
+    const c = p.charter || {};
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(p.title)}: Consortium Charter</title><style>body{font:16px/1.6 system-ui,-apple-system,sans-serif;max-width:850px;margin:40px auto;padding:0 24px;color:#222;}h1{border-bottom:2px solid #333;padding-bottom:10px;}table{width:100%;border-collapse:collapse;margin:20px 0;}th,td{border:1px solid #ddd;padding:10px;text-align:left;}th{background:#f9f9f9;width:30%;}.signatures{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:24px;}.sig-box{border-top:1px solid #666;padding-top:8px;margin-top:30px;}</style></head><body><h1>Multilateral Consortium Partnership Charter</h1><p><strong>Course:</strong> ${esc(p.title)}</p><p><strong>Participating Institutions (${p.partners.length} Campuses):</strong> ${p.partners.map(x => esc(`${x.institution} (${x.country})`)).join(', ')}</p><table><tr><th>Shared Purpose</th><td>${esc(c.purpose || 'Not set')}</td></tr><tr><th>Decision Rights & Quorum</th><td>${esc(c.decisionRights || 'Multilateral consensus')}</td></tr><tr><th>Languages</th><td>${esc(c.languages || 'Not set')}</td></tr><tr><th>Division of Responsibilities</th><td>${esc(c.division || 'Not set')}</td></tr><tr><th>Student Communications</th><td>${esc(c.studentComms || 'Not set')}</td></tr><tr><th>Attribution & IP</th><td>${esc(c.attribution || 'CC BY-NC')}</td></tr><tr><th>Dispute Resolution</th><td>${esc(c.disagreements || 'Asynchronous dialogue with escalating live review')}</td></tr><tr><th>Withdrawal & Parity</th><td>${esc(c.withdrawal || 'Two weeks notice')}</td></tr><tr><th>Contingency for Cohort Delays</th><td>${esc(c.cohortLoss || 'Archived briefings protect student credit')}</td></tr><tr><th>Mobility & Format</th><td>${esc(c.mobility || 'Collaborative format')}</td></tr></table><div class="signatures">${p.partners.map(x => `<div class="sig-box"><strong>${esc(x.name)}</strong><br>${esc(x.institution)} (${esc(x.country)})<br><span style="color:#777;font-size:0.85rem;">Representative Faculty Signature</span></div>`).join('')}</div></body></html>`;
+    download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-charter.html`, html, 'text/html');
+  },
+  'dl-pack-calendar-ics'() {
+    const p = app.p;
+    if (!p) return;
+    const evs = [
+      ...p.activities.filter(a => a.start).map(a => ({ uid: a.id, title: `[Crosscourse] ${a.title}`, allDay: true, startYmd: a.start, endYmd: a.end || a.start, description: a.summary })),
+      ...p.meetings.map(m => ({ uid: m.id, title: m.title, start: new Date(m.start), end: new Date(Date.parse(m.start) + m.duration * 60000), description: m.agenda, location: m.link }))
+    ];
+    download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-calendar.ics`, buildICS(evs), 'text/calendar');
+  },
+  'dl-pack-project-json'() {
+    const p = app.p;
+    if (!p) return;
+    download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-consortium-course.json`, JSON.stringify(p, null, 2), 'application/json');
   }
 });

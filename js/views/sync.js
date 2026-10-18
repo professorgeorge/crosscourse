@@ -6,6 +6,7 @@ import * as T from '../time.js';
 import { head } from './project.js';
 import { settleDecisions } from './govern.js';
 import { propose, proposalsFor } from './proposals.js';
+import { downloadLmsCartridge } from '../lms.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
 const active = p => p.partners.filter(x => x.status !== 'withdrawn');
@@ -160,12 +161,14 @@ app.view('release', {
       </section>
       <section class="card">
         <h2>Releases</h2>
-        ${p.releases.length ? `<ul class="stack">${p.releases.slice().reverse().map(r => { const ok = active(p).filter(x => x.role === 'representative').every(x => r.approvals?.[x.id]?.status === 'approve'); return `<li class="release"><div><strong class="mono">${esc(r.label)}</strong> ${badge(ok ? 'Approved by all partners' : 'Awaiting approval', ok ? 'ok' : 'pending')}<p class="small muted">Created ${fmtAgo(r.at)} by ${esc(pn(p, r.by)?.name || 'a partner')}${r.gatePassed != null ? ` · gate ${r.gatePassed}/8 at creation` : ''}</p></div><div class="row gap wrap"><button class="btn sm" data-action="export-html" data-rel="${r.id}">${icon.download} Design package</button><button class="btn sm" data-action="export-students" data-rel="${r.id}">Student guide</button>${r.decisionId ? `<a class="btn sm ghost" href="#/p/${p.id}/decisions/${r.decisionId}">Approvals</a>` : ''}</div></li>`; }).join('')}</ul>` : '<p class="muted small">No releases yet.</p>'}
+        ${p.releases.length ? `<ul class="stack">${p.releases.slice().reverse().map(r => { const ok = active(p).filter(x => x.role === 'representative').every(x => r.approvals?.[x.id]?.status === 'approve'); return `<li class="release"><div><strong class="mono">${esc(r.label)}</strong> ${badge(ok ? 'Approved by all partners' : 'Awaiting approval', ok ? 'ok' : 'pending')}<p class="small muted">Created ${fmtAgo(r.at)} by ${esc(pn(p, r.by)?.name || 'a partner')}${r.gatePassed != null ? ` · gate ${r.gatePassed}/8 at creation` : ''}</p></div><div class="row gap wrap"><button class="btn sm primary" data-action="export-imscc" title="Download IMS Common Cartridge for Canvas, Blackboard, Moodle">${icon.package} LMS Cartridge (.imscc)</button><button class="btn sm" data-action="export-html" data-rel="${r.id}">${icon.download} Design package</button><button class="btn sm" data-action="export-students" data-rel="${r.id}">Student guide</button>${r.decisionId ? `<a class="btn sm ghost" href="#/p/${p.id}/decisions/${r.decisionId}">Approvals</a>` : ''}</div></li>`; }).join('')}</ul>` : '<p class="muted small">No releases yet.</p>'}
       </section>
       <section class="card">
-        <h2>Working-draft exports</h2>
-        <p class="muted small">Watermarked as drafts, useful for discussion with colleagues, not for students.</p>
+        <h2>LMS Cartridge & Working-Draft Exports</h2>
+        <p class="muted small">Export full modular course packages ready for 1-click import into Canvas, Blackboard, Moodle, or D2L Brightspace, or download individual syllabus and data files.</p>
         <div class="row gap wrap">
+          <button class="btn primary" data-action="export-imscc">${icon.package} Export LMS Cartridge (Canvas / Blackboard / Moodle .imscc)</button>
+          <button class="btn" data-action="export-lms-zip">${icon.download} Download LMS Web Package (.zip)</button>
           <button class="btn" data-action="export-html">${icon.download} Draft design package (HTML / print to PDF)</button>
           <button class="btn" data-action="export-md">${icon.download} Markdown</button>
           <button class="btn" data-action="export-ics">${icon.calendar} All activities & sessions (.ics)</button>
@@ -263,6 +266,14 @@ app.register({
   'export-students'(d) {
     const rel = app.p.releases.find(r => r.id === d.rel);
     download(`${slug(app.p.title)}-${rel.label}-student-guide.html`, packageHTML(rel.snapshot, rel, true), 'text/html');
+  },
+  'export-imscc'(d) {
+    downloadLmsCartridge(app.p, false);
+    toast('Exported LMS Common Cartridge (.imscc) for Canvas, Blackboard, Moodle, and Brightspace!', 'ok');
+  },
+  'export-lms-zip'(d) {
+    downloadLmsCartridge(app.p, true);
+    toast('Exported LMS Web Package (.zip)!', 'ok');
   },
   'export-md'() { download(`${slug(app.p.title)}-draft.md`, packageMD(app.p), 'text/markdown'); },
   'export-json'() { download(`${slug(app.p.title)}-course-model.json`, JSON.stringify(app.p, null, 2)); },

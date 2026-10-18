@@ -89,6 +89,7 @@ js/checks.js          deterministic alignment engine, release gate
 js/ai.js              provider adapters, task prompts, templates
 js/ui.js              rendering helpers, dialogs, toasts
 js/app.js             router, shell, data binding
+js/lms.js             IMS Common Cartridge (.imscc/.zip) generator for Canvas, Blackboard, Moodle
 js/autopilot.js       AI autopilot engine, progress orchestrator & download center
 js/views/*.js         screens
 js/demo.js            interactive AI Partner co-design simulation engine
@@ -96,10 +97,18 @@ js/demo.js            interactive AI Partner co-design simulation engine
 
 Plain ES modules, no build step, no framework.
 
+## Classroom & LMS Integrations
+
+Crosscourse natively packages courses into **IMS Common Cartridge (`.imscc` / `.zip`)**:
+- **Canvas:** Import via *Course Settings* → *Import Course Content* → *Common Cartridge 1.x Package*. Modules, weekly activity pages, instructions, and SpeedGrader rubrics are automatically generated in your course shell.
+- **Moodle:** Import via *Course Reuse* → *Restore* or *Import Common Cartridge*.
+- **Blackboard Learn:** Import via *Packages and Utilities* → *Import Package / View Logs*.
+- **D2L Brightspace:** Import via *Course Admin* → *Import/Export/Copy Components*.
+
 ## Roadmap ideas
 
 - Optional real-time sync backend (e.g. Supabase or a CRDT relay) for teams that want it.
-- LMS export (Common Cartridge) and institutional SSO.
+- Institutional SSO and LMS LTI 1.3 launch integration.
 - Student team formation and delivery-phase tools.
 - Evaluation of partnership quality after delivery.
 

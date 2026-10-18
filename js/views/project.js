@@ -14,6 +14,7 @@ export const statusBadge = s => badge(({ draft: 'Draft', pending: 'Awaiting appr
 export const approvalBtn = (kind, id, title, status) => status === 'pending' ? `<a class="btn sm" href="#/p/${app.p.id}/decisions">${icon.vote} View approval</a>` : `<button class="btn sm" data-action="request-approval" data-kind="${kind}" data-id="${id}" data-title="${esc(title)}">${icon.vote} ${status === 'approved' ? 'Re-open for approval' : 'Request partner approval'}</button>`;
 
 import { getMobilityLabel, realignProjectArc } from '../autopilot.js';
+import { downloadLmsCartridge } from '../lms.js';
 
 // ================= Overview (3-Pillar Unified Blueprint) =================
 app.view('overview', {
@@ -299,6 +300,26 @@ app.view('overview', {
         </div>
 
         <div class="deliverable-grid">
+          <!-- 0. LMS Cartridge (Canvas / Blackboard / Moodle / Brightspace) -->
+          <div class="deliverable-card" style="border: 2px solid var(--primary); background: #f0fdfa;">
+            <div>
+              <div class="row between wrap gap" style="margin-bottom: 8px;">
+                <span class="badge badge-ok">Canvas / Moodle / Blackboard</span>
+                <span class="muted small">IMS Common Cartridge (.IMSCC)</span>
+              </div>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">LMS Course Cartridge</h3>
+              <p class="muted small" style="line-height: 1.4;">Universal 1-click import package (.imscc) with complete weekly modules, assignments, student instructions, and SpeedGrader rubrics.</p>
+            </div>
+            <div class="row gap wrap" style="width: 100%;">
+              <button class="btn primary" data-action="dl-pack-lms-imscc" style="flex: 1;">
+                ${icon.package} Export Cartridge (.IMSCC)
+              </button>
+              <button class="btn" data-action="dl-pack-lms-zip" style="flex: 1;">
+                ${icon.download} Web Zip (.ZIP)
+              </button>
+            </div>
+          </div>
+
           <!-- 1. Syllabus -->
           <div class="deliverable-card">
             <div>
@@ -687,6 +708,18 @@ app.view('charter', {
 });
 
 app.register({
+  'dl-pack-lms-imscc'() {
+    const p = app.p;
+    if (!p) return;
+    downloadLmsCartridge(p, false);
+    toast('Downloaded LMS Common Cartridge (.imscc) for Canvas, Blackboard, Moodle, and Brightspace!', 'ok');
+  },
+  'dl-pack-lms-zip'() {
+    const p = app.p;
+    if (!p) return;
+    downloadLmsCartridge(p, true);
+    toast('Downloaded LMS Web Package (.zip)!', 'ok');
+  },
   'switch-blueprint-pillar'(d, el) {
     app._activePillar = parseInt(el?.dataset?.pillar, 10) || 1;
     app.render();

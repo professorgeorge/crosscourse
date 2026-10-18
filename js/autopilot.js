@@ -9,6 +9,7 @@ import { esc, icon, modal, toast, download, md } from './ui.js';
 import { runChecks, releaseGate, decisionStatus, counterfactual, DIMENSIONS } from './checks.js';
 import { AI_PARTNER_PERSONAS, TOPIC_PRESETS, createAiPartnerDemo, getTermDates } from './demo.js';
 import { callProvider, aiEnabled, parseJSON } from './ai.js';
+import { downloadLmsCartridge } from './lms.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
 const active = p => p.partners.filter(x => x.status !== 'withdrawn');
@@ -707,6 +708,21 @@ export function openDownloadPackModal(p, isCelebration = false) {
       `}
 
       <div class="download-pack-grid">
+        <div class="download-pack-card" style="border: 2px solid var(--primary); background: #f0fdfa;">
+          <div class="download-card-icon">🏛️</div>
+          <div class="download-card-info">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <h3 style="margin:0;">LMS Course Cartridge (Canvas / Blackboard / Moodle / Brightspace)</h3>
+              <span class="badge" style="background:#1d5c63;color:#fff;">Universal LMS Standard</span>
+            </div>
+            <p class="muted small">Complete IMS Common Cartridge (.imscc) bundle containing full weekly module pages, student assignments, SpeedGrader rubrics, syllabus, and institutional charter. Ready to upload directly into Canvas ("Common Cartridge 1.x Package"), Blackboard, or Moodle.</p>
+            <div class="row gap wrap">
+              <button class="btn primary sm" data-action="dl-pack-lms-imscc">${icon.package} Download LMS Cartridge (.imscc)</button>
+              <button class="btn sm" data-action="dl-pack-lms-zip">${icon.download} Download Web Package (.zip)</button>
+            </div>
+          </div>
+        </div>
+
         <div class="download-pack-card">
           <div class="download-card-icon">📄</div>
           <div class="download-card-info">
@@ -772,6 +788,16 @@ export function openDownloadPackModal(p, isCelebration = false) {
 }
 
 app.register({
+  'dl-pack-lms-imscc'() {
+    const p = app.p;
+    downloadLmsCartridge(p, false);
+    toast('Downloaded LMS Common Cartridge (.imscc) for Canvas, Blackboard, Moodle, and Brightspace!', 'ok');
+  },
+  'dl-pack-lms-zip'() {
+    const p = app.p;
+    downloadLmsCartridge(p, true);
+    toast('Downloaded LMS Web Package (.zip)!', 'ok');
+  },
   'dl-pack-syllabus-html'() {
     const p = app.p;
     download(`${slug(p.title)}-complete-syllabus.html`, buildSyllabusHTML(p), 'text/html');

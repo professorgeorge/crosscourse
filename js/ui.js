@@ -89,14 +89,33 @@ export function modal({ title, body, actions = [{ label: 'Close', value: null }]
   return new Promise(resolve => {
     const dlg = document.createElement('dialog');
     dlg.className = 'modal' + (wide ? ' wide' : '');
-    dlg.innerHTML = `<form method="dialog"><header class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" value="__close" aria-label="Close">${icon.x}</button></header><div class="modal-body">${body}</div><footer class="modal-foot">${actions.map((a, i) => `<button class="btn ${a.kind || ''}" value="${i}">${esc(a.label)}</button>`).join('')}</footer></form>`;
+    dlg.innerHTML = `<form method="dialog"><header class="modal-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn modal-close-btn" aria-label="Close">${icon.x}</button></header><div class="modal-body">${body}</div><footer class="modal-foot">${actions.map((a, i) => `<button class="btn ${a.kind || ''}" value="${i}" ${a.value == null ? 'formnovalidate' : ''}>${esc(a.label)}</button>`).join('')}</footer></form>`;
     document.body.appendChild(dlg);
     const form = dlg.querySelector('form');
+    const closeBtn = dlg.querySelector('.modal-close-btn');
     let result = null;
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        result = null;
+        dlg.close();
+      });
+    }
+
+    dlg.addEventListener('click', e => {
+      if (e.target === dlg) {
+        result = null;
+        dlg.close();
+      }
+    });
+
     form.addEventListener('submit', e => {
       const v = e.submitter?.value;
       if (v === '__close' || v == null) { result = null; return; }
       const a = actions[+v];
+      if (!a || a.value == null) { result = null; return; }
       if (a.validate && !a.validate(form)) { e.preventDefault(); return; }
       result = { value: a.value, form, data: Object.fromEntries(new FormData(form).entries()) };
     });

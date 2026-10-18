@@ -14,6 +14,36 @@ const pn = (p, id) => p.partners.find(x => x.id === id);
 const active = p => p.partners.filter(x => x.status !== 'withdrawn');
 const slug = s => (s || 'crosscourse').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40).toLowerCase();
 
+export function getMobilityLabel(format) {
+  switch (format) {
+    case 'student-visit': return 'Blended: Virtual + Student Immersion Visit';
+    case 'faculty-visit': return 'Blended: Virtual + Faculty Mobility / Colloquium';
+    case 'parallel-studios': return 'Dual-Campus Synchronized Labs / Parallel Studios';
+    case 'async-distributed': return 'Asynchronous Distributed Teams';
+    case 'field-practicum': return 'Virtual Preparation + Joint On-Site Field Practicum';
+    case 'virtual':
+    default: return '100% Fully Virtual Exchange (COIL)';
+  }
+}
+
+export function getMobilityDescription(format, partnerInst = 'Partner University', partnerCountry = 'International') {
+  switch (format) {
+    case 'student-visit':
+      return `Blended Virtual + Student Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partnerInst} (${partnerCountry}). Host institution coordinates campus access, safety briefings, and field site visits. Non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
+    case 'faculty-visit':
+      return `Blended Virtual + Faculty Mobility: Visiting faculty travels to partner campus for guest lectures, seminars, and a joint colloquium. Host institution assists with campus credentials and academic itinerary. Student cohort collaboration remains online.`;
+    case 'parallel-studios':
+      return `Dual-Campus Parallel Studios: Cohorts work simultaneously in synchronized design studios or laboratories on their home campuses, connecting at scheduled milestones for joint peer reviews, data exchanges, and simultaneous prototype crits.`;
+    case 'async-distributed':
+      return `Asynchronous Distributed Teams: Designed specifically for large time-zone differentials. Collaboration occurs via structured asynchronous handoffs, pre-recorded briefings, annotated documents, and 24-hour cycle workflows with lightweight messaging.`;
+    case 'field-practicum':
+      return `Virtual Preparation + Field Practicum: Cohorts complete collaborative virtual preparatory modules, followed by an intensive joint on-site practicum or community-based fieldwork with civic or industry partners in the host region.`;
+    case 'virtual':
+    default:
+      return `100% Fully Virtual Exchange (COIL): All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
+  }
+}
+
 /**
  * Generates actionable student-facing instructions for an activity.
  */
@@ -772,13 +802,12 @@ app.register({
     if (!form) return;
     const formData = new FormData(form);
     const promptText = (formData.get('prompt') || '').trim();
-    const homeUniversity = (formData.get('homeUniversity') || '').trim() || 'Alcorn State University';
+    const homeUniversity = (formData.get('homeUniversity') || '').trim() || 'Home University';
     const partnerUniversity = (formData.get('partnerUniversity') || '').trim() || 'Partner University';
-    const term = (formData.get('term') || '').trim() || 'Fall 2026';
     const mode = formData.get('mode') || 'module';
     const durationWeeks = formData.get('durationWeeks');
     const customWeeks = formData.get('customWeeks');
-    const visitFormat = formData.get('visitFormat');
+    const visitFormat = formData.get('visitFormat') || 'virtual';
 
     if (!promptText) {
       toast('Please enter a course topic, discipline, or vision to generate.', 'warn');
@@ -786,10 +815,11 @@ app.register({
     }
 
     const durText = durationWeeks === 'custom' ? `${customWeeks} weeks` : `${durationWeeks || 5} weeks`;
+    const mobilityLabel = getMobilityLabel(visitFormat);
     const steps = [
-      { title: 'Interpreting course specifications & academic parameters', detail: `${homeUniversity} ↔ ${partnerUniversity} · ${term} · ${mode === 'course' ? 'Whole Course' : 'Course Segment'}` },
-      { title: 'Calibrating duration & cross-country mobility format', detail: `Duration: ${durText} · Mobility: ${visitFormat === 'student-visit' ? 'In-Person Immersion' : (visitFormat === 'faculty-visit' ? 'Faculty Exchange' : '100% Virtual')}` },
-      { title: 'Harmonizing institutional contexts & term calendars', detail: `Aligning ${homeUniversity} with ${partnerUniversity} for ${term}.` },
+      { title: 'Interpreting course specifications & academic parameters', detail: `${homeUniversity} ↔ ${partnerUniversity} · ${mode === 'course' ? 'Whole Course' : 'Course Segment'}` },
+      { title: 'Calibrating duration & cross-country mobility format', detail: `Duration: ${durText} · Mobility: ${mobilityLabel}` },
+      { title: 'Harmonizing institutional contexts & curricula', detail: `Aligning ${homeUniversity} with ${partnerUniversity} for flexible multi-term deployment.` },
       { title: 'Drafting mutual learning brief & driving inquiry question', detail: 'Formulating core international challenge and counterfactual test.' },
       { title: 'Mapping shared intercultural & disciplinary outcomes', detail: 'Linking shared outcomes to each institution\'s curriculum.' },
       { title: 'Sequencing collaborative learning arc & weekly milestones', detail: 'Balancing live and async activities with fallback contingencies.' },
@@ -826,7 +856,7 @@ app.register({
       </header>
       <div class="modal-body">
         <p class="lede" style="margin-bottom: var(--space-3);">
-          AI is autonomously co-developing the complete course package for <strong>${esc(homeUniversity)}</strong> and <strong>${esc(partnerUniversity)}</strong> (${esc(term)}). No intermediate manual steps required.
+          AI is autonomously co-developing the complete course package for <strong>${esc(homeUniversity)}</strong> and <strong>${esc(partnerUniversity)}</strong>. Evergreen & reusable across academic terms. No intermediate manual steps required.
         </p>
         <div id="prompt-gen-steps">${renderSteps(0)}</div>
       </div>
@@ -839,7 +869,6 @@ app.register({
     const genPromise = generateCourseFromPrompt(promptText, {
       homeUniversity,
       partnerUniversity,
-      term,
       mode,
       durationWeeks,
       customWeeks,
@@ -941,9 +970,12 @@ app.register({
           <div class="field">
             <label for="custom-visit-format"><strong>Cross-Country Mobility & Format</strong></label>
             <select id="custom-visit-format" name="visitFormat">
-              <option value="virtual" ${curVisit === 'virtual' ? 'selected' : ''}>100% Fully Virtual (Online exchange, zero travel)</option>
-              <option value="student-visit" ${curVisit === 'student-visit' ? 'selected' : ''}>Hybrid: In-Person Student Field Study & Immersion Visit</option>
-              <option value="faculty-visit" ${curVisit === 'faculty-visit' ? 'selected' : ''}>Hybrid: Faculty Cross-Country Exchange & Guest Lectures</option>
+              <option value="virtual" ${curVisit === 'virtual' ? 'selected' : ''}>100% Fully Virtual Exchange (COIL, online collaboration)</option>
+              <option value="student-visit" ${curVisit === 'student-visit' ? 'selected' : ''}>Blended: Virtual Collaboration + Reciprocal Student Immersion Visit</option>
+              <option value="faculty-visit" ${curVisit === 'faculty-visit' ? 'selected' : ''}>Blended: Virtual Collaboration + Visiting Faculty Mobility / Colloquium</option>
+              <option value="parallel-studios" ${curVisit === 'parallel-studios' ? 'selected' : ''}>Dual-Campus Synchronized Labs / Parallel Studios</option>
+              <option value="async-distributed" ${curVisit === 'async-distributed' ? 'selected' : ''}>Asynchronous Distributed Teams (Optimized for large time-zone differences)</option>
+              <option value="field-practicum" ${curVisit === 'field-practicum' ? 'selected' : ''}>Virtual Preparation + Joint On-Site Field Practicum / Community Action</option>
             </select>
             <p class="hint">Includes travel safety, orientation, and hybrid contingencies for students participating remotely.</p>
           </div>
@@ -981,7 +1013,7 @@ app.register({
       }
       S.saveProject(app.p);
       app.render();
-      toast(`Collaboration format updated to ${dWeeks} weeks (${vFormat === 'student-visit' ? 'Hybrid Student Immersion' : (vFormat === 'faculty-visit' ? 'Faculty Exchange' : '100% Virtual')})!`, 'ok');
+      toast(`Collaboration format updated to ${dWeeks} weeks (${getMobilityLabel(vFormat)})!`, 'ok');
     });
   },
   'ai-resync-format'() {
@@ -1019,13 +1051,7 @@ export function realignProjectArc(p, custom = {}) {
   });
 
   const partner2 = p.partners[1] || p.partners[0];
-  if (p.visitFormat === 'student-visit') {
-    p.charter.mobility = `In-Person Cross-Country Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partner2.institution} (${partner2.country}). Host institution coordinates campus access, safety orientations, and local field site visits. Non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
-  } else if (p.visitFormat === 'faculty-visit') {
-    p.charter.mobility = `Faculty Mobility & Guest Colloquium: Visiting faculty travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary.`;
-  } else {
-    p.charter.mobility = '100% Fully Virtual Collaboration: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.';
-  }
+  p.charter.mobility = getMobilityDescription(p.visitFormat, partner2.institution, partner2.country);
 
   // Respace activities across durationWeeks
   const acts = p.activities;
@@ -1071,9 +1097,9 @@ function buildProjectFromHeuristic(prompt, mode, user, options = {}) {
   else if (lower.includes('supply') || lower.includes('trade') || lower.includes('waste') || lower.includes('circular') || lower.includes('logistics')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'supplychain');
   else if (lower.includes('media') || lower.includes('news') || lower.includes('misinformation') || lower.includes('journalism') || lower.includes('disinformation')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'media');
 
-  const homeInst = options.homeUniversity || user.userInst || 'Alcorn State University';
-  const partnerInst = options.partnerUniversity || (matchedPersona ? matchedPersona.institution : null);
-  const term = options.term || 'Fall 2026';
+  const homeInst = options.homeUniversity || user.userInst || 'Home University';
+  const partnerInst = options.partnerUniversity || (matchedPersona ? matchedPersona.institution : 'Partner University');
+  const term = options.term || 'Evergreen / Multi-Term';
 
   const demoOptions = {
     mode,
@@ -1103,10 +1129,10 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
   p.isAiSimulation = true;
   p.isAutopilotCompleted = true;
 
-  const homeInst = options.homeUniversity || user.userInst || 'Alcorn State University';
+  const homeInst = options.homeUniversity || user.userInst || 'Home University';
   const aiP = parsed.partner || {};
   const partnerInst = options.partnerUniversity || aiP.institution || 'Partner University';
-  const termInfo = getTermDates(options.term || 'Fall 2026', p.durationWeeks);
+  const termInfo = getTermDates(options.term || 'Evergreen / Multi-Term', p.durationWeeks);
   const termStartStr = termInfo.startStr;
   const termEndStr = termInfo.endStr;
   p.term = termInfo.term;
@@ -1203,17 +1229,10 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
     updatedAt: S.now()
   };
 
-  let mobilityClause = '';
-  if (p.visitFormat === 'student-visit') {
-    mobilityClause = `In-Person Immersion: Cohorts participate in a reciprocal field study visit hosted at ${partnerInst}. Host institution provides campus facilities and safety orientation. Remote alternatives provided with full academic parity.`;
-  } else if (p.visitFormat === 'faculty-visit') {
-    mobilityClause = `Faculty Mobility: Visiting faculty guest lecture exchange at ${partnerInst} and ${homeInst}. Student collaboration remains online.`;
-  } else {
-    mobilityClause = `100% Fully Virtual Collaboration: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
-  }
+  const mobilityClause = getMobilityDescription(p.visitFormat, partnerInst, aiP.country || 'International');
 
   p.charter = {
-    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${p.durationWeeks} weeks, ${p.visitFormat === 'student-visit' ? 'hybrid with student immersion' : (p.visitFormat === 'faculty-visit' ? 'hybrid with faculty visit' : 'virtual')}) between ${homePartner.institution} and ${aiPartner.institution} for ${p.term}.`,
+    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${p.durationWeeks} weeks, ${getMobilityLabel(p.visitFormat)}) between ${homePartner.institution} and ${aiPartner.institution}, designed for flexible multi-term deployment.`,
     decisionRights: 'Substantive changes require affirmative agreement from both faculty representatives. Local grading is sovereign.',
     responseDays: 3,
     languages: 'Faculty coordination in English; student teams support bilingual collaboration.',

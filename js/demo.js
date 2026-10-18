@@ -372,27 +372,27 @@ export function randomTopicPreset() {
  */
 export function getTermDates(term, durationWeeks = 5) {
   const t = String(term || '').toLowerCase();
-  let startYear = 2026;
+  let startYear = new Date().getFullYear();
   const yearMatch = t.match(/20\d\d/);
   if (yearMatch) startYear = parseInt(yearMatch[0], 10);
 
-  let startMonth = 8; // August (1-based)
-  let startDay = 24;
+  let startMonth = new Date().getMonth() + 1;
+  let startDay = new Date().getDate();
 
   if (t.includes('spring')) {
-    startMonth = 1; // January
+    startMonth = 1;
     startDay = 18;
-    if (!yearMatch) startYear = 2027;
+    if (!yearMatch) startYear += 1;
   } else if (t.includes('summer')) {
-    startMonth = 6; // June
+    startMonth = 6;
     startDay = 1;
-    if (!yearMatch) startYear = 2027;
+    if (!yearMatch) startYear += 1;
   } else if (t.includes('winter')) {
-    startMonth = 1; // January
+    startMonth = 1;
     startDay = 4;
-    if (!yearMatch) startYear = 2027;
+    if (!yearMatch) startYear += 1;
   } else if (t.includes('fall')) {
-    startMonth = 8; // August
+    startMonth = 8;
     startDay = 24;
   }
 
@@ -404,7 +404,7 @@ export function getTermDates(term, durationWeeks = 5) {
   const fmtYmd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
   return {
-    term: term || (startMonth === 8 ? `Fall ${startYear}` : `Spring ${startYear}`),
+    term: term || 'Evergreen / Multi-Term',
     startStr: fmtYmd(startDate),
     endStr: fmtYmd(endDate),
     startDate,
@@ -415,48 +415,65 @@ export function getTermDates(term, durationWeeks = 5) {
 /**
  * Creates an interactive AI Partner Simulation project.
  * @param {Object} options
+ * @param {string} [options.topic] Custom topic or title
  * @param {string} [options.topicKey] Key from TOPIC_PRESETS or 'custom'
  * @param {string} [options.customTopic] Custom topic if topicKey is custom
  * @param {string} [options.mode] 'module' (default) or 'course'
  * @param {string} [options.personaKey] Key from AI_PARTNER_PERSONAS or 'random'
+ * @param {string} [options.partnerName] Optional partner colleague name
  * @param {string} [options.homeUniversity] Name of home institution
  * @param {string} [options.partnerUniversity] Name of partner institution
- * @param {string} [options.term] Academic term (e.g. 'Fall 2026', 'Spring 2027')
+ * @param {string} [options.term] Academic term (optional, default Evergreen)
  * @param {Object} [options.userProfile] Optional name, institution, country for the user
  */
 export function createAiPartnerDemo(options = {}) {
   const mode = options.mode === 'course' ? 'course' : 'module';
   const durationWeeks = parseInt(options.durationWeeks, 10) || (mode === 'course' ? 14 : 5);
-  const visitFormat = options.visitFormat || 'virtual'; // 'virtual', 'student-visit', 'faculty-visit'
+  const visitFormat = options.visitFormat || 'virtual';
   
   // Pick topic
-  let topic = TOPIC_PRESETS.find(t => t.key === options.topicKey);
-  if (!topic) {
-    if (options.customTopic?.trim()) {
-      topic = {
-        key: 'custom',
-        title: options.customTopic.trim(),
-        discipline: 'Interdisciplinary International Studies',
-        challenge: `Collaborative inquiry into ${options.customTopic.trim()} across contrasting institutional contexts`,
-        question: `How can our cohorts investigate ${options.customTopic.trim()} using evidence and perspectives from both regions?`,
-        whyInternational: 'Each cohort holds situated regional knowledge and case studies the other cannot access independently.',
-        counterfactual: 'Without the partner cohort, students would analyze this topic through a single national and cultural lens.',
-        homeCourseTitle: `Studies in ${options.customTopic.trim()}`,
-        homeCourseCode: 'INT 400',
-        partnerCourseTitle: `Perspectives on ${options.customTopic.trim()}`,
-        partnerCourseCode: 'GLO 300',
-        commonTheme: 'Both courses seek to broaden student perspectives through reciprocal international critique.',
-        glossary: []
-      };
-    } else {
-      topic = randomTopicPreset();
-    }
+  let topic = null;
+  const customTopic = (options.topic || options.customTopic || '').trim();
+  if (customTopic) {
+    topic = {
+      key: 'custom',
+      title: customTopic,
+      discipline: 'Interdisciplinary International Studies',
+      challenge: `Collaborative inquiry into ${customTopic} across contrasting institutional contexts`,
+      question: `How can our cohorts investigate ${customTopic} using evidence and perspectives from both regions?`,
+      whyInternational: 'Each cohort holds situated regional knowledge and case studies the other cannot access independently.',
+      counterfactual: 'Without the partner cohort, students would analyze this topic through a single national and cultural lens.',
+      homeCourseTitle: `Studies in ${customTopic}`,
+      homeCourseCode: 'INT 400',
+      partnerCourseTitle: `Perspectives on ${customTopic}`,
+      partnerCourseCode: 'GLO 300',
+      commonTheme: 'Both courses seek to broaden student perspectives through reciprocal international critique.',
+      glossary: []
+    };
+  } else if (options.topicKey) {
+    topic = TOPIC_PRESETS.find(t => t.key === options.topicKey) || randomTopicPreset();
+  } else {
+    topic = {
+      key: 'custom',
+      title: 'Comparative International Inquiry',
+      discipline: 'Interdisciplinary Studies',
+      challenge: 'Collaborative inquiry across contrasting institutional contexts',
+      question: 'How can our cohorts investigate shared challenges collaboratively?',
+      whyInternational: 'Each cohort holds situated regional knowledge the other cannot access independently.',
+      counterfactual: 'Without the partner cohort, students would analyze this topic through a single national lens.',
+      homeCourseTitle: 'Studies in Collaborative Inquiry',
+      homeCourseCode: 'INT 400',
+      partnerCourseTitle: 'Perspectives on Collaborative Inquiry',
+      partnerCourseCode: 'GLO 300',
+      commonTheme: 'Broaden student perspectives through reciprocal international critique.',
+      glossary: []
+    };
   }
 
   // Pick persona
-  let persona = AI_PARTNER_PERSONAS.find(p => p.key === options.personaKey);
-  if (!persona) {
-    persona = randomPartnerPersona();
+  let persona = Object.assign({}, AI_PARTNER_PERSONAS.find(p => p.key === options.personaKey) || randomPartnerPersona());
+  if (options.partnerName?.trim()) {
+    persona.name = options.partnerName.trim();
   }
 
   const p = S.blankProject(topic.title);
@@ -622,15 +639,21 @@ export function createAiPartnerDemo(options = {}) {
   // Partnership Charter
   let mobilityClause = '';
   if (visitFormat === 'student-visit') {
-    mobilityClause = `In-Person Cross-Country Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partnerInst} in ${persona.city}, ${persona.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
+    mobilityClause = `Blended Virtual + Student Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partnerInst} in ${persona.city}, ${persona.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
   } else if (visitFormat === 'faculty-visit') {
-    mobilityClause = `Faculty Mobility & Guest Colloquium: Visiting professor travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary. Student cohort collaboration remains online.`;
+    mobilityClause = `Blended Virtual + Faculty Mobility: Visiting professor travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary. Student cohort collaboration remains online.`;
+  } else if (visitFormat === 'parallel-studios') {
+    mobilityClause = `Dual-Campus Parallel Studios: Cohorts work simultaneously in synchronized design studios or laboratories on their home campuses, connecting at scheduled milestones for joint peer reviews, data exchanges, and simultaneous prototype crits.`;
+  } else if (visitFormat === 'async-distributed') {
+    mobilityClause = `Asynchronous Distributed Teams: Designed specifically for large time-zone differentials. Collaboration occurs via structured asynchronous handoffs, pre-recorded briefings, annotated documents, and 24-hour cycle workflows with lightweight messaging.`;
+  } else if (visitFormat === 'field-practicum') {
+    mobilityClause = `Virtual Preparation + Field Practicum: Cohorts complete collaborative virtual preparatory modules, followed by an intensive joint on-site practicum or community-based fieldwork with civic or industry partners in the host region.`;
   } else {
-    mobilityClause = `100% Fully Virtual Collaboration: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
+    mobilityClause = `100% Fully Virtual Exchange (COIL): All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
   }
 
   Object.assign(p.charter, {
-    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${durationWeeks} weeks, ${visitFormat === 'student-visit' ? 'hybrid with student immersion' : (visitFormat === 'faculty-visit' ? 'hybrid with faculty visit' : 'virtual')}) where students from ${userInst} and ${partnerInst} investigate ${topic.title} together for ${p.term}.`,
+    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${durationWeeks} weeks, ${visitFormat}) where students from ${userInst} and ${partnerInst} investigate ${topic.title} together, designed for flexible multi-term deployment.`,
     decisionRights: 'Substantive changes to shared deliverables, schedule, and outcomes require explicit approval from both representatives. Local grading remains sovereign at each institution.',
     responseDays: 3,
     languages: `Faculty coordination in English (with bilingual glossary support). Student team deliverables submitted with bilingual executive summaries.`,

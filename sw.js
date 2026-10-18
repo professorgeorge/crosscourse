@@ -1,4 +1,4 @@
-const VERSION = 'crosscourse-v1.7.0';
+const VERSION = 'crosscourse-v1.8.0';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/style.css',
   './js/main.js', './js/app.js', './js/store.js', './js/time.js', './js/checks.js', './js/ai.js', './js/ui.js', './js/demo.js', './js/autopilot.js',

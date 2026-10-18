@@ -190,7 +190,7 @@ app.view('home', {
         <div class="section-head">
           <h2>Your projects</h2>
           <div class="row gap" style="align-items: center;">
-            <button class="btn sm" data-action="import-project">${icon.upload} Open project file</button>
+            <button class="btn sm" data-action="import-project" title="Import a previously saved Crosscourse project JSON backup">${icon.upload} Import Course Backup (.json)</button>
             <span class="muted">${projects.length ? `${projects.length} on this device` : ''}</span>
           </div>
         </div>
@@ -229,7 +229,7 @@ app.view('settings', {
           <div class="row between wrap gap">
             <div class="grow">
               <strong>Auto-Detect AI on your Device</strong>
-              <p class="ai-help-text">Check if Google Chrome Built-in AI, Ollama, or LM Studio are already installed and running on your machine.</p>
+              <p class="ai-help-text">Check if In-Browser WebGPU, Google Chrome Built-in AI, Ollama, or LM Studio are available on your machine.</p>
             </div>
             <button type="button" class="btn sm primary" data-action="scan-ai" ${isScanning ? 'disabled' : ''}>
               ${isScanning ? '<span class="spinner"></span> Scanning...' : `${icon.sparkle} Scan my device`}
@@ -238,6 +238,16 @@ app.view('settings', {
 
           ${scan ? `
           <div class="ai-detect-results">
+            ${scan.webgpu?.available ? `
+            <div class="ai-detect-row">
+              <div>
+                <strong>In-Browser Local AI (WebGPU)</strong>
+                <span class="ai-badge-pill free">Hardware-Accelerated</span>
+                <p class="ai-help-text">Runs directly inside this browser tab (Edge, Chrome, Firefox, Safari 18+). Zero server setup, zero API keys, 100% private.</p>
+              </div>
+              <button type="button" class="btn sm" data-action="use-detected-ai" data-provider="webgpu" data-model="SmolLM2-360M-Instruct-q4f16_1-MLC">Use In-Browser WebGPU</button>
+            </div>` : ''}
+
             ${scan.chrome?.available ? `
             <div class="ai-detect-row">
               <div>
@@ -268,7 +278,7 @@ app.view('settings', {
               <button type="button" class="btn sm" data-action="use-detected-ai" data-provider="ollama" data-model="${esc(scan.lmstudio.models[0] || '')}" data-base="${esc(scan.lmstudio.baseUrl)}">Use LM Studio</button>
             </div>` : ''}
 
-            ${!scan.chrome?.available && !scan.ollama?.available && !scan.lmstudio?.available ? `
+            ${!scan.webgpu?.available && !scan.chrome?.available && !scan.ollama?.available && !scan.lmstudio?.available ? `
             <p class="ai-help-text" style="margin: 0; padding-top: var(--space-2);">No local AI models are currently running on this computer. That is completely normal! You can use the built-in pedagogical templates below with zero setup, or connect a free Google Gemini key in 30 seconds.</p>` : ''}
           </div>` : ''}
         </div>
@@ -276,7 +286,7 @@ app.view('settings', {
         <form id="ai-form" class="stack">
           <div class="field">
             <label for="ai-prov">AI Provider</label>
-            <select id="ai-prov" name="provider">${Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${k === ai.provider ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>
+            <select id="ai-prov" name="provider" onchange="window.crosscourse.actions['change-ai-provider'](null, this)">${Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${k === ai.provider ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>
           </div>
 
           <div class="ai-provider-info">
@@ -288,6 +298,15 @@ app.view('settings', {
           <div class="banner info" style="margin-top: var(--space-2);">
             ${icon.checks}
             <span><strong>Zero setup needed:</strong> All course co-design features, alignment checks, calendar overlap calculations, and exports are fully active without any AI. Crosscourse provides expert pedagogical templates whenever you request drafting assistance.</span>
+          </div>` : ''}
+
+          ${ai.provider === 'webgpu' ? `
+          <div class="field">
+            <label for="ai-webgpu-model">In-Browser Open-Weights Model</label>
+            <select id="ai-webgpu-model" name="model">
+              ${(prov.models || []).map(m => `<option value="${m}" ${m === (ai.model || prov.defaultModel) ? 'selected' : ''}>${esc(m)}</option>`).join('')}
+            </select>
+            <p class="ai-help-text">Runs locally inside this browser tab via WebGPU (Edge, Chrome, Firefox, Safari 18+). The model downloads into your browser cache on first use and runs offline with zero server setup.</p>
           </div>` : ''}
 
           ${ai.provider === 'chrome' ? `
@@ -646,7 +665,7 @@ app.register({
     try {
       const rep = await detectLocalAndBrowserAI();
       app._aiScanReport = rep;
-      const count = (rep.chrome.available ? 1 : 0) + (rep.ollama.available ? 1 : 0) + (rep.lmstudio.available ? 1 : 0);
+      const count = (rep.webgpu?.available ? 1 : 0) + (rep.chrome?.available ? 1 : 0) + (rep.ollama?.available ? 1 : 0) + (rep.lmstudio?.available ? 1 : 0);
       if (count > 0) {
         toast(`Found ${count} local/browser AI option(s) on your machine.`, 'ok');
       } else {
@@ -658,6 +677,13 @@ app.register({
       app._aiScanning = false;
       app.render();
     }
+  },
+  'change-ai-provider'(d, el) {
+    const s = S.settings.get();
+    s.ai.provider = el.value;
+    s.ai.model = PROVIDERS[el.value]?.defaultModel || PROVIDERS[el.value]?.models?.[0] || '';
+    S.settings.save(s);
+    app.render();
   },
   'use-detected-ai'(d, el) {
     const prov = el.dataset.provider;
@@ -708,8 +734,8 @@ app.register({
     el = document.querySelector('[data-action=test-ai]');
     if (el) { el.disabled = true; el.textContent = 'Testing connection...'; }
     try {
-      await testConnection();
-      toast('Connection works! Your AI assistant is ready.', 'ok');
+      const res = await testConnection();
+      toast(res?.message || 'Connection works! Your AI assistant is ready.', 'ok');
     } catch (e) {
       toast('Connection test failed: ' + e.message, 'error');
     } finally {

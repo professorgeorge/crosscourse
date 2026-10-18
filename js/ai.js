@@ -16,6 +16,18 @@ export const PROVIDERS = {
     desc: 'Runs completely inside Google Chrome on your device. Zero setup, zero keys, zero data leaves your computer.',
     models: ['gemini-nano']
   },
+  webgpu: {
+    label: 'In-Browser Local AI (WebGPU: Edge / Chrome / Firefox / Safari)',
+    badge: 'Free, Private & On-Device',
+    desc: 'Downloads a compact open-weights AI model directly into your browser tab cache. Runs on Edge, Chrome, Firefox, and Safari 18+ using WebGPU with zero cloud data and no servers.',
+    models: [
+      'SmolLM2-360M-Instruct-q4f16_1-MLC',
+      'Qwen2.5-0.5B-Instruct-q4f16_1-MLC',
+      'Llama-3.2-1B-Instruct-q4f16_1-MLC',
+      'Qwen2.5-1.5B-Instruct-q4f16_1-MLC'
+    ],
+    defaultModel: 'SmolLM2-360M-Instruct-q4f16_1-MLC'
+  },
   ollama: {
     label: 'Local AI on your Computer (Ollama / LM Studio)',
     badge: 'Free & Private',
@@ -66,6 +78,7 @@ export function aiEnabled() {
   const c = aiConfig();
   if (!c || c.provider === 'none') return false;
   if (c.provider === 'chrome') return true;
+  if (c.provider === 'webgpu') return true;
   if (c.provider === 'ollama') return true;
   return Boolean(c.apiKey || c.provider === 'compatible');
 }
@@ -73,6 +86,7 @@ export function aiLabel() {
   const c = aiConfig();
   if (!c || c.provider === 'none') return 'Templates (no AI)';
   if (c.provider === 'chrome') return 'Chrome Built-in AI';
+  if (c.provider === 'webgpu') return `In-Browser WebGPU (${c.model?.split('-')[0] || 'Local'})`;
   if (c.provider === 'ollama') return `Ollama (${c.model || 'local'})`;
   const p = PROVIDERS[c.provider];
   const name = p ? p.label.split(' (')[0] : c.provider;
@@ -83,6 +97,7 @@ export function aiLabel() {
 export async function detectLocalAndBrowserAI() {
   const report = {
     chrome: { available: false, status: 'unavailable', message: '' },
+    webgpu: { available: false, status: 'unavailable', message: '' },
     ollama: { available: false, models: [], baseUrl: 'http://localhost:11434/v1' },
     lmstudio: { available: false, models: [], baseUrl: 'http://localhost:1234/v1' }
   };
@@ -108,7 +123,26 @@ export async function detectLocalAndBrowserAI() {
     console.debug('Chrome AI check:', e);
   }
 
-  // 2. Local Ollama check
+  // 2. In-Browser WebGPU check (works across Edge, Chrome, Firefox, Safari 18+, Brave, Opera)
+  try {
+    if (typeof navigator !== 'undefined' && navigator.gpu) {
+      report.webgpu = {
+        available: true,
+        status: 'ready',
+        message: 'WebGPU acceleration is supported on this browser (Edge, Chrome, Firefox, Safari 18+). You can download and run AI directly in your browser tab without external servers.'
+      };
+    } else {
+      report.webgpu = {
+        available: false,
+        status: 'unsupported',
+        message: 'WebGPU not detected on this browser/GPU.'
+      };
+    }
+  } catch (e) {
+    console.debug('WebGPU check:', e);
+  }
+
+  // 3. Local Ollama check
   try {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 1200);
@@ -125,7 +159,7 @@ export async function detectLocalAndBrowserAI() {
     console.debug('Ollama check:', e);
   }
 
-  // 3. Local LM Studio check
+  // 4. Local LM Studio check
   try {
     const ctrl = new AbortController();
     const tid = setTimeout(() => ctrl.abort(), 1200);
@@ -275,6 +309,9 @@ export function parseJSON(text) {
   throw new Error('The model did not return valid JSON.');
 }
 
+let webllmEngine = null;
+let currentWebllmModel = null;
+
 export async function callProvider(system, user) {
   const c = aiConfig();
   const p = PROVIDERS[c.provider];
@@ -282,7 +319,7 @@ export async function callProvider(system, user) {
 
   if (c.provider === 'chrome') {
     if (typeof window === 'undefined' || (!window.ai?.languageModel && !window.ai?.assistant)) {
-      throw new Error('Chrome Built-in AI was not found in this browser. To use it, open Google Chrome (version 128+) and enable chrome://flags/#prompt-api-for-gemini-nano.');
+      throw new Error('Chrome Built-in AI was not found in this browser. To use it, open Google Chrome (version 128+) and enable chrome://flags/#prompt-api-for-gemini-nano. Or switch to "In-Browser Local AI (WebGPU)" in settings to run downloaded models on Edge, Chrome, Firefox, or Safari.');
     }
     let session = null;
     try {
@@ -296,6 +333,37 @@ export async function callProvider(system, user) {
       throw new Error(`Chrome Built-in AI error: ${err.message}`);
     } finally {
       try { session?.destroy?.(); } catch {}
+    }
+  }
+
+  if (c.provider === 'webgpu') {
+    if (typeof navigator === 'undefined' || !navigator.gpu) {
+      throw new Error('WebGPU is not supported or not enabled in this browser. To run downloaded local models in your browser, please use Microsoft Edge, Google Chrome, Firefox, or Safari 18+ with WebGPU enabled. Alternatively, select Ollama on your computer or the free Google Gemini tier in settings.');
+    }
+    const targetModel = c.model || p?.defaultModel || 'SmolLM2-360M-Instruct-q4f16_1-MLC';
+    try {
+      const webllm = await import('https://esm.run/@mlc-ai/web-llm');
+      if (!webllmEngine || currentWebllmModel !== targetModel) {
+        webllmEngine = await webllm.CreateMLCEngine(targetModel, {
+          initProgressCallback: (report) => {
+            console.log('WebLLM Loading:', report.text);
+            if (typeof window !== 'undefined' && window.__crosscourse_on_ai_progress) {
+              window.__crosscourse_on_ai_progress(report.text);
+            }
+          }
+        });
+        currentWebllmModel = targetModel;
+      }
+      const reply = await webllmEngine.chat.completions.create({
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user }
+        ],
+        temperature: 0.6
+      });
+      return reply.choices[0]?.message?.content || '';
+    } catch (err) {
+      throw new Error(`In-Browser Local AI (WebGPU) error: ${err.message || err}. You can also run Ollama locally or use Google Gemini.`);
     }
   }
 
@@ -388,6 +456,37 @@ export async function callProvider(system, user) {
 }
 
 export async function testConnection() {
+  const c = aiConfig();
+  if (!c || c.provider === 'none') {
+    return { ok: true, message: 'Built-in pedagogical templates are ready! No network or API key required.' };
+  }
+
+  if (c.provider === 'webgpu') {
+    if (typeof navigator === 'undefined' || !navigator.gpu) {
+      throw new Error('WebGPU is not supported or not enabled in this browser. To use downloaded in-browser models, open Microsoft Edge, Google Chrome, Firefox (130+), or Safari 18+ with hardware acceleration enabled. Alternatively, select Ollama or Google Gemini in settings.');
+    }
+    let adapter;
+    try {
+      adapter = await navigator.gpu.requestAdapter();
+    } catch (err) {
+      throw new Error(`WebGPU adapter initialization failed: ${err.message}`);
+    }
+    if (!adapter) {
+      throw new Error('WebGPU hardware adapter could not be initialized. Please verify that hardware acceleration is enabled in your browser settings.');
+    }
+    const model = c.model || PROVIDERS.webgpu.defaultModel || 'SmolLM2-360M-Instruct-q4f16_1-MLC';
+    return {
+      ok: true,
+      message: `WebGPU is active and hardware-accelerated on this browser! Selected model: ${model}. The open-weights model will download directly to your browser tab cache on first use.`
+    };
+  }
+
+  if (c.provider === 'chrome') {
+    if (typeof window === 'undefined' || (!window.ai?.languageModel && !window.ai?.assistant)) {
+      throw new Error('Chrome Built-in AI was not found in this browser. To use it, open Google Chrome (version 128+) and enable chrome://flags/#prompt-api-for-gemini-nano. Or select "In-Browser Local AI (WebGPU)" in settings to run downloaded models on Edge, Chrome, Firefox, or Safari.');
+    }
+  }
+
   const out = await callProvider('Reply with JSON only.', 'Return {"ok":true,"message":"Connected successfully"}');
   return parseJSON(out);
 }

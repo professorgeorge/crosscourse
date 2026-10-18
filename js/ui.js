@@ -39,7 +39,9 @@ export const icon = {
   translate: I('<path d="M4 5h8M8 3v2M5.5 5c.8 3 3 5.5 6 6.5M10.5 5c-.8 3-3 5.5-6 6.5"/><path d="m13 21 4-9 4 9M14.5 18h5"/>'),
   arrow: I('<path d="M5 12h14M13 6l6 6-6 6"/>'),
   back: I('<path d="M19 12H5M11 6l-6 6 6 6"/>'),
-  edit: I('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>')
+  edit: I('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>'),
+  help: I('<circle cx="12" cy="12" r="9"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5"/>'),
+  book: I('<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 2v20"/>')
 };
 
 export function fmtAgo(iso) {

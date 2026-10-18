@@ -32,7 +32,12 @@ app.view('home', {
     const projects = S.listProjects();
     return `<div class="page home">
       <section class="home-hero">
-        <p class="eyebrow">Autonomous International Course Co-Design</p>
+        <div class="row between wrap gap" style="align-items: center; margin-bottom: var(--space-2);">
+          <p class="eyebrow" style="margin: 0;">Autonomous International Course Co-Design</p>
+          <button type="button" class="btn sm" data-action="open-user-manual" style="background: rgba(29, 92, 99, 0.08); border: 1px solid rgba(29, 92, 99, 0.25); color: var(--color-primary); font-weight: 500;">
+            ${icon.book} User Manual &amp; Practical Guide
+          </button>
+        </div>
         <h1>Autonomous AI Co-Design for International Courses Across Partner Universities.</h1>
         <p class="lede">Specify your partner universities (two or more, up to 9) and collaboration scope (either conversationally in natural language or through structured choices), and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
 
@@ -189,7 +194,8 @@ app.view('home', {
       <section class="section">
         <div class="section-head">
           <h2>Your projects</h2>
-          <div class="row gap" style="align-items: center;">
+          <div class="row gap wrap" style="align-items: center;">
+            <button class="btn sm ghost" data-action="open-user-manual">${icon.book} User Manual</button>
             <button class="btn sm" data-action="import-project" title="Import a previously saved Crosscourse project JSON backup">${icon.upload} Import Course Backup (.json)</button>
             <span class="muted">${projects.length ? `${projects.length} on this device` : ''}</span>
           </div>
@@ -848,6 +854,104 @@ app.register({
     if (!(await confirmBox('Delete all local data?', 'This removes every project and setting from this browser. Partners keep their own copies.', 'Delete everything'))) return;
     for (const k of S.kv.keys()) if (k.startsWith('xc:')) S.kv.del(k);
     app.go('#/'); app.render();
+  },
+  'open-user-manual'() {
+    modal({
+      title: 'Crosscourse User Manual & Practical Guide',
+      wide: true,
+      body: `
+        <div class="user-manual-modal" style="max-height: 68vh; overflow-y: auto; padding-right: 6px;">
+          <p class="lede" style="margin-bottom: var(--space-3);">
+            Crosscourse is an autonomous co-design studio and workspace for creating shared international courses across partner universities (2 to 9 campuses in a consortium). Everything runs locally on your device with zero central servers and zero accounts.
+          </p>
+
+          <div class="banner info" style="margin-bottom: var(--space-3);">
+            ${icon.shield}
+            <div>
+              <strong>Faculty Sovereignty &amp; Privacy:</strong> You and your international partner professors retain 100% curriculum authority. All student data, drafts, and private AI keys stay securely on your computer.
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--space-3); border-left: 4px solid var(--color-primary); background: var(--color-surface-2);">
+            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">1. Quick Start: Co-Design a Course in 3 Minutes</h3>
+            <ol class="stack gap-sm" style="margin: 0; padding-left: 1.25rem; font-size: 0.92rem; line-height: 1.5;">
+              <li><strong>Add Partner Campuses:</strong> Enter your lead university and international partner campuses. Click <code>+ Add Partner Campus</code> to add up to 9 universities in the consortium.</li>
+              <li><strong>Select Pacing &amp; Mobility:</strong> Choose a 5-week intensive, 7 to 16-week semester, and exchange format (100% Virtual, Student Immersion Visit, Faculty Mobility, or Custom).</li>
+              <li><strong>Input Course Topic or Rough Notes:</strong> Type your vision or paste rough syllabus notes. Click <code>${icon.sparkle} Convert Rough Notes to Structured Prompt</code> to format them with 1 click.</li>
+              <li><strong>Click Autonomously Generate Deliverables:</strong> In seconds, AI synthesizes all institutional constraints and co-develops your complete 3-Pillar Course Blueprint.</li>
+            </ol>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--space-3); border-left: 4px solid #2e7656; background: var(--color-surface-2);">
+            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">2. The 3-Pillar Course Blueprint</h3>
+            <div class="stack gap-sm" style="font-size: 0.92rem; line-height: 1.5;">
+              <div>
+                <strong>${icon.users} Pillar 1: Consortium &amp; Vision</strong>
+                <p class="muted small" style="margin: 2px 0 0;">Consortium context cards, driving inquiry challenge, sovereign grading scales, and the ratified Partnership Charter.</p>
+              </div>
+              <div>
+                <strong>${icon.sparkle} Pillar 2: Weekly Arc &amp; Activities</strong>
+                <p class="muted small" style="margin: 2px 0 0;">Week-by-week sequence through 6 stages: Trust &rarr; Local Investigation &rarr; Compare &rarr; Critique &rarr; Co-Create &rarr; Reflect. Every activity details designated roles for each campus and contingency fallback plans.</p>
+              </div>
+              <div>
+                <strong>${icon.download} Pillar 3: Classroom Deliverables</strong>
+                <p class="muted small" style="margin: 2px 0 0;">Centralized export hub for your LMS Course Cartridge, Syllabus PDF, Student Handouts, Calendar (.ics), and Project Backup.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--space-3); border-left: 4px solid #b4532a; background: var(--color-surface-2);">
+            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">3. 1-Click LMS Upload (Canvas / Blackboard / Moodle)</h3>
+            <p class="small" style="margin-bottom: var(--space-2);">Crosscourse exports native <strong>IMS Common Cartridges (.imscc)</strong> containing complete weekly modules, assignments, and SpeedGrader rubrics:</p>
+            <ul class="stack gap-sm" style="margin: 0; padding-left: 1.25rem; font-size: 0.92rem; line-height: 1.5;">
+              <li><strong>Canvas:</strong> Go to Course Settings &rarr; <em>Import Course Content</em> &rarr; Content Type: <strong>Common Cartridge 1.x Package</strong> &rarr; Select the downloaded <code>.imscc</code> file &rarr; Import.</li>
+              <li><strong>Blackboard:</strong> Go to Packages &amp; Utilities &rarr; <em>Import Package / View Logs</em> &rarr; Select <code>.imscc</code> file &rarr; Submit.</li>
+              <li><strong>Moodle:</strong> Go to Course Management &rarr; <em>Restore</em> &rarr; Upload <code>.imscc</code> file &rarr; Restore.</li>
+            </ul>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--space-3); border-left: 4px solid #6d4a8e; background: var(--color-surface-2);">
+            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">4. AI Options: Local WebGPU, Ollama, Cloud &amp; Offline</h3>
+            <ul class="stack gap-sm" style="margin: 0; padding-left: 1.25rem; font-size: 0.92rem; line-height: 1.5;">
+              <li><strong>In-Browser Local AI (WebGPU):</strong> Runs open-weights models (SmolLM2, Qwen2.5, Llama 3.2) directly in your browser tab (Edge, Chrome, Firefox 130+, Safari 18+). 100% free, private, zero servers, zero API keys.</li>
+              <li><strong>Local Desktop AI (Ollama / LM Studio):</strong> Connects to local models running on your machine (e.g. <code>ollama run llama3.2</code>).</li>
+              <li><strong>Google Chrome Built-in AI:</strong> On-device Gemini Nano inside Chrome 128+ with flags enabled.</li>
+              <li><strong>Free Google Gemini Cloud Tier:</strong> Generous free tier from Google AI Studio (zero credit card needed).</li>
+              <li><strong>Deterministic Offline Templates:</strong> Works 100% without any AI or internet connection. Expert pedagogical templates are always active.</li>
+            </ul>
+          </div>
+
+          <div class="card" style="margin-bottom: var(--space-3); border-left: 4px solid #2c6a8a; background: var(--color-surface-2);">
+            <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">5. Peer-to-Peer Sharing &amp; Project Backups</h3>
+            <ul class="stack gap-sm" style="margin: 0; padding-left: 1.25rem; font-size: 0.92rem; line-height: 1.5;">
+              <li><strong>Share &amp; Sync:</strong> Click <em>Share &amp; sync</em> &rarr; <em>Download file &amp; draft email</em> to share a <code>.crosscourse.json</code> file with international colleagues. Edits merge automatically item-by-item without overwriting partner work.</li>
+              <li><strong>Export Course Backup (.json):</strong> Under Pillar 3, click <em>Export Project (.JSON)</em> at any time.</li>
+              <li><strong>Importing:</strong> On the home screen, click <strong>Import Course Backup (.json)</strong> to load any project file and continue working immediately.</li>
+            </ul>
+          </div>
+
+          <div class="row between wrap gap" style="margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--color-border); align-items: center;">
+            <button type="button" class="btn sm" data-action="download-user-manual">
+              ${icon.download} Download Complete Manual (.md)
+            </button>
+            <span class="muted small">Also available in USER_MANUAL.md in the repository root.</span>
+          </div>
+        </div>
+      `,
+      actions: [
+        { label: 'Close Manual', value: 'ok', kind: 'primary' }
+      ]
+    });
+  },
+  async 'download-user-manual'() {
+    try {
+      const res = await fetch('./USER_MANUAL.md');
+      const text = await res.text();
+      download('Crosscourse-User-Manual.md', text, 'text/markdown');
+      toast('Downloaded User Manual (.md)', 'ok');
+    } catch (e) {
+      toast('Could not download manual: ' + e.message, 'warn');
+    }
   }
 });
 

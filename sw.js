@@ -1,6 +1,6 @@
-const VERSION = 'crosscourse-v1.9.11';
+const VERSION = 'crosscourse-v1.9.12';
 const SHELL = [
-  './', './index.html', './manifest.webmanifest', './css/style.css',
+  './', './index.html', './manifest.webmanifest', './css/style.css', './USER_MANUAL.md',
   './js/main.js', './js/app.js', './js/store.js', './js/time.js', './js/checks.js', './js/ai.js', './js/ui.js', './js/demo.js', './js/autopilot.js', './js/lms.js',
   './js/views/home.js', './js/views/proposals.js', './js/views/project.js', './js/views/design.js', './js/views/govern.js', './js/views/schedule.js', './js/views/sync.js',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'

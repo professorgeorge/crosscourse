@@ -1,7 +1,7 @@
 {
-  "name": "Crosscourse: international course co-design",
+  "name": "Crosscourse: International Course & Consortium Co-Designer",
   "short_name": "Crosscourse",
-  "description": "Co-design international collaborative courses with teaching partners in other countries.",
+  "description": "Co-design international collaborative courses across university consortia (2 to 9 partner institutions) with AI assistance, local WebGPU intelligence, and LMS Common Cartridge exports.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -142,8 +142,6 @@ app.register({
     }, `Accepted proposal: ${x.title}`, { kind: 'proposals', id: x.id });
     toast('Added as drafts.', 'ok');
   },
-    toast('Added as drafts.', 'ok');
-  },
   'reject-proposal'(d) {
     const x = app.p.proposals.find(y => y.id === d.id);
     app.mutate(pp => close(pp, x, 'dismissed'), `Dismissed proposal: ${x.title}`);

@@ -660,3 +660,79 @@ Convert this raw text into the structured, professional course co-design prompt 
 
   return heuristicStructurePrompt(text, options);
 }
+
+export function heuristicStructureMobility(rawText, options = {}) {
+  const clean = (rawText || '').trim().replace(/[\u2014\u2013]/g, ' - ');
+  const home = options.homeUniversity || 'Lead Institution';
+  const partner = options.partnerUniversity || 'Partner Universities';
+  const weeks = options.durationWeeks || 5;
+
+  return `1. Delivery Model & Modality Rationale:
+Model: ${clean || 'Blended virtual collaboration combined with targeted experiential immersion'}
+Structure: Structured across a ${weeks}-week engagement balancing asynchronous digital collaboration with synchronized milestone summits.
+
+2. Campus Responsibilities & Host Logistics:
+Host Institutions: ${home} and ${partner} coordinate synchronized academic calendars, digital workspace access, and site safety protocols.
+Cohort Equity: All participating cohorts maintain academic parity regardless of physical travel status.
+
+3. Asynchronous Protocols & Time Zone Handoffs:
+Communication: Multi-campus handoffs utilize shared digital portfolios and recorded briefings to accommodate time zone differentials.
+Contingency: Non-traveling or delayed students participate through remote collaborative links without academic penalty.
+
+4. Milestone Arc & Key Touchpoints:
+Phase 1: Digital onboarding, cross-cultural icebreakers, and joint team formation.
+Phase 2: Core collaborative inquiry, comparative case study analysis, and peer reviews.
+Phase 3: Joint culminating showcase, co-presented findings, and reciprocal reflection.`;
+}
+
+export async function structureMobilityPrompt(rawText, options = {}) {
+  const text = (rawText || '').trim().replace(/[\u2014\u2013]/g, ' - ');
+  if (!text) throw new Error('Please enter some notes or describe your custom mobility format first.');
+
+  const home = options.homeUniversity || 'Lead Institution';
+  const partner = options.partnerUniversity || 'Partner Universities';
+  const weeks = options.durationWeeks || 5;
+
+  if (aiEnabled()) {
+    try {
+      const system = `You are an expert in international higher education mobility models and collaborative cross-border course design.
+Your task is to take the user's raw notes regarding international mobility, hybrid delivery, or travel format, and convert them into a structured, highly professional, editable mobility specification.
+CRITICAL FORMAT RULES:
+- Do NOT use Em dashes anywhere.
+- Do NOT include conversational filler, preamble, backticks, or meta comments.
+- Organize with clear headings and bullet points:
+
+1. Delivery Model & Modality Rationale:
+[Summarize the blend of virtual vs in-person/immersion components, duration, and pedagogical purpose]
+
+2. Campus Responsibilities & Host Logistics:
+[Specify coordination across ${home} and ${partner}, host campus responsibilities, academic parity]
+
+3. Asynchronous Protocols & Time Zone Handoffs:
+[Managing time zone offsets, asynchronous contingencies, parity for non-traveling students]
+
+4. Milestone Arc & Key Touchpoints:
+[Virtual orientation, intensive collaboration/fieldwork window, and final joint showcase]`;
+
+      const user = `Raw Mobility Notes:
+"""
+${text}
+"""
+
+Context:
+- Institutions: ${home} and ${partner}
+- Duration: ${weeks} weeks
+
+Convert this into the structured mobility plan now:`;
+
+      const res = await callProvider(system, user);
+      if (res && res.trim().length > 30) {
+        return res.trim().replace(/[\u2014\u2013]/g, ' - ');
+      }
+    } catch (err) {
+      console.warn('Live AI mobility prompt structuring failed, falling back to heuristic:', err);
+    }
+  }
+
+  return heuristicStructureMobility(text, options);
+}

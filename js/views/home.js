@@ -2,7 +2,7 @@ import { app } from '../app.js';
 import * as S from '../store.js';
 import { esc, icon, modal, toast, pickFile, download, fmtAgo, chip, confirmBox } from '../ui.js';
 import { allTimezones } from '../time.js';
-import { PROVIDERS, testConnection, detectLocalAndBrowserAI, structureRawPrompt } from '../ai.js';
+import { PROVIDERS, testConnection, detectLocalAndBrowserAI, structureRawPrompt, structureMobilityPrompt } from '../ai.js';
 import { createAiPartnerDemo, demoProject } from '../demo.js';
 import { importPacketFile } from './sync.js';
 import { showAutopilotProgressModal, openDownloadPackModal } from '../autopilot.js';
@@ -145,7 +145,13 @@ app.view('home', {
                   <option value="custom">Other / Custom Mobility Format (Specify below)...</option>
                 </select>
                 <div id="prompt-custom-visit-box" style="display: none; margin-top: var(--space-2);">
-                  <input id="prompt-custom-visit" name="customVisitFormat" placeholder="Describe your mobility/delivery format (e.g. 2-week student field practicum followed by virtual showcase)">
+                  <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: flex-end;">
+                    <span class="muted small">Specify your custom mobility arrangement or delivery model:</span>
+                    <button type="button" class="btn text sm" data-action="structure-mobility-prompt" data-target="prompt-custom-visit" style="padding: 2px 8px; font-size: 0.82rem;" title="Convert rough mobility notes into a structured plan">
+                      ${icon.sparkle} Convert Rough Notes to Structured Mobility Plan
+                    </button>
+                  </div>
+                  <textarea id="prompt-custom-visit" name="customVisitFormat" rows="3" placeholder="e.g. Enter notes (e.g. 2 weeks online team onboarding, 10 days reciprocal field practicum/immersion in host city, final joint virtual symposium)..."></textarea>
                 </div>
               </div>
             </div>
@@ -153,7 +159,7 @@ app.view('home', {
             <div class="field" style="margin: 0;">
               <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: flex-end;">
                 <label for="course-prompt" class="ai-prompt-label" style="margin: 0;">
-                  ${icon.sparkle} <strong>5. Course Topic, Discipline, or Driving Inquiry Vision</strong>
+                  <strong>5. Course Topic, Discipline, or Driving Inquiry Vision</strong>
                 </label>
                 <button type="button" class="btn text sm" data-action="structure-raw-prompt" data-target="course-prompt" style="padding: 2px 8px; font-size: 0.82rem;" title="Convert rough or unstructured notes into a structured prompt">
                   ${icon.sparkle} Convert Rough Notes to Structured Prompt
@@ -388,24 +394,47 @@ app.register({
     if (f) await importPacketFile(f);
   },
   async 'open-ai-demo-modal'() {
+    const homeForm = document.getElementById('ai-prompt-form');
+    const curScope = homeForm?.querySelector('input[name=scope]:checked')?.value || 'module';
+    const curWeeks = document.getElementById('prompt-dur-weeks')?.value || (curScope === 'course' ? '14' : '5');
+    const curVisit = document.getElementById('prompt-visit-format')?.value || 'virtual';
+    const curCustomVisit = document.getElementById('prompt-custom-visit')?.value || '';
+    const curTopic = document.getElementById('course-prompt')?.value || '';
+
+    // Extract all campuses currently in the consortium intake list (2 to 9 campuses)
+    const intakeCards = Array.from(document.querySelectorAll('#campus-intake-list .campus-intake-card'));
+    const campuses = intakeCards.map((card, i) => {
+      const idx = card.dataset.idx || (i + 1);
+      const inst = card.querySelector(`input[name="campus_name_${idx}"], input[name^="uni_${idx}_inst"], input[id^="uni-${idx}-inst"]`)?.value || '';
+      const country = card.querySelector(`input[name="campus_location_${idx}"], input[name^="uni_${idx}_country"], input[id^="uni-${idx}-country"]`)?.value || '';
+      const prof = card.querySelector(`input[name="campus_faculty_${idx}"], input[name^="uni_${idx}_prof"], input[id^="uni-${idx}-prof"]`)?.value || '';
+      return { idx: parseInt(idx, 10), institution: inst.trim(), country: country.trim(), faculty: prof.trim() };
+    });
+
+    const leadCampus = campuses.find(c => c.idx === 1) || campuses[0] || { idx: 1, institution: '', country: '', faculty: '' };
+    let partnerCampuses = campuses.filter(c => c.idx > 1);
+    if (!partnerCampuses.length) {
+      partnerCampuses = [{ idx: 2, institution: '', country: '', faculty: '' }];
+    }
+
     const r = await modal({
-      title: 'Co-Design with an AI Partner Professor',
+      title: 'Co-Design with AI Partner Professors',
       wide: true,
       body: `<p class="lede" style="margin-bottom: var(--space-3);">
-        Collaborate step-by-step with an AI partner professor representing your international partner university.
+        Collaborate step-by-step with AI partner professors representing each international partner university in your consortium.
         This mode provides interactive AI Assistance across all course design stages, with no automatic autopilot.
       </p>
       <fieldset class="field" style="margin-bottom: var(--space-3);">
         <legend><strong>1. Collaboration scope</strong></legend>
         <label class="choice">
-          <input type="radio" name="mode" value="module" checked>
+          <input type="radio" name="mode" value="module" ${curScope !== 'course' ? 'checked' : ''}>
           <span>
             <strong>Shared international module / segment in existing courses</strong><br>
             <span class="muted small">A collaborative arc embedded within each partner's existing course.</span>
           </span>
         </label>
         <label class="choice">
-          <input type="radio" name="mode" value="course">
+          <input type="radio" name="mode" value="course" ${curScope === 'course' ? 'checked' : ''}>
           <span>
             <strong>Whole course collaboration</strong><br>
             <span class="muted small">A complete joint course designed collaboratively from the ground up.</span>
@@ -415,22 +444,28 @@ app.register({
       <div class="grid2 gap" style="margin-bottom: var(--space-3);">
         <div class="field" style="margin: 0;">
           <label for="ai-demo-duration"><strong>2. Course Duration (Weeks)</strong></label>
-          <input type="number" id="ai-demo-duration" name="durationWeeks" min="1" max="52" required placeholder="Number of weeks (e.g. 5 or 14)" value="5">
+          <input type="number" id="ai-demo-duration" name="durationWeeks" min="1" max="52" required placeholder="Number of weeks (e.g. 5 or 14)" value="${esc(curWeeks)}">
         </div>
 
         <div class="field" style="margin: 0;">
           <label for="ai-demo-visit"><strong>3. Cross-Country Mobility & Format</strong></label>
           <select id="ai-demo-visit" name="visitFormat">
-            <option value="virtual" selected>100% Fully Virtual Exchange (Online collaboration)</option>
-            <option value="student-visit">Blended: Virtual Collaboration + Reciprocal Student Immersion Visit</option>
-            <option value="faculty-visit">Blended: Virtual Collaboration + Visiting Faculty Mobility / Colloquium</option>
-            <option value="parallel-studios">Dual-Campus Synchronized Labs / Parallel Studios</option>
-            <option value="async-distributed">Asynchronous Distributed Teams (Optimized for large time-zone differences)</option>
-            <option value="field-practicum">Virtual Preparation + Joint On-Site Field Practicum / Community Action</option>
-            <option value="custom">Other / Custom Mobility Format (Specify below)...</option>
+            <option value="virtual" ${curVisit === 'virtual' ? 'selected' : ''}>100% Fully Virtual Exchange (Online collaboration)</option>
+            <option value="student-visit" ${curVisit === 'student-visit' ? 'selected' : ''}>Blended: Virtual Collaboration + Reciprocal Student Immersion Visit</option>
+            <option value="faculty-visit" ${curVisit === 'faculty-visit' ? 'selected' : ''}>Blended: Virtual Collaboration + Visiting Faculty Mobility / Colloquium</option>
+            <option value="parallel-studios" ${curVisit === 'parallel-studios' ? 'selected' : ''}>Dual-Campus Synchronized Labs / Parallel Studios</option>
+            <option value="async-distributed" ${curVisit === 'async-distributed' ? 'selected' : ''}>Asynchronous Distributed Teams (Optimized for large time-zone differences)</option>
+            <option value="field-practicum" ${curVisit === 'field-practicum' ? 'selected' : ''}>Virtual Preparation + Joint On-Site Field Practicum / Community Action</option>
+            <option value="custom" ${curVisit === 'custom' ? 'selected' : ''}>Other / Custom Mobility Format (Specify below)...</option>
           </select>
-          <div id="ai-demo-custom-visit-box" style="display: none; margin-top: var(--space-2);">
-            <input id="ai-demo-custom-visit" name="customVisitFormat" placeholder="Describe your mobility/delivery format">
+          <div id="ai-demo-custom-visit-box" style="display: ${curVisit === 'custom' ? 'block' : 'none'}; margin-top: var(--space-2);">
+            <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: flex-end;">
+              <span class="muted small">Specify your custom mobility arrangement or delivery model:</span>
+              <button type="button" class="btn text sm" id="btn-modal-structure-mobility" style="padding: 2px 8px; font-size: 0.82rem;" title="Convert rough mobility notes into a structured plan">
+                ${icon.sparkle} Convert Rough Notes to Structured Mobility Plan
+              </button>
+            </div>
+            <textarea id="ai-demo-custom-visit" name="customVisitFormat" rows="3" placeholder="e.g. Enter notes (e.g. 2 weeks online collaboration, 10-day field study visit in host country, final joint virtual showcase)...">${esc(curCustomVisit)}</textarea>
           </div>
         </div>
       </div>
@@ -441,28 +476,59 @@ app.register({
             ${icon.sparkle} Convert Rough Notes to Structured Prompt
           </button>
         </div>
-        <textarea id="ai-demo-topic" name="topic" rows="3" required placeholder="e.g. Enter your topic, rough syllabus notes, or paste unformatted text (e.g. Comparative Climate Resilience, AI Ethics, Global Supply Chains)..."></textarea>
+        <textarea id="ai-demo-topic" name="topic" rows="3" required placeholder="e.g. Enter your topic, rough syllabus notes, or paste unformatted text (e.g. Comparative Climate Resilience, AI Ethics, Global Supply Chains)...">${esc(curTopic)}</textarea>
       </div>
-      <div class="grid2 gap" style="margin-bottom: var(--space-3);">
-        <div class="field" style="margin: 0;">
-          <label for="ai-demo-partner-inst"><strong>5. Partner University (University 2)</strong></label>
-          <input id="ai-demo-partner-inst" name="partnerInst" required placeholder="e.g. Kyoto University">
-        </div>
-        <div class="field" style="margin: 0;">
-          <label for="ai-demo-partner-name"><strong>Partner Colleague Name (Optional)</strong></label>
-          <input id="ai-demo-partner-name" name="partnerName" placeholder="e.g. Dr. Colleague Name">
+
+      <div class="field" style="margin-bottom: var(--space-3);">
+        <label><strong>5. Partner Universities (${partnerCampuses.length} Partner Campus${partnerCampuses.length > 1 ? 'es' : ''} in Consortium)</strong></label>
+        <span class="muted small" style="display: block; margin-bottom: var(--space-2);">Pre-populated from your consortium intake. An AI partner professor will represent each international campus.</span>
+        <div class="stack gap">
+          ${partnerCampuses.map(c => {
+            const color = S.PARTNER_COLORS[(c.idx - 1) % S.PARTNER_COLORS.length];
+            return `
+            <div class="campus-intake-card" style="border-left: 4px solid ${color}; padding: var(--space-3); margin: 0;">
+              <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: center;">
+                <div class="row gap" style="align-items: center;">
+                  <span class="campus-badge-dot" style="background: ${color};"></span>
+                  <strong class="small">Campus ${c.idx} (Partner University)</strong>
+                </div>
+              </div>
+              <div class="grid3 gap">
+                <div class="field" style="margin: 0;">
+                  <label class="small" for="modal-uni-${c.idx}-inst"><strong>University Name</strong></label>
+                  <input id="modal-uni-${c.idx}-inst" name="modal_uni_${c.idx}_inst" value="${esc(c.institution)}" required placeholder="e.g. Partner University ${c.idx}">
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label class="small" for="modal-uni-${c.idx}-country">Country (Optional)</label>
+                  <input id="modal-uni-${c.idx}-country" name="modal_uni_${c.idx}_country" value="${esc(c.country)}" placeholder="e.g. Country">
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label class="small" for="modal-uni-${c.idx}-prof">Colleague Name (Optional)</label>
+                  <input id="modal-uni-${c.idx}-prof" name="modal_uni_${c.idx}_prof" value="${esc(c.faculty)}" placeholder="e.g. Dr. Colleague Name">
+                </div>
+              </div>
+            </div>`;
+          }).join('')}
         </div>
       </div>
-      <fieldset class="field">
-        <legend><strong>6. About you (Home Professor)</strong></legend>
-        <div class="grid2">
-          <div class="field">
-            <label for="ai-demo-myname">Your name</label>
-            <input id="ai-demo-myname" name="myName" placeholder="e.g. Professor Name" required>
+
+      <fieldset class="field" style="margin-bottom: var(--space-3);">
+        <legend><strong>6. Course Developer & Lead Campus Context</strong></legend>
+        <p class="muted small" style="margin-top: 0; margin-bottom: var(--space-2);">
+          Crosscourse supports course developers, instructional designers, and academic coordinators designing on behalf of faculty, as well as instructing professors themselves.
+        </p>
+        <div class="grid3 gap">
+          <div class="field" style="margin: 0;">
+            <label for="ai-demo-myname"><strong>Your Name & Role</strong></label>
+            <input id="ai-demo-myname" name="myName" placeholder="e.g. Dr. Alex Morgan (Course Developer / Faculty Lead)" value="${esc(leadCampus.faculty || '')}" required>
           </div>
-          <div class="field">
-            <label for="ai-demo-myinst">Your institution (University 1)</label>
-            <input id="ai-demo-myinst" name="myInst" placeholder="e.g. Alcorn State University" required>
+          <div class="field" style="margin: 0;">
+            <label for="ai-demo-myinst"><strong>Lead Institution (Campus 1)</strong></label>
+            <input id="ai-demo-myinst" name="myInst" placeholder="e.g. Lead University" value="${esc(leadCampus.institution || '')}" required>
+          </div>
+          <div class="field" style="margin: 0;">
+            <label for="ai-demo-mycountry">Location / Country (Optional)</label>
+            <input id="ai-demo-mycountry" name="myCountry" placeholder="e.g. United States" value="${esc(leadCampus.country || '')}">
           </div>
         </div>
       </fieldset>`,
@@ -476,6 +542,39 @@ app.register({
         if (selVisit && customVisitBox) {
           selVisit.addEventListener('change', () => {
             customVisitBox.style.display = selVisit.value === 'custom' ? 'block' : 'none';
+          });
+        }
+
+        const btnMobility = dlg.querySelector('#btn-modal-structure-mobility');
+        const mobilityTa = dlg.querySelector('#ai-demo-custom-visit');
+        if (btnMobility && mobilityTa) {
+          btnMobility.addEventListener('click', async () => {
+            const raw = mobilityTa.value.trim();
+            if (!raw) {
+              toast('Enter some mobility notes or keywords first.', 'info');
+              mobilityTa.focus();
+              return;
+            }
+            btnMobility.disabled = true;
+            const oldHtml = btnMobility.innerHTML;
+            btnMobility.innerHTML = '<span class="spinner"></span> Structuring...';
+            try {
+              const homeUni = dlg.querySelector('#ai-demo-myinst')?.value || '';
+              const dWeeks = parseInt(dlg.querySelector('#ai-demo-duration')?.value, 10) || 5;
+              const structured = await structureMobilityPrompt(raw, {
+                homeUniversity: homeUni,
+                partnerUniversity: 'Partner Universities',
+                durationWeeks: dWeeks
+              });
+              mobilityTa.value = structured;
+              mobilityTa.focus();
+              toast('Rough notes converted into structured mobility plan! You can review or edit below.', 'ok');
+            } catch (e) {
+              toast('Could not structure mobility plan: ' + e.message, 'warn');
+            } finally {
+              btnMobility.disabled = false;
+              btnMobility.innerHTML = oldHtml;
+            }
           });
         }
 
@@ -494,12 +593,12 @@ app.register({
             btnStruct.innerHTML = '<span class="spinner"></span> Structuring...';
             try {
               const homeUni = dlg.querySelector('#ai-demo-myinst')?.value || '';
-              const partnerUni = dlg.querySelector('#ai-demo-partner-inst')?.value || '';
+              const partnerUnis = partnerCampuses.map(c => dlg.querySelector(`#modal-uni-${c.idx}-inst`)?.value || '').filter(Boolean).join(', ');
               const mode = dlg.querySelector('input[name=mode]:checked')?.value || 'module';
               const dWeeks = parseInt(dlg.querySelector('#ai-demo-duration')?.value, 10) || (mode === 'course' ? 14 : 5);
               const structured = await structureRawPrompt(raw, {
                 homeUniversity: homeUni,
-                partnerUniversity: partnerUni,
+                partnerUniversity: partnerUnis || 'Partner Universities',
                 mode,
                 durationWeeks: dWeeks
               });
@@ -524,6 +623,19 @@ app.register({
     const customVisitFormat = (d.customVisitFormat || '').trim();
     const effectiveVisit = (visitFormat === 'custom' && customVisitFormat) ? 'custom' : visitFormat;
 
+    const allUniversities = [
+      {
+        name: (d.myInst || leadCampus.institution || 'Lead University').trim(),
+        location: (d.myCountry || leadCampus.country || '').trim(),
+        faculty: (d.myName || leadCampus.faculty || 'Lead Faculty').trim()
+      },
+      ...partnerCampuses.map(c => ({
+        name: (d[`modal_uni_${c.idx}_inst`] || c.institution || `Partner University ${c.idx}`).trim(),
+        location: (d[`modal_uni_${c.idx}_country`] || c.country || '').trim(),
+        faculty: (d[`modal_uni_${c.idx}_prof`] || c.faculty || `Partner Colleague ${c.idx}`).trim()
+      }))
+    ];
+
     const p = createAiPartnerDemo({
       mode: d.mode,
       durationWeeks: dWeeks,
@@ -531,12 +643,11 @@ app.register({
       customVisitFormat: customVisitFormat,
       topic: d.topic,
       customTopic: d.topic,
-      homeUniversity: d.myInst || 'Home University',
-      partnerUniversity: d.partnerInst || 'Partner University',
-      partnerName: d.partnerName || undefined,
+      universities: allUniversities,
+      homeUniversity: allUniversities[0].name,
       userProfile: {
-        name: d.myName || 'Home Professor',
-        institution: d.myInst || 'Home University'
+        name: d.myName || 'Course Developer / Faculty Lead',
+        institution: allUniversities[0].name
       }
     });
     p.isAiSimulation = true;
@@ -546,10 +657,9 @@ app.register({
     const s = S.settings.get();
     s.identities[p.id] = p.partners[0].id;
     S.settings.save(s);
-    const partner = p.partners[1];
 
     app.go(`#/p/${p.id}/overview`);
-    toast(`AI-Assisted Co-Design started with ${partner.name} (${partner.institution}, ${partner.country})! Use AI Assistance at each stage to draft, refine, and align your course.`, 'ok');
+    toast(`AI-Assisted Co-Design started for ${allUniversities.length}-campus consortium! Use AI Assistance at each stage to draft, refine, and align your course.`, 'ok');
   },
   'load-demo'() {
     app.actions['open-ai-demo-modal']();
@@ -678,6 +788,48 @@ app.register({
       toast('Rough notes converted into structured prompt! You can review or edit below.', 'ok');
     } catch (err) {
       toast('Could not structure prompt: ' + err.message, 'warn');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldText;
+    }
+  },
+  async 'structure-mobility-prompt'(d, btn) {
+    const targetId = d?.target || btn?.dataset?.target || 'prompt-custom-visit';
+    const ta = document.getElementById(targetId);
+    if (!ta) return;
+    const raw = ta.value.trim();
+    if (!raw) {
+      toast('Please enter some notes or keywords describing your mobility format first.', 'info');
+      ta.focus();
+      return;
+    }
+    const form = ta.closest('form') || document.getElementById('ai-prompt-form');
+    const universities = [];
+    if (form) {
+      const cards = form.querySelectorAll('.campus-intake-card');
+      cards.forEach((card, idx) => {
+        const inst = (card.querySelector('input[name$="_inst"]')?.value || '').trim();
+        if (inst) universities.push(inst);
+      });
+    }
+    const homeUni = universities[0] || 'Lead Institution';
+    const partnerUnis = universities.slice(1).join(', ') || 'Partner Universities';
+    const dWeeks = parseInt(form?.querySelector('input[name=durationWeeks]')?.value, 10) || 5;
+
+    btn.disabled = true;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Structuring mobility plan...';
+    try {
+      const res = await structureMobilityPrompt(raw, {
+        homeUniversity: homeUni,
+        partnerUniversity: partnerUnis,
+        durationWeeks: dWeeks
+      });
+      ta.value = res;
+      ta.focus();
+      toast('Rough notes converted into structured mobility plan! You can review or edit below.', 'ok');
+    } catch (err) {
+      toast('Could not structure mobility plan: ' + err.message, 'warn');
     } finally {
       btn.disabled = false;
       btn.innerHTML = oldText;

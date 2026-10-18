@@ -62,6 +62,7 @@ function decisionCard(p, d, open = false) {
       <button class="btn sm ${myVote?.status === 'approve' ? 'primary' : ''}" data-action="vote" data-id="${d.id}" data-v="approve">${icon.check} Approve</button>
       <button class="btn sm ${myVote?.status === 'object' ? 'danger' : ''}" data-action="vote" data-id="${d.id}" data-v="object">Object…</button>
       <button class="btn sm ghost" data-action="vote" data-id="${d.id}" data-v="abstain">Abstain</button></div>` : d.type === 'advisory' ? `<button class="btn sm" data-action="adopt" data-id="${d.id}">${d.adopted ? 'Mark not adopted' : 'Mark adopted'}</button>` : !me ? '<p class="muted small">Choose who you are to respond.</p>' : ''}
+    ${p.isAiSimulation && st.affected.includes(p.aiPartnerId) && (!d.approvals?.[p.aiPartnerId] || ((d.approvals[p.aiPartnerId].at || '') < (d.revisedAt || ''))) ? `<div class="row gap wrap" style="margin-top: var(--space-2);"><button class="btn sm primary" data-action="ai-partner-vote" data-id="${d.id}">${icon.sparkle} Ask ${esc(pn(p, p.aiPartnerId)?.name || 'AI Partner')} to vote</button></div>` : ''}
     ${st.status === 'objection' ? `<button class="btn sm" data-action="ai-mediate" data-id="${d.id}">${icon.sparkle} Articulate alternatives</button>` : ''}
     ${open ? proposalsFor({ ...p, proposals: p.proposals.filter(x => x.decisionId === d.id) }, ['mediate']) + commentsBlock(p, { kind: 'decisions', id: d.id }) : `<p class="small"><a href="#/p/${p.id}/decisions/${d.id}">${p.comments.filter(c => c.target?.id === d.id).length} comments · open discussion</a></p>`}
   </article>`;
@@ -150,6 +151,53 @@ app.register({
   'ai-mediate'(d, btn) {
     const dec = app.p.decisions.find(x => x.id === d.id);
     return propose('mediate', { decision: { title: dec.title, description: dec.description, votes: Object.fromEntries(Object.entries(dec.approvals || {}).map(([k, v]) => [pn(app.p, k)?.institution, v])) }, comments: app.p.comments.filter(c => c.target?.id === dec.id).map(c => ({ by: pn(app.p, c.author)?.institution, text: c.text })) }, { decisionId: dec.id }, btn);
+  },
+  async 'ai-partner-vote'(data, el) {
+    const p = app.p;
+    const dec = p.decisions.find(x => x.id === data.id);
+    if (!dec || !p.aiPartnerId) return;
+    const aiPartner = p.partners.find(x => x.id === p.aiPartnerId);
+    if (!aiPartner) return;
+
+    if (el) {
+      el.disabled = true;
+      el.innerHTML = '<span class="spinner"></span> Consulting ' + esc(aiPartner.name) + '...';
+    }
+
+    try {
+      const { result } = await runTask('partnerVote', p, { decision: dec, partner: aiPartner });
+      const voteStatus = result?.status === 'object' ? 'object' : 'approve';
+      const voteNote = result?.note || `Approved from ${aiPartner.institution}.`;
+
+      app.mutate(pp => {
+        const targetDec = pp.decisions.find(x => x.id === dec.id);
+        if (!targetDec) return;
+        targetDec.approvals = targetDec.approvals || {};
+        targetDec.approvals[aiPartner.id] = {
+          status: voteStatus,
+          note: voteNote,
+          at: S.now()
+        };
+        app.touch(targetDec);
+        if (voteStatus === 'object') {
+          pp.comments.push({
+            id: S.uid('cmt_'),
+            target: { kind: 'decisions', id: targetDec.id },
+            author: aiPartner.id,
+            text: 'Feedback from ' + aiPartner.name + ': ' + voteNote,
+            lang: aiPartner.language,
+            at: S.now()
+          });
+        }
+        if (decisionStatus(pp, targetDec).status === 'approved') onApproved(pp, targetDec);
+      }, `${aiPartner.name} ${voteStatus === 'approve' ? 'approved' : 'commented on'}: ${dec.title}`, { kind: 'decisions', id: dec.id });
+
+      toast(`${aiPartner.name} has recorded their response: ${voteStatus === 'approve' ? 'Approved' : 'Feedback provided'}!`, 'ok');
+    } catch (err) {
+      toast('Could not get response: ' + err.message, 'warn');
+    } finally {
+      if (el) { el.disabled = false; el.innerHTML = `${icon.sparkle} Ask ${esc(aiPartner.name)} to vote`; }
+    }
   }
 });
 

@@ -60,6 +60,13 @@ To run locally: `python3 -m http.server 8000` in this folder, then open `http://
 - Update files contain the project (including partner names and emails) but never AI keys.
 - No analytics, no tracking, no backend.
 
+## AI Partner Co-Design Simulation
+
+Crosscourse includes an interactive simulation mode where you co-design directly with an AI colleague wearing the hat of an international professor.
+- **Choose your scope:** Co-develop a whole course from scratch, or design a shared 4 to 8 week module embedded in existing courses.
+- **Authentic institutional personas:** Partner with faculty from Senegal, Brazil, Japan, Italy, UAE, India, Colombia, or Sweden. Each persona introduces genuine institutional schedules, student cohort constraints, local language environments, and grading regulations.
+- **Collaborative governance:** The AI partner reviews shared decisions, votes from their institutional perspective, and provides constructive feedback.
+
 ## Architecture
 
 ```
@@ -74,7 +81,7 @@ js/ai.js              provider adapters, task prompts, templates
 js/ui.js              rendering helpers, dialogs, toasts
 js/app.js             router, shell, data binding
 js/views/*.js         screens
-js/demo.js            fictional U.S.-Brazil sample project
+js/demo.js            interactive AI Partner co-design simulation engine
 ```
 
 Plain ES modules, no build step, no framework.

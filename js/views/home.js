@@ -3,7 +3,7 @@ import * as S from '../store.js';
 import { esc, icon, modal, toast, pickFile, download, fmtAgo, chip, confirmBox } from '../ui.js';
 import { allTimezones } from '../time.js';
 import { PROVIDERS, testConnection, detectLocalAndBrowserAI } from '../ai.js';
-import { demoProject } from '../demo.js';
+import { createAiPartnerDemo, demoProject, AI_PARTNER_PERSONAS, TOPIC_PRESETS } from '../demo.js';
 import { importPacketFile } from './sync.js';
 
 let deferredInstall = null;
@@ -37,7 +37,7 @@ app.view('home', {
         <div class="row gap">
           <button class="btn primary lg" data-action="new-project">${icon.plus} Start a partnership</button>
           <button class="btn lg" data-action="import-project">${icon.upload} Open a partner’s project file</button>
-          <button class="btn ghost lg" data-action="load-demo">Explore a sample project</button>
+          <button class="btn ghost lg" data-action="open-ai-demo-modal">${icon.sparkle} Co-Design with an AI Partner Professor</button>
         </div>
       </section>
 
@@ -49,7 +49,7 @@ app.view('home', {
             <h3>${esc(p.title)}</h3>
             <div class="chips">${p.partners.map(x => chip(x, { small: true })).join('')}</div>
             <span class="muted small">Updated ${fmtAgo(p.updatedAt)} · ${p.activities.length} activities · ${p.decisions.length} decisions</span>
-          </a>`).join('')}</div>` : `<div class="empty"><p class="empty-title">No projects yet</p><p>Start a partnership, open a project file a colleague sent you, or explore the sample to see a complete co-design in progress.</p></div>`}
+          </a>`).join('')}</div>` : `<div class="empty"><p class="empty-title">No projects yet</p><p>Start a partnership, open a project file a colleague sent you, or launch the AI Partner simulation to co-design an international course or module.</p></div>`}
       </section>
 
       <section class="section how">
@@ -253,12 +253,100 @@ app.register({
     const f = await pickFile('.json,application/json');
     if (f) await importPacketFile(f);
   },
-  'load-demo'() {
-    const p = demoProject();
+  async 'open-ai-demo-modal'() {
+    const r = await modal({
+      title: 'Co-Design with an AI Partner Professor',
+      wide: true,
+      body: `<p class="lede" style="margin-bottom: var(--space-3);">
+        Collaborate with an AI partner wearing the hat of an international professor.
+        Explore how Crosscourse aligns different institutional calendars, grading systems, and student contexts.
+      </p>
+      <fieldset class="field" style="margin-bottom: var(--space-3);">
+        <legend><strong>1. Collaboration scope</strong></legend>
+        <label class="choice">
+          <input type="radio" name="mode" value="module" checked>
+          <span>
+            <strong>Shared international module / segment in existing courses</strong><br>
+            <span class="muted small">A 4 to 8 week collaborative arc embedded within each partner's existing course.</span>
+          </span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="mode" value="course">
+          <span>
+            <strong>Whole course collaboration</strong><br>
+            <span class="muted small">A complete 14 to 16 week semester course designed jointly from the ground up.</span>
+          </span>
+        </label>
+      </fieldset>
+      <div class="field" style="margin-bottom: var(--space-3);">
+        <label for="ai-demo-topic"><strong>2. Collaboration topic</strong></label>
+        <select id="ai-demo-topic" name="topicKey">
+          ${TOPIC_PRESETS.map(t => `<option value="${t.key}">${esc(t.title)} (${esc(t.discipline)})</option>`).join('')}
+          <option value="custom">Other / Enter my own custom topic...</option>
+        </select>
+        <div id="ai-custom-topic-box" style="display: none; margin-top: var(--space-2);">
+          <label for="ai-demo-custom-topic" class="small muted">Custom topic or subject</label>
+          <input id="ai-demo-custom-topic" name="customTopic" placeholder="e.g. Sustainable Coastal Ecosystems">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom: var(--space-3);">
+        <label for="ai-demo-partner"><strong>3. International AI Partner Professor</strong></label>
+        <select id="ai-demo-partner" name="personaKey">
+          <option value="random" selected>Surprise me! (Random professor from around the world)</option>
+          ${AI_PARTNER_PERSONAS.map(p => `<option value="${p.key}">${esc(p.name)} (${esc(p.institution)}, ${esc(p.country)})</option>`).join('')}
+        </select>
+        <p class="hint" style="margin-top: 4px;">Your AI colleague navigates real-world university realities: local time zones, campus term dates, student cohort profiles, and grading standards.</p>
+      </div>
+      <fieldset class="field">
+        <legend><strong>4. About you (Home Professor)</strong></legend>
+        <div class="grid2">
+          <div class="field">
+            <label for="ai-demo-myname">Your name</label>
+            <input id="ai-demo-myname" name="myName" value="Dr. Alex Taylor" required>
+          </div>
+          <div class="field">
+            <label for="ai-demo-myinst">Your institution</label>
+            <input id="ai-demo-myinst" name="myInst" value="State University" required>
+          </div>
+        </div>
+      </fieldset>`,
+      actions: [
+        { label: 'Cancel', value: null },
+        { label: 'Launch Co-Design Simulation', value: 'ok', kind: 'primary', validate: f => f.reportValidity() }
+      ],
+      onOpen(dlg) {
+        const sel = dlg.querySelector('#ai-demo-topic');
+        const customBox = dlg.querySelector('#ai-custom-topic-box');
+        if (sel && customBox) {
+          sel.addEventListener('change', () => {
+            customBox.style.display = sel.value === 'custom' ? 'block' : 'none';
+          });
+        }
+      }
+    });
+
+    if (!r?.value) return;
+    const d = r.data;
+    const p = createAiPartnerDemo({
+      mode: d.mode,
+      topicKey: d.topicKey,
+      customTopic: d.customTopic,
+      personaKey: d.personaKey,
+      userProfile: {
+        name: d.myName || 'Dr. Alex Taylor',
+        institution: d.myInst || 'State University'
+      }
+    });
     S.saveProject(p);
-    const s = S.settings.get(); s.identities[p.id] = p.partners[0].id; S.settings.save(s);
+    const s = S.settings.get();
+    s.identities[p.id] = p.partners[0].id;
+    S.settings.save(s);
+    const partner = p.partners[1];
     app.go(`#/p/${p.id}/overview`);
-    toast('Sample loaded. You are viewing it as the U.S. partner. Switch in the sidebar.');
+    toast(`AI Partner simulation started with ${partner.name} (${partner.institution}, ${partner.country})!`, 'ok');
+  },
+  'load-demo'() {
+    app.actions['open-ai-demo-modal']();
   },
   async 'scan-ai'(d, el) {
     app._aiScanning = true;

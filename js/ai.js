@@ -249,6 +249,20 @@ const TASKS = {
     label: 'Stage coaching advice & next steps',
     schema: `{"assessment":"Current status and readiness of this stage","recommendations":["Step 1...","Step 2..."],"discussionQuestions":["Question to discuss with partner..."],"risksToWatch":["Potential pitfall..."]}`,
     build: (p, x) => `You are the international course co-design coach. Review the current state of stage "${x.stage}" and give specific, actionable recommendations and discussion prompts for the teaching partners.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  partnerVote: {
+    label: 'Simulate partner professor response to decision',
+    schema: `{"status":"approve|object","note":"Constructive comment from the international professor's institutional context"}`,
+    build: (p, { decision, partner }) => `You are wearing the hat of ${partner.name}, an international professor at ${partner.institution} (${partner.country}) participating in a cross-border course co-design with a partner university.
+Your student cohort: ${partner.course?.studentAvailability || 'undergraduate students'}.
+Your institutional obligations: ${partner.course?.assessmentObligations || 'continuous assessment'}.
+Your technological setup: ${partner.course?.tech || 'standard LMS'} (restrictions: ${partner.course?.techRestrictions || 'standard'}).
+
+Evaluate this pending shared decision:
+Title: "${decision.title}"
+Context / details: "${decision.description || 'Approve this course co-design item'}"
+
+Respond in character in 2 to 3 sentences. Decide whether to approve or raise a constructive objection based on your institutional calendar, student workload, or local academic requirements.`
   }
 };
 export const TASK_LABELS = Object.fromEntries(Object.entries(TASKS).map(([k, v]) => [k, v.label]));
@@ -533,6 +547,12 @@ const TEMPLATES = {
       risksToWatch: [
         'Dominant-language bias: Ensure non-native speakers have time to draft asynchronously rather than being pressured in live sessions.'
       ]
+    };
+  },
+  partnerVote(p, { decision, partner }) {
+    return {
+      status: 'approve',
+      note: `As faculty at ${partner.institution}, I have reviewed "${decision.title}". It aligns well with our local academic calendar, accommodates our students' scheduling, and respects our institutional requirements.`
     };
   }
 };

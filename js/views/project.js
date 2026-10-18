@@ -48,6 +48,21 @@ app.view('overview', {
 
       <ol class="stages" aria-label="Design-thinking progress">${stages.map((st, i) => `<li class="${st.done ? 'done' : ''}"><a href="#/p/${p.id}/${st.route}"><span class="num">${st.done ? icon.check : i + 1}</span><span>${st.label}</span></a></li>`).join('')}</ol>
 
+      ${p.isAiSimulation ? `
+      <div class="banner info ai-simulation-banner" style="margin-bottom: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap;">
+        <div class="row gap" style="align-items: center;">
+          ${icon.sparkle}
+          <div>
+            <strong>AI Partner Simulation:</strong> You are co-designing with <strong>${esc(pn(p, p.aiPartnerId)?.name || 'International Partner')}</strong> (${esc(pn(p, p.aiPartnerId)?.institution || '')}, ${esc(pn(p, p.aiPartnerId)?.country || '')}).
+            <div class="muted small">Scope: ${p.mode === 'course' ? 'Co-developing a whole course' : 'Designing a shared international module in existing courses'}. Your AI colleague acts from their local university calendar, grading system, and student context.</div>
+          </div>
+        </div>
+        <div class="row gap">
+          <a class="btn sm" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} View Context Card</a>
+          <a class="btn sm primary" href="#/p/${p.id}/decisions">${icon.vote} Review Decisions</a>
+        </div>
+      </div>` : ''}
+
       ${renderCoach({
         stage: 'Overview & Guidance',
         title: 'Course Co-Design Coach',
@@ -130,7 +145,8 @@ function partnerCard(p, x, me) {
   const f = (k, o = {}) => field(S.COURSE_FIELDS.find(z => z[0] === k)[1], `${P}.course.${k}`, c[k], Object.assign({ badge: stateBadge(p, x, k) }, o));
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   return `
-  ${!own ? `<div class="banner info">${icon.alert}<span>This is ${esc(x.name || 'a partner')}’s card. You can add notes, but your edits are marked <em>Reported</em> until ${esc(x.name || 'they')} confirm${x.name ? 's' : ''} them.</span></div>` : ''}
+  ${x.isAi ? `<div class="banner info" style="margin-bottom: var(--space-3);">${icon.sparkle}<span><strong>International AI Simulation Colleague:</strong> ${esc(x.name)} is wearing the hat of a faculty member at ${esc(x.institution)} in ${esc(x.country)}. This context card reflects authentic academic calendar dates, student cohort background, local learning outcomes, and technical access constraints.</span></div>` : ''}
+  ${!own && !x.isAi ? `<div class="banner info">${icon.alert}<span>This is ${esc(x.name || 'a partner')}’s card. You can add notes, but your edits are marked <em>Reported</em> until ${esc(x.name || 'they')} confirm${x.name ? 's' : ''} them.</span></div>` : ''}
   <div class="cols">
     <div class="col-main stack">
       <section class="card">

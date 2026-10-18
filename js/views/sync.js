@@ -225,7 +225,7 @@ export function packageHTML(p, rel, studentOnly = false) {
           <span style="font-size:0.85rem;color:#666;">Date: _______________</span>
         </div>`).join('')}
       </div>
-    `)};
+    `)}`;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(p.title)}: ${studentOnly ? 'Student guide' : 'Course design package'}</title><meta name="viewport" content="width=device-width,initial-scale=1">
   <style>body{font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:#1f2328;max-width:900px;margin:40px auto;padding:0 24px}h1{font-size:28px;margin:0 0 4px}h2{font-size:20px;border-bottom:1px solid #ddd;padding-bottom:6px;margin-top:36px}h3{font-size:17px;margin:20px 0 6px}h4{font-size:15px;margin:14px 0 4px}table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f5f2ec}.meta{color:#555;font-size:14px}.draft{background:#fbeee6;color:#7a3612;padding:8px 12px;border-radius:6px;font-weight:600}.act{break-inside:avoid;margin:14px 0}@media print{body{margin:0}a{color:inherit}}</style></head><body>
   <h1>${esc(p.title)}</h1><p class="meta">${studentOnly ? 'Student guide' : 'Course design package'} · ${ps.map(x => esc(x.institution)).join(' × ')} · ${rel ? `Release <strong>${esc(rel.label)}</strong> · ${new Date(rel.at).toLocaleDateString()}` : 'Generated ' + new Date().toLocaleDateString()}</p>

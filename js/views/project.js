@@ -53,7 +53,7 @@ app.view('overview', {
       <ol class="stages" aria-label="Design-thinking progress">${stages.map((st, i) => `<li class="${st.done ? 'done' : ''}"><a href="#/p/${p.id}/${st.route}"><span class="num">${st.done ? icon.check : i + 1}</span><span>${st.label}</span></a></li>`).join('')}</ol>
 
       ${p.isAiSimulation ? `
-      <div class="card autopilot-banner" style="margin-bottom: var(--space-4);">
+      <div class="card autopilot-banner" style="margin-bottom: var(--space-3);">
         <div class="row between wrap gap" style="align-items: center;">
           <div class="grow">
             <div class="row gap" style="align-items: center; margin-bottom: 4px;">
@@ -73,7 +73,7 @@ app.view('overview', {
           </div>
         </div>
       </div>` : `
-      <div class="card" style="margin-bottom: var(--space-4);">
+      <div class="card" style="margin-bottom: var(--space-3);">
         <div class="row between wrap gap" style="align-items: center;">
           <div>
             <strong>Ready-to-Use Course Pack & Syllabus</strong>
@@ -82,6 +82,27 @@ app.view('overview', {
           <button class="btn sm primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
         </div>
       </div>`}
+
+      <div class="card collab-format-card" style="margin-bottom: var(--space-4); border-left: 3px solid var(--color-primary);">
+        <div class="row between wrap gap" style="align-items: center;">
+          <div class="grow">
+            <div class="row gap wrap" style="align-items: center; margin-bottom: 4px;">
+              <span class="badge ${p.durationWeeks <= 7 ? 'badge-live' : 'badge-ok'}">${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Semester'})</span>
+              <span class="badge ${p.visitFormat === 'student-visit' || p.visitFormat === 'faculty-visit' ? 'badge-ok' : 'badge-async'}">
+                ${p.visitFormat === 'student-visit' ? 'In-Person Student Immersion Week' : (p.visitFormat === 'faculty-visit' ? 'Faculty Cross-Country Exchange' : '100% Fully Virtual')}
+              </span>
+            </div>
+            <strong>Collaboration Format & Pacing:</strong>
+            <span class="muted small">
+              ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} weeks · ${p.visitFormat === 'student-visit' ? `Hybrid with in-person student field study in ${esc(pn(p, p.partners[1]?.id)?.country || 'partner country')}` : (p.visitFormat === 'faculty-visit' ? 'Hybrid with faculty cross-country exchange' : '100% fully virtual online collaboration (no travel required)')}.
+            </span>
+          </div>
+          <div class="row gap wrap">
+            <button class="btn sm" data-action="customize-collab-format">${icon.plus} Customize Duration & Visit...</button>
+            <button class="btn sm ghost" data-action="ai-resync-format">${icon.sparkle} AI: Re-Align Schedule & Arc</button>
+          </div>
+        </div>
+      </div>
 
       ${renderCoach({
         stage: 'Overview & Guidance',

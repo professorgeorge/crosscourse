@@ -64,6 +64,10 @@ To run locally: `python3 -m http.server 8000` in this folder, then open `http://
 
 Crosscourse provides a complete, first-class methodology to co-develop an international course or module using natural language prompting with zero intermediate human intervention:
 - **Prompt-to-Course Generation:** Describe any course, discipline, or collaboration vision in natural language. AI autonomously infers partner institutional constraints, calendars, and cohort strengths, co-developing the complete course across all eight design stages.
+- **Customization in AI Copilot & AI Assisted Modes:**
+  - **Pacing & Duration:** Choose accelerated intensive (5 weeks), accelerated terms (7 or 8 weeks), standard full semesters (12, 14, or 16 weeks), or any custom week count.
+  - **Cross-Country Mobility:** Choose 100% fully virtual exchange, hybrid with a 1-week reciprocal student field study and immersion visit on partner campus, or hybrid with faculty cross-country exchange colloquium.
+  - **Flexible Expression:** Customizations can be chosen via intuitive dropdown lists or specified naturally directly in the prompting text.
 - **Zero Intermediate Intervention:** Generates final approved deliverables automatically:
   1. Complete Course Syllabus & Implementation Guide (HTML & print to PDF)
   2. Student-Facing Onboarding & Assignment Handout (Markdown / LMS-ready)

@@ -49,11 +49,43 @@ app.view('home', {
 
             <div class="ai-prompt-chips-row">
               <span class="muted small" style="font-weight: 500;">Quick inspiration:</span>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A 5-week shared module on AI, Ethics & Algorithmic Accountability, partnering with Kyoto University in Japan. Focus on algorithmic impact assessments.">AI Ethics & Systems (Japan)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="An undergraduate course collaboration on Water Resource Governance and Ecological Peacebuilding with Universidad de los Andes in Colombia.">Water Resource Stewardship (Colombia)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A 6-week module on Global Health Policy and Community Epidemiology with Cheikh Anta Diop University in Senegal.">Global Health & Equity (Senegal)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A joint semester course on Sustainable Cities, Transit Justice and Participatory Urbanism with Universidade de Sao Paulo in Brazil.">Sustainable Cities (Brazil)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A 4-week module on Digital Media, Misinformation and Civic Agency with Lund University in Sweden.">Digital Misinformation (Sweden)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="5" data-visit="virtual" data-p="A 5-week accelerated module on AI Ethics, Algorithmic Bias and Public Policy, partnering with Kyoto University in Japan. Focus on algorithmic accountability audits.">AI Ethics & Systems (Japan, 5-wk)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="7" data-visit="student-visit" data-p="A 7-week accelerated collaborative course on Water Resource Governance with Universidad de los Andes in Colombia, including a 1-week in-person field study immersion in Bogota.">Water Stewardship (Colombia, 7-wk + Visit)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="7" data-visit="faculty-visit" data-p="A 7-week module on Global Health Systems and Epidemic Preparedness with Cheikh Anta Diop University in Senegal, with a visiting faculty exchange colloquium in Dakar.">Global Health (Senegal, 7-wk + Faculty)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="14" data-visit="student-visit" data-p="A joint semester course on Sustainable Cities, Transit Justice and Urbanism with Universidade de Sao Paulo in Brazil, featuring a 1-week student immersion laboratory.">Sustainable Cities (Brazil, 14-wk + Visit)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="5" data-visit="virtual" data-p="A 5-week intensive virtual module on Digital Media, Misinformation and Civic Agency with Lund University in Sweden. Fully online.">Digital Misinformation (Sweden, 5-wk)</button>
+            </div>
+
+            <!-- Typical Course Customization Controls: Duration in Weeks & Cross-Country Visit -->
+            <div class="ai-customization-bar grid2 gap" style="margin-top: var(--space-3); padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <div class="field" style="margin: 0;">
+                <label for="prompt-dur-weeks" class="small" style="font-weight: 600;">
+                  Course Duration (Weeks & Pace)
+                </label>
+                <div class="row gap" style="align-items: center;">
+                  <select id="prompt-dur-weeks" name="durationWeeks" class="grow">
+                    <option value="5" selected>5 weeks (Accelerated Intensive)</option>
+                    <option value="7">7 weeks (Accelerated Term)</option>
+                    <option value="8">8 weeks (Standard Module)</option>
+                    <option value="12">12 weeks (Quarter / Trimester)</option>
+                    <option value="14">14 weeks (Full Semester)</option>
+                    <option value="16">16 weeks (Extended Semester)</option>
+                    <option value="custom">Custom duration...</option>
+                  </select>
+                  <input type="number" id="prompt-custom-weeks" name="customWeeks" min="2" max="30" placeholder="Weeks" style="width: 80px; display: none;" aria-label="Custom weeks">
+                </div>
+              </div>
+
+              <div class="field" style="margin: 0;">
+                <label for="prompt-visit-format" class="small" style="font-weight: 600;">
+                  Cross-Country Mobility & Format
+                </label>
+                <select id="prompt-visit-format" name="visitFormat">
+                  <option value="virtual" selected>100% Fully Virtual (Online exchange, zero travel)</option>
+                  <option value="student-visit">Hybrid: In-Person Student Field Study & Immersion Visit</option>
+                  <option value="faculty-visit">Hybrid: Faculty Cross-Country Exchange & Guest Lectures</option>
+                </select>
+              </div>
             </div>
 
             <div class="row between wrap gap" style="margin-top: var(--space-3); align-items: center;">
@@ -323,8 +355,36 @@ app.register({
           </span>
         </label>
       </fieldset>
+      <div class="grid2 gap" style="margin-bottom: var(--space-3);">
+        <div class="field" style="margin: 0;">
+          <label for="ai-demo-duration"><strong>2. Course Duration & Pace</strong></label>
+          <select id="ai-demo-duration" name="durationWeeks">
+            <option value="5" selected>5 weeks (Accelerated Intensive)</option>
+            <option value="7">7 weeks (Accelerated Term)</option>
+            <option value="8">8 weeks (Standard Module)</option>
+            <option value="12">12 weeks (Quarter / Trimester)</option>
+            <option value="14">14 weeks (Full Semester)</option>
+            <option value="16">16 weeks (Extended Semester)</option>
+            <option value="custom">Custom duration...</option>
+          </select>
+          <div id="ai-demo-custom-weeks-box" style="display: none; margin-top: var(--space-2);">
+            <label for="ai-demo-custom-weeks" class="small muted">Duration in weeks (2 to 30)</label>
+            <input type="number" id="ai-demo-custom-weeks" name="customWeeks" min="2" max="30" value="7">
+          </div>
+        </div>
+
+        <div class="field" style="margin: 0;">
+          <label for="ai-demo-visit"><strong>3. Cross-Country Mobility</strong></label>
+          <select id="ai-demo-visit" name="visitFormat">
+            <option value="virtual" selected>100% Fully Virtual (Online exchange)</option>
+            <option value="student-visit">Hybrid: Student Field Study Immersion Visit</option>
+            <option value="faculty-visit">Hybrid: Faculty Cross-Country Exchange</option>
+          </select>
+          <p class="hint" style="margin-top: 4px;">Hybrid options include travel safety, host orientation, and hybrid contingencies.</p>
+        </div>
+      </div>
       <div class="field" style="margin-bottom: var(--space-3);">
-        <label for="ai-demo-topic"><strong>2. Collaboration topic</strong></label>
+        <label for="ai-demo-topic"><strong>4. Collaboration topic</strong></label>
         <select id="ai-demo-topic" name="topicKey">
           ${TOPIC_PRESETS.map(t => `<option value="${t.key}">${esc(t.title)} (${esc(t.discipline)})</option>`).join('')}
           <option value="custom">Other / Enter my own custom topic...</option>
@@ -335,7 +395,7 @@ app.register({
         </div>
       </div>
       <div class="field" style="margin-bottom: var(--space-3);">
-        <label for="ai-demo-partner"><strong>3. International AI Partner Professor</strong></label>
+        <label for="ai-demo-partner"><strong>5. International AI Partner Professor</strong></label>
         <select id="ai-demo-partner" name="personaKey">
           <option value="random" selected>Surprise me! (Random professor from around the world)</option>
           ${AI_PARTNER_PERSONAS.map(p => `<option value="${p.key}">${esc(p.name)} (${esc(p.institution)}, ${esc(p.country)})</option>`).join('')}
@@ -354,13 +414,13 @@ app.register({
         <label class="choice">
           <input type="radio" name="coDesignMode" value="step">
           <span>
-            <strong>Interactive Step-by-Step Mode</strong><br>
-            <span class="muted small">Starts as an initial draft where you step through each design stage with the AI partner proposing along the way.</span>
+            <strong>Interactive Step-by-Step Mode (AI Assisted)</strong><br>
+            <span class="muted small">Starts as an initial draft with your customized duration and visit format, where you step through each design stage with the AI partner proposing along the way.</span>
           </span>
         </label>
       </fieldset>
       <fieldset class="field">
-        <legend><strong>4. About you (Home Professor)</strong></legend>
+        <legend><strong>6. About you (Home Professor)</strong></legend>
         <div class="grid2">
           <div class="field">
             <label for="ai-demo-myname">Your name</label>
@@ -377,11 +437,18 @@ app.register({
         { label: 'Launch Co-Design Simulation', value: 'ok', kind: 'primary', validate: f => f.reportValidity() }
       ],
       onOpen(dlg) {
-        const sel = dlg.querySelector('#ai-demo-topic');
-        const customBox = dlg.querySelector('#ai-custom-topic-box');
-        if (sel && customBox) {
-          sel.addEventListener('change', () => {
-            customBox.style.display = sel.value === 'custom' ? 'block' : 'none';
+        const selTopic = dlg.querySelector('#ai-demo-topic');
+        const customTopicBox = dlg.querySelector('#ai-custom-topic-box');
+        if (selTopic && customTopicBox) {
+          selTopic.addEventListener('change', () => {
+            customTopicBox.style.display = selTopic.value === 'custom' ? 'block' : 'none';
+          });
+        }
+        const selDur = dlg.querySelector('#ai-demo-duration');
+        const customWeeksBox = dlg.querySelector('#ai-demo-custom-weeks-box');
+        if (selDur && customWeeksBox) {
+          selDur.addEventListener('change', () => {
+            customWeeksBox.style.display = selDur.value === 'custom' ? 'block' : 'none';
           });
         }
       }
@@ -389,8 +456,17 @@ app.register({
 
     if (!r?.value) return;
     const d = r.data;
+    let dWeeks = d.durationWeeks;
+    if (dWeeks === 'custom') {
+      dWeeks = parseInt(d.customWeeks, 10) || 7;
+    } else {
+      dWeeks = parseInt(dWeeks, 10) || (d.mode === 'course' ? 14 : 5);
+    }
+
     const p = createAiPartnerDemo({
       mode: d.mode,
+      durationWeeks: dWeeks,
+      visitFormat: d.visitFormat || 'virtual',
       topicKey: d.topicKey,
       customTopic: d.customTopic,
       personaKey: d.personaKey,
@@ -411,7 +487,7 @@ app.register({
       });
     } else {
       app.go(`#/p/${p.id}/overview`);
-      toast(`AI Partner simulation started with ${partner.name} (${partner.institution}, ${partner.country})!`, 'ok');
+      toast(`AI Partner simulation started with ${partner.name} (${partner.institution}, ${partner.country})! ${dWeeks} weeks, ${d.visitFormat === 'student-visit' ? 'Hybrid Student Immersion' : (d.visitFormat === 'faculty-visit' ? 'Hybrid Faculty Visit' : 'Virtual')}`, 'ok');
     }
   },
   'load-demo'() {

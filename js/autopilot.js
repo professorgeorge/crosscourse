@@ -353,10 +353,16 @@ export function buildSyllabusHTML(p) {
   </div>
 
   <header>
-    <span class="badge badge-ok">${rel.label} Approved Release</span>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+      <span class="badge badge-ok">${rel.label} Approved Release</span>
+      <span class="badge ${p.durationWeeks <= 7 ? 'badge-live' : 'badge-ok'}">${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Semester'})</span>
+      <span class="badge ${p.visitFormat === 'student-visit' || p.visitFormat === 'faculty-visit' ? 'badge-ok' : 'badge-async'}">
+        ${p.visitFormat === 'student-visit' ? 'In-Person Student Field Study & Immersion' : (p.visitFormat === 'faculty-visit' ? 'Faculty Cross-Country Exchange' : '100% Fully Virtual')}
+      </span>
+    </div>
     <h1>${esc(p.title)}</h1>
     <p class="meta" style="font-size: 16px; color: #555; margin: 4px 0 16px;">
-      ${p.mode === 'course' ? 'Co-Developed International Course' : 'Shared International Collaborative Module'} · Approved for Classroom Implementation
+      ${p.mode === 'course' ? 'Co-Developed International Course' : 'Shared International Collaborative Module'} · ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks · Approved for Classroom Implementation
     </p>
   </header>
 
@@ -477,6 +483,7 @@ export function buildSyllabusHTML(p) {
       <tr><th>Division of Work</th><td>${esc(p.charter.division)}</td></tr>
       <tr><th>Attribution & Intellectual Property</th><td>${esc(p.charter.attribution)}</td></tr>
       <tr><th>Student Care & Communication</th><td>${esc(p.charter.studentComms)}</td></tr>
+      <tr><th>Mobility & Travel Protocol</th><td>${esc(p.charter.mobility || '100% Fully Virtual Collaboration. No international travel required.')}</td></tr>
       <tr><th>Contingency for Disruption</th><td>${esc(p.charter.cohortLoss)}</td></tr>
     </tbody>
   </table>
@@ -501,6 +508,7 @@ export function buildStudentHandoutMD(p) {
 ## ${p.title}
 **Collaborating Universities:** ${ps.map(x => `${x.institution} (${x.country})`).join(' and ')}
 **Faculty Leads:** ${ps.map(x => `${x.name} (${x.institution})`).join(', ')}
+**Duration & Format:** ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Semester'}) · ${p.visitFormat === 'student-visit' ? 'Hybrid with In-Person Student Field Study' : (p.visitFormat === 'faculty-visit' ? 'Hybrid with Faculty Exchange' : '100% Fully Virtual Online Collaboration')}
 
 ---
 
@@ -513,6 +521,13 @@ Rather than simply reading about international perspectives in textbooks, you wi
 > **"${p.brief.question}"**
 
 ---
+
+### Collaboration Format & Schedule
+- **Duration:** ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Semester'})
+- **Format:** ${p.visitFormat === 'student-visit' ? `Hybrid with an intensive 1-week in-person field study visit at ${ps[1]?.institution || 'Partner Campus'}` : (p.visitFormat === 'faculty-visit' ? 'Hybrid with international faculty exchange' : '100% Fully Virtual Online Collaboration (no international travel required)')}
+${p.visitFormat === 'student-visit' ? `
+> **In-Person Field Study Note:** Traveling students will receive visa guidance and host campus orientations. Non-traveling students participate through synchronized video links and annotated collaborative field documents with full academic parity.
+` : ''}
 
 ### How We Will Work Together
 1. **Asynchronous First:** Most collaborative work happens flexibly through shared team drives and discussion workspaces. You do not need to wake up at odd hours.
@@ -556,6 +571,7 @@ export function buildCharterMD(p) {
 ## ${p.title}
 **Participating Institutions:**
 ${ps.map(x => `- **${x.institution}** (${x.country}) - Represented by ${x.name} (${x.email || 'Faculty'})`).join('\n')}
+**Collaboration Parameters:** ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks · ${p.visitFormat === 'student-visit' ? 'Hybrid with Student In-Person Immersion' : (p.visitFormat === 'faculty-visit' ? 'Hybrid with Faculty Exchange' : '100% Fully Virtual')}
 
 ---
 
@@ -581,6 +597,9 @@ ${p.charter.attribution}
 
 ### 7. Contingency for Unexpected Disruption
 ${p.charter.cohortLoss}
+
+### 8. Cross-Country Mobility & Virtual Inclusivity
+${p.charter.mobility || 'All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.'}
 
 ---
 **Approved & Signed by All Participating Institutional Representatives.**
@@ -754,6 +773,10 @@ app.register({
     const formData = new FormData(form);
     const promptText = (formData.get('prompt') || '').trim();
     const mode = formData.get('mode') || 'module';
+    const durationWeeks = formData.get('durationWeeks');
+    const customWeeks = formData.get('customWeeks');
+    const visitFormat = formData.get('visitFormat');
+
     if (!promptText) {
       toast('Please enter a course topic, discipline, or vision to generate.', 'warn');
       return;
@@ -761,12 +784,13 @@ app.register({
 
     const steps = [
       { title: 'Interpreting natural language prompt & pedagogical intent', detail: promptText.slice(0, 80) + '...' },
+      { title: 'Calibrating duration & cross-country mobility format', detail: `Duration: ${durationWeeks === 'custom' ? `${customWeeks} weeks` : `${durationWeeks || 5} weeks`} · Mobility: ${visitFormat === 'student-visit' ? 'In-Person Immersion' : (visitFormat === 'faculty-visit' ? 'Faculty Exchange' : '100% Virtual')}` },
       { title: 'Selecting partner institution & faculty colleague persona', detail: 'Harmonizing global time zones, campus calendars, and cohort strengths.' },
       { title: 'Drafting mutual learning brief & driving inquiry question', detail: 'Formulating core international challenge and counterfactual test.' },
       { title: 'Mapping shared intercultural & disciplinary outcomes', detail: 'Linking shared outcomes to each institution\'s curriculum.' },
-      { title: 'Sequencing 6-stage collaborative learning arc', detail: 'Balancing live and async activities with fallback contingencies.' },
+      { title: 'Sequencing collaborative learning arc & weekly milestones', detail: 'Balancing live and async activities with fallback contingencies.' },
       { title: 'Formulating student instructions & evaluation rubrics', detail: 'Generating weekly directions and 4-level grading rubrics.' },
-      { title: 'Signing institutional partnership charter & agreement', detail: 'Formalizing decision rights, attribution, and student care protocols.' },
+      { title: 'Signing institutional partnership charter & agreement', detail: 'Formalizing decision rights, mobility protocols, and student care.' },
       { title: 'Freezing approved release candidate & classroom kit', detail: 'Zero intermediate human intervention: final deliverables ready.' }
     ];
 
@@ -808,7 +832,7 @@ app.register({
 
     const container = dlg.querySelector('#prompt-gen-steps');
 
-    const genPromise = generateCourseFromPrompt(promptText, { mode });
+    const genPromise = generateCourseFromPrompt(promptText, { mode, durationWeeks, customWeeks, visitFormat });
 
     for (let i = 1; i < steps.length; i++) {
       await new Promise(r => setTimeout(r, 220));
@@ -834,6 +858,8 @@ app.register({
   },
   'fill-prompt'(d, el) {
     const text = el.dataset.p;
+    const dur = el.dataset.dur;
+    const visit = el.dataset.visit;
     const form = document.getElementById('ai-prompt-form');
     if (!form || !text) return;
     const ta = form.querySelector('textarea[name=prompt]');
@@ -841,10 +867,158 @@ app.register({
       ta.value = text;
       ta.focus();
     }
+    if (dur) {
+      const durSel = form.querySelector('select[name=durationWeeks]');
+      if (durSel) durSel.value = dur;
+    }
+    if (visit) {
+      const visitSel = form.querySelector('select[name=visitFormat]');
+      if (visitSel) visitSel.value = visit;
+    }
+  },
+  'customize-collab-format'() {
+    const p = app.p;
+    if (!p) return;
+    const curDur = p.durationWeeks || (p.mode === 'course' ? 14 : 5);
+    const curVisit = p.visitFormat || 'virtual';
+
+    modal({
+      title: 'Customize Collaboration Format & Pacing',
+      content: `
+        <form class="stack" id="format-custom-form">
+          <p class="muted">Set the duration in weeks and specify whether this international collaboration includes an in-person cross-country visit or remains 100% virtual.</p>
+          
+          <div class="field">
+            <label for="custom-dur-weeks"><strong>Course Duration (weeks)</strong></label>
+            <select id="custom-dur-weeks" name="durationWeeks">
+              <option value="5" ${curDur === 5 ? 'selected' : ''}>5 weeks (Accelerated Intensive)</option>
+              <option value="7" ${curDur === 7 ? 'selected' : ''}>7 weeks (Accelerated Term)</option>
+              <option value="8" ${curDur === 8 ? 'selected' : ''}>8 weeks (Standard Module)</option>
+              <option value="12" ${curDur === 12 ? 'selected' : ''}>12 weeks (Quarter / Trimester)</option>
+              <option value="14" ${curDur === 14 ? 'selected' : ''}>14 weeks (Full Semester)</option>
+              <option value="16" ${curDur === 16 ? 'selected' : ''}>16 weeks (Extended Semester)</option>
+              <option value="custom" ${![5, 7, 8, 12, 14, 16].includes(curDur) ? 'selected' : ''}>Custom weeks...</option>
+            </select>
+          </div>
+
+          <div class="field" id="custom-weeks-input-box" style="${[5, 7, 8, 12, 14, 16].includes(curDur) ? 'display: none;' : ''}">
+            <label for="custom-weeks-val">Custom duration in weeks (2 to 30)</label>
+            <input type="number" id="custom-weeks-val" name="customWeeks" min="2" max="30" value="${curDur}">
+          </div>
+
+          <div class="field">
+            <label for="custom-visit-format"><strong>Cross-Country Mobility & Format</strong></label>
+            <select id="custom-visit-format" name="visitFormat">
+              <option value="virtual" ${curVisit === 'virtual' ? 'selected' : ''}>100% Fully Virtual (Online exchange, zero travel)</option>
+              <option value="student-visit" ${curVisit === 'student-visit' ? 'selected' : ''}>Hybrid: In-Person Student Field Study & Immersion Visit</option>
+              <option value="faculty-visit" ${curVisit === 'faculty-visit' ? 'selected' : ''}>Hybrid: Faculty Cross-Country Exchange & Guest Lectures</option>
+            </select>
+            <p class="hint">Includes travel safety, orientation, and hybrid contingencies for students participating remotely.</p>
+          </div>
+        </form>
+      `,
+      actions: [
+        { label: 'Cancel', value: null },
+        { label: 'Apply & AI Re-Align Arc', value: 'apply', kind: 'primary' }
+      ],
+      onOpen(dlg) {
+        const sel = dlg.querySelector('#custom-dur-weeks');
+        const box = dlg.querySelector('#custom-weeks-input-box');
+        if (sel && box) {
+          sel.addEventListener('change', () => {
+            box.style.display = sel.value === 'custom' ? 'block' : 'none';
+          });
+        }
+      }
+    }).then(res => {
+      if (res?.value !== 'apply') return;
+      const f = document.getElementById('format-custom-form');
+      if (!f) return;
+      const fd = new FormData(f);
+      let dWeeks = fd.get('durationWeeks');
+      if (dWeeks === 'custom') {
+        dWeeks = parseInt(fd.get('customWeeks'), 10) || 7;
+      } else {
+        dWeeks = parseInt(dWeeks, 10) || 5;
+      }
+      const vFormat = fd.get('visitFormat') || 'virtual';
+
+      realignProjectArc(app.p, { durationWeeks: dWeeks, visitFormat: vFormat });
+      if (app.p.isAutopilotCompleted) {
+        runAutopilot(app.p);
+      }
+      S.saveProject(app.p);
+      app.render();
+      toast(`Collaboration format updated to ${dWeeks} weeks (${vFormat === 'student-visit' ? 'Hybrid Student Immersion' : (vFormat === 'faculty-visit' ? 'Faculty Exchange' : '100% Virtual')})!`, 'ok');
+    });
+  },
+  'ai-resync-format'() {
+    const p = app.p;
+    if (!p) return;
+    realignProjectArc(p, { durationWeeks: p.durationWeeks, visitFormat: p.visitFormat });
+    if (p.isAutopilotCompleted) {
+      runAutopilot(p);
+    }
+    S.saveProject(p);
+    app.render();
+    toast('AI successfully re-aligned schedule, activities, and charter!', 'ok');
   }
 });
 
-function buildProjectFromHeuristic(prompt, mode, user) {
+export function realignProjectArc(p, custom = {}) {
+  if (custom.durationWeeks) p.durationWeeks = parseInt(custom.durationWeeks, 10);
+  if (custom.visitFormat) p.visitFormat = custom.visitFormat;
+  p.mode = p.durationWeeks >= 10 ? 'course' : 'module';
+
+  const nowD = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const fmtYmd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
+
+  const termDays = p.durationWeeks * 7 + 21;
+  const termStartD = addDays(nowD, -7);
+  const termEndD = addDays(termStartD, termDays);
+
+  p.partners.forEach(ptn => {
+    if (ptn.course) {
+      ptn.course.termStart = fmtYmd(termStartD);
+      ptn.course.termEnd = fmtYmd(termEndD);
+    }
+  });
+
+  const partner2 = p.partners[1] || p.partners[0];
+  if (p.visitFormat === 'student-visit') {
+    p.charter.mobility = `In-Person Cross-Country Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partner2.institution} (${partner2.country}). Host institution coordinates campus access, safety orientations, and local field site visits. Non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
+  } else if (p.visitFormat === 'faculty-visit') {
+    p.charter.mobility = `Faculty Mobility & Guest Colloquium: Visiting faculty travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary.`;
+  } else {
+    p.charter.mobility = '100% Fully Virtual Collaboration: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.';
+  }
+
+  // Respace activities across durationWeeks
+  const acts = p.activities;
+  const n = acts.length;
+  if (n > 0) {
+    const daysPerAct = Math.max(5, Math.floor((p.durationWeeks * 7) / n));
+    acts.forEach((a, i) => {
+      const s = addDays(nowD, i * daysPerAct + 2);
+      const e = addDays(s, daysPerAct - 1);
+      a.start = fmtYmd(s);
+      a.end = fmtYmd(e);
+      if (p.visitFormat === 'student-visit' && i === Math.floor(n / 2)) {
+        a.title = `In-Person Immersion & Field Lab at ${partner2.institution}`;
+        a.sync = true;
+        a.summary = `Reciprocal in-person cross-country immersion week hosted at ${partner2.institution} in ${partner2.country}.`;
+      }
+    });
+  }
+
+  p.updatedAt = S.now();
+  S.saveProject(p);
+  return p;
+}
+
+function buildProjectFromHeuristic(prompt, mode, user, options = {}) {
   const lower = prompt.toLowerCase();
   
   let matchedPersona = null;
@@ -865,8 +1039,10 @@ function buildProjectFromHeuristic(prompt, mode, user) {
   else if (lower.includes('supply') || lower.includes('trade') || lower.includes('waste') || lower.includes('circular') || lower.includes('logistics')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'supplychain');
   else if (lower.includes('media') || lower.includes('news') || lower.includes('misinformation') || lower.includes('journalism') || lower.includes('disinformation')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'media');
 
-  const options = {
+  const demoOptions = {
     mode,
+    durationWeeks: options.durationWeeks,
+    visitFormat: options.visitFormat,
     topicKey: matchedTopic ? matchedTopic.key : 'custom',
     customTopic: matchedTopic ? undefined : (prompt.length > 50 ? prompt.slice(0, 50).trim() : prompt.trim()),
     personaKey: matchedPersona ? matchedPersona.key : 'random',
@@ -877,12 +1053,14 @@ function buildProjectFromHeuristic(prompt, mode, user) {
     }
   };
 
-  return createAiPartnerDemo(options);
+  return createAiPartnerDemo(demoOptions);
 }
 
-function buildProjectFromAiJson(parsed, mode, user) {
+function buildProjectFromAiJson(parsed, mode, user, options = {}) {
   const p = S.blankProject(parsed.title || 'International Course Collaboration');
   p.mode = mode;
+  p.durationWeeks = options.durationWeeks || (mode === 'course' ? 14 : 5);
+  p.visitFormat = options.visitFormat || 'virtual';
   p.isAiSimulation = true;
   p.isAutopilotCompleted = true;
 
@@ -892,8 +1070,11 @@ function buildProjectFromAiJson(parsed, mode, user) {
   const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
   const ago = h => new Date(Date.now() - h * 3600000).toISOString();
 
-  const termStartStr = fmtYmd(addDays(nowD, -14));
-  const termEndStr = fmtYmd(addDays(nowD, mode === 'course' ? 95 : 60));
+  const termDays = p.durationWeeks * 7 + 21;
+  const termStartD = addDays(nowD, -7);
+  const termEndD = addDays(termStartD, termDays);
+  const termStartStr = fmtYmd(termStartD);
+  const termEndStr = fmtYmd(termEndD);
 
   const homePartner = S.blankPartner({
     id: 'ptn_home',
@@ -1149,10 +1330,58 @@ function buildProjectFromAiJson(parsed, mode, user) {
   return p;
 }
 
+export function parsePromptCustomizations(promptText, defaultOptions = {}) {
+  const text = String(promptText || '').toLowerCase();
+  let durationWeeks = defaultOptions.durationWeeks ? parseInt(defaultOptions.durationWeeks, 10) : null;
+  let customWeeks = defaultOptions.customWeeks ? parseInt(defaultOptions.customWeeks, 10) : null;
+  if (!durationWeeks && customWeeks) {
+    durationWeeks = customWeeks;
+  }
+  let visitFormat = defaultOptions.visitFormat || null;
+  let mode = defaultOptions.mode || null;
+
+  // Natural language parsing of duration
+  if (!durationWeeks) {
+    const weekMatch = text.match(/(\d+)\s*[- ]\s*week/i);
+    if (weekMatch) {
+      durationWeeks = parseInt(weekMatch[1], 10);
+    } else if (text.includes('accelerated') || text.includes('intensive') || text.includes('bootcamp')) {
+      durationWeeks = 5;
+    } else if (text.includes('semester') || text.includes('full term') || text.includes('whole semester') || text.includes('14 week') || text.includes('15 week') || text.includes('16 week')) {
+      durationWeeks = 14;
+    }
+  }
+
+  if (!mode) {
+    if (durationWeeks && durationWeeks >= 10) mode = 'course';
+    else if (text.includes('course') || text.includes('semester')) mode = 'course';
+    else mode = 'module';
+  }
+
+  if (!durationWeeks) {
+    durationWeeks = mode === 'course' ? 14 : 5;
+  }
+
+  // Natural language parsing of in-person visit/travel
+  if (!visitFormat || visitFormat === 'virtual') {
+    if (text.includes('faculty visit') || text.includes('professor visit') || text.includes('faculty exchange') || text.includes('guest lecture visit')) {
+      visitFormat = 'faculty-visit';
+    } else if (text.includes('in-person') || text.includes('in person') || text.includes('travel') || text.includes('field study') || text.includes('field trip') || text.includes('study abroad') || text.includes('immersion') || text.includes('on campus') || text.includes('on-site')) {
+      visitFormat = 'student-visit';
+    } else {
+      visitFormat = defaultOptions.visitFormat || 'virtual';
+    }
+  }
+
+  return { durationWeeks, visitFormat, mode };
+}
+
 export async function generateCourseFromPrompt(promptText, options = {}) {
   const prompt = String(promptText || '').trim();
-  const lower = prompt.toLowerCase();
-  const mode = options.mode || (lower.includes('course') || lower.includes('semester') || lower.includes('14-16') ? 'course' : 'module');
+  const custom = parsePromptCustomizations(prompt, options);
+  const mode = custom.mode;
+  const durationWeeks = custom.durationWeeks;
+  const visitFormat = custom.visitFormat;
   const user = options.userProfile || {};
   const userName = user.name || 'Dr. Alex Taylor';
   const userInst = user.institution || 'Home University';
@@ -1221,14 +1450,16 @@ Output JSON ONLY matching this schema:
 
       const userMsg = `Co-develop a complete international course collaboration based on this prompt:
 "${prompt}"
-Mode: ${mode === 'course' ? 'Full semester course collaboration (14 to 16 weeks)' : 'Shared international module embedded in existing courses (4 to 8 weeks)'}
+Mode: ${mode === 'course' ? 'Full semester course collaboration' : 'Shared international collaborative module'}
+Duration: ${durationWeeks} weeks (${durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full length semester'})
+Mobility & Format: ${visitFormat === 'student-visit' ? 'Hybrid with a 1-week in-person student field study immersion visit on partner campus' : (visitFormat === 'faculty-visit' ? 'Hybrid with faculty cross-country exchange and guest lectures' : '100% Fully Virtual Online Collaboration')}
 Home Professor: ${userName} at ${userInst} (${userCountry})`;
 
       const responseText = await callProvider(systemPrompt, userMsg);
       const parsed = parseJSON(responseText);
 
       if (parsed && parsed.title && parsed.partner) {
-        project = buildProjectFromAiJson(parsed, mode, { userName, userInst, userCountry });
+        project = buildProjectFromAiJson(parsed, mode, { userName, userInst, userCountry }, { durationWeeks, visitFormat });
       }
     } catch (err) {
       console.warn('Live AI generation failed or returned invalid format, falling back to heuristic engine:', err);
@@ -1236,9 +1467,11 @@ Home Professor: ${userName} at ${userInst} (${userCountry})`;
   }
 
   if (!project) {
-    project = buildProjectFromHeuristic(prompt, mode, { userName, userInst, userCountry });
+    project = buildProjectFromHeuristic(prompt, mode, { userName, userInst, userCountry }, { durationWeeks, visitFormat });
   }
 
+  project.durationWeeks = durationWeeks;
+  project.visitFormat = visitFormat;
   runAutopilot(project);
   return project;
 }

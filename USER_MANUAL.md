@@ -18,6 +18,7 @@ Crosscourse is a local-first Progressive Web App (PWA). There are no user accoun
 8. [Decentralized Collaboration (Share & Sync)](#8-decentralized-collaboration-share--sync)
 9. [Backups, Restores & Project Portability](#9-backups-restores--project-portability)
 10. [Frequently Asked Questions](#10-frequently-asked-questions)
+11. [Important Legal Notice, Disclaimer & Terms of Use (User Beware)](#11-important-legal-notice-disclaimer--terms-of-use-user-beware)
 
 ---
 
@@ -190,3 +191,14 @@ A: Never. All calculations, syllabus parsing, calendar overlap checks, and local
 
 **Q: Can I install Crosscourse as a desktop application?**  
 A: Yes. Crosscourse is a Progressive Web App (PWA). In Chrome, Edge, or Safari, click the Install icon in the address bar (or go to Settings -> Install Crosscourse) to install it as a standalone desktop app that works offline.
+
+---
+
+## 11. Important Legal Notice, Disclaimer & Terms of Use (User Beware)
+
+* **"AS-IS" Provision & Absolute Warranty Disclaimer:** Crosscourse is provided strictly on an "as is" and "as available" basis as an experimental, client-side curriculum drafting utility. To the maximum extent permitted under applicable law, the authors, developers, contributors, and copyright holders expressly disclaim all warranties and conditions of any kind, whether express, statutory, or implied, including but not limited to the implied warranties of merchantability, fitness for a particular academic or institutional purpose, quiet enjoyment, accuracy, title, and non-infringement.
+* **Limitation of Liability & Hold Harmless:** Under no legal theory (contract, tort, negligence, strict liability, or otherwise) shall the authors, contributors, copyright holders, or any affiliated individuals or educational entities be liable for any direct, indirect, incidental, special, consequential, punitive, or exemplary damages whatsoever (including, without limitation, loss of student data, academic or disciplinary actions, course cancellations, grade disputes, accreditation inquiries, copyright infringement claims, or server interruptions) arising out of or related to your use, misuse, or inability to use this software or any generated deliverables.
+* **User Responsibility & Institutional Governance:** Users (instructors, instructional designers, and university staff) bear sole and absolute responsibility for reviewing, vetting, editing, and verifying that all course deliverables, syllabi, student instructions, rubrics, and inter-institutional charters comply with their respective universities' academic policies, faculty bylaws, intellectual property rules, and student privacy laws (including FERPA, GDPR, and local privacy regulations).
+* **AI Output Notice:** Artificial intelligence outputs and draft proposals are unverified automated suggestions. AI models may hallucinate, omit critical information, misinterpret institutional constraints, or produce biased text. They are assistive drafting aids only and never constitute verified institutional or academic facts.
+* **Local Storage & Backup Responsibility:** While Crosscourse is engineered to store data in your browser's private local storage, no browser environment is immune to data clearing, system crashes, or device failures. Clearing browser history or site data permanently deletes local projects. Users are solely responsible for exporting and preserving their own project backups (.json).
+* **No Institutional Endorsement:** Crosscourse is an independent open-source tool. Mentions of any university, partner institution, or third-party learning management system (such as Canvas by Instructure, Blackboard by Anthology, Moodle, or D2L Brightspace) are for descriptive identification only and do not imply any affiliation, sponsorship, or endorsement.

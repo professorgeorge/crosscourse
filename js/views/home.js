@@ -195,7 +195,6 @@ app.view('home', {
         <div class="section-head">
           <h2>Your projects</h2>
           <div class="row gap wrap" style="align-items: center;">
-            <button class="btn sm ghost" data-action="open-user-manual">${icon.book} User Manual</button>
             <button class="btn sm" data-action="import-project" title="Import a previously saved Crosscourse project JSON backup">${icon.upload} Import Course Backup (.json)</button>
             <span class="muted">${projects.length ? `${projects.length} on this device` : ''}</span>
           </div>
@@ -208,6 +207,33 @@ app.view('home', {
             <span class="muted small">Updated ${fmtAgo(p.updatedAt)} · ${p.activities.length} activities · ${p.decisions.length} decisions</span>
           </a>`).join('')}</div>` : `<div class="empty"><p class="empty-title">No projects yet</p><p>Start a partnership, open a project file a colleague sent you, or launch the AI Partner simulation to co-design an international course or module.</p></div>`}
       </section>
+
+      <!-- Legal Fine Print & Terms Notice (User Beware) -->
+      <footer class="app-disclaimer-footer" style="margin-top: var(--space-5); padding: var(--space-4) 0 var(--space-5); border-top: 1px solid var(--color-border); font-size: 0.76rem; line-height: 1.55; color: var(--color-text-muted);">
+        <div class="stack gap-xs">
+          <p style="margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--color-text);">
+            Important Legal Notice, Disclaimer &amp; Terms of Use (User Beware)
+          </p>
+          <p style="margin: 0;">
+            <strong>"AS-IS" Provision &amp; Absolute Warranty Disclaimer:</strong> Crosscourse is provided strictly on an "as is" and "as available" basis as an experimental, client-side curriculum drafting utility. To the maximum extent permitted under applicable law, the authors, developers, contributors, and copyright holders expressly disclaim all warranties and conditions of any kind, whether express, statutory, or implied, including but not limited to the implied warranties of merchantability, fitness for a particular academic or institutional purpose, quiet enjoyment, accuracy, title, and non-infringement.
+          </p>
+          <p style="margin: 0;">
+            <strong>Limitation of Liability &amp; Hold Harmless:</strong> Under no legal theory (contract, tort, negligence, strict liability, or otherwise) shall the authors, contributors, copyright holders, or any affiliated individuals or educational entities be liable for any direct, indirect, incidental, special, consequential, punitive, or exemplary damages whatsoever (including, without limitation, loss of student data, academic or disciplinary actions, course cancellations, grade disputes, accreditation inquiries, copyright infringement claims, or server interruptions) arising out of or related to your use, misuse, or inability to use this software or any generated deliverables.
+          </p>
+          <p style="margin: 0;">
+            <strong>User Responsibility &amp; Institutional Governance:</strong> Users (instructors, instructional designers, and university staff) bear sole and absolute responsibility for reviewing, vetting, editing, and verifying that all course deliverables, syllabi, student instructions, rubrics, and inter-institutional charters comply with their respective universities' academic policies, faculty bylaws, intellectual property rules, and student privacy laws (including FERPA, GDPR, and local privacy regulations).
+          </p>
+          <p style="margin: 0;">
+            <strong>AI Output Notice:</strong> Artificial intelligence outputs and draft proposals are unverified automated suggestions. AI models may hallucinate, omit critical information, misinterpret institutional constraints, or produce biased text. They are assistive drafting aids only and never constitute verified institutional or academic facts.
+          </p>
+          <p style="margin: 0;">
+            <strong>Local Storage &amp; Backup Responsibility:</strong> While Crosscourse is engineered to store data in your browser's private local storage, no browser environment is immune to data clearing, system crashes, or device failures. Clearing browser history or site data permanently deletes local projects. Users are solely responsible for exporting and preserving their own project backups (.json).
+          </p>
+          <p style="margin: 0;">
+            <strong>No Institutional Endorsement:</strong> Crosscourse is an independent open-source tool. Mentions of any university, partner institution, or third-party learning management system (such as Canvas by Instructure, Blackboard by Anthology, Moodle, or D2L Brightspace) are for descriptive identification only and do not imply any affiliation, sponsorship, or endorsement.
+          </p>
+        </div>
+      </footer>
     </div>`;
   }
 });

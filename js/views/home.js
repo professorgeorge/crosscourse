@@ -441,7 +441,7 @@ app.register({
       wide: true,
       body: `<p class="lede" style="margin-bottom: var(--space-3);">
         Collaborate step-by-step with AI partner professors representing each international partner university in your consortium.
-        This mode provides interactive AI Assistance across all course design stages, with no automatic autopilot.
+        This mode provides interactive AI Assistance across all course design stages, ensuring professors and course developers retain full design control.
       </p>
       <fieldset class="field" style="margin-bottom: var(--space-3);">
         <legend><strong>1. Collaboration scope</strong></legend>

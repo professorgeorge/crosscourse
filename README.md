@@ -69,11 +69,12 @@ Crosscourse provides a complete, first-class methodology to co-develop an intern
   - **Cross-Country Mobility:** Choose 100% fully virtual exchange, hybrid with a 1-week reciprocal student field study and immersion visit on partner campus, or hybrid with faculty cross-country exchange colloquium.
   - **Flexible Expression:** Customizations can be chosen via intuitive dropdown lists or specified naturally directly in the prompting text.
 - **Zero Intermediate Intervention:** Generates final approved deliverables automatically:
-  1. Complete Course Syllabus & Implementation Guide (HTML & print to PDF)
-  2. Student-Facing Onboarding & Assignment Handout (Markdown / LMS-ready)
-  3. Institutional Partnership Charter & Agreement
-  4. Shared Calendar Schedule (.ics for Google Calendar, Outlook, Apple Calendar)
-  5. Full Structured Project Archive (.crosscourse.json)
+  1. Complete LMS Course Cartridge (.imscc for Canvas, Blackboard, Moodle, and Brightspace with SpeedGrader rubrics)
+  2. Complete Course Syllabus & Implementation Guide (HTML & print to PDF)
+  3. Student-Facing Onboarding & Assignment Handout (Markdown / LMS-ready)
+  4. Institutional Partnership Charter & Agreement
+  5. Shared Calendar Schedule (.ics for Google Calendar, Outlook, Apple Calendar)
+  6. Full Structured Project Archive (.crosscourse.json)
 - **Authentic Global Partners:** Features eight institutional partner profiles across Senegal, Brazil, Japan, Italy, UAE, India, Colombia, and Sweden, reflecting genuine academic schedules, grading scales, language environments, and technical access realities.
 
 ## Architecture
@@ -90,7 +91,7 @@ js/ai.js              provider adapters, task prompts, templates
 js/ui.js              rendering helpers, dialogs, toasts
 js/app.js             router, shell, data binding
 js/lms.js             IMS Common Cartridge (.imscc/.zip) generator for Canvas, Blackboard, Moodle
-js/autopilot.js       AI autopilot engine, progress orchestrator & download center
+js/autopilot.js       AI co-design assistant engine, progress orchestrator & download center
 js/views/*.js         screens
 js/demo.js            interactive AI Partner co-design simulation engine
 ```

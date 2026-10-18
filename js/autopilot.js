@@ -193,15 +193,15 @@ export function runAutopilot(p, options = {}) {
     p.partners.forEach(ptn => {
       d.approvals[ptn.id] = d.approvals[ptn.id] || {
         status: 'approve',
-        note: `Approved under AI Autopilot co-design agreement for ${ptn.institution}.`,
+        note: `Approved under consortium co-design agreement for ${ptn.institution}.`,
         at: S.now()
       };
     });
   });
 
-  // 9. Create an approved Release Candidate R1-AUTOPILOT
+  // 9. Create an approved Release Candidate R1-RELEASE
   const snapshot = structuredClone({ ...p, releases: [], events: [], proposals: [] });
-  const label = 'R1-AUTOPILOT';
+  const label = 'R1-RELEASE';
   const rel = {
     id: S.uid('rel_'),
     label,
@@ -216,7 +216,7 @@ export function runAutopilot(p, options = {}) {
   };
   p.releases = [rel];
 
-  // 10. Mark autopilot completed
+  // 10. Mark co-design completed
   p.isAutopilotCompleted = true;
   p.updatedAt = S.now();
 
@@ -225,8 +225,8 @@ export function runAutopilot(p, options = {}) {
     id: S.uid('evt_'),
     at: S.now(),
     by: p2.id,
-    kind: 'autopilot',
-    summary: 'AI Autopilot co-developed and finalized approved classroom package (R1-AUTOPILOT)'
+    kind: 'co-design',
+    summary: 'AI Assistance co-developed and finalized approved classroom package (R1-RELEASE)'
   });
 
   S.saveProject(p);
@@ -275,11 +275,11 @@ export async function showAutopilotProgressModal(p, onComplete) {
   dlg.className = 'modal wide autopilot-progress-modal';
   dlg.innerHTML = `
     <header class="modal-head">
-      <h2>${icon.sparkle} AI Autopilot Co-Designing Course</h2>
+      <h2>${icon.sparkle} AI-Assisted Co-Design in Progress</h2>
     </header>
     <div class="modal-body" id="autopilot-progress-body">
       <p class="lede" style="margin-bottom: var(--space-3);">
-        Your AI partner colleague is collaborating with you across all eight design stages to build a complete, classroom-ready international course.
+        AI partner professors are collaborating across all eight design stages to build a complete, classroom-ready international course.
       </p>
       <div id="autopilot-steps-container">${renderStepsHtml(0)}</div>
     </div>
@@ -685,25 +685,24 @@ ${ps.slice(1).map((x, i) => `- **Partner Campus ${i + 2} Faculty Representative 
  */
 export function openDownloadPackModal(p, isCelebration = false) {
   const ps = active(p);
-  const p1 = ps[0] || { institution: 'University' };
-  const p2 = ps[1] || p1;
-  const rel = p.releases[0] || { label: 'R1-AUTOPILOT' };
+  const rel = p.releases[0] || { label: 'R1-RELEASE' };
+  const campusList = ps.map(x => esc(x.institution)).join(', ');
 
   modal({
-    title: isCelebration ? 'Autopilot Complete: Course Pack Ready!' : 'Download Course & Teaching Pack',
+    title: isCelebration ? 'AI-Assisted Co-Design Complete: Course Pack Ready!' : 'Download Course & Teaching Pack',
     wide: true,
     body: `
       ${isCelebration ? `
         <div class="banner ok" style="margin-bottom: var(--space-4);">
           ${icon.check}
           <div>
-            <strong>Autopilot Successfully Co-Developed Your Course!</strong>
-            <p style="margin: 0;">Both ${esc(p1.institution)} and ${esc(p2.institution)} have approved the design brief, learning arc, rubrics, and release candidate <strong>${esc(rel.label)}</strong>. All teaching assets are generated and ready for immediate download.</p>
+            <strong>Course Successfully Co-Developed with AI Assistance!</strong>
+            <p style="margin: 0;">Partner institutions in the consortium (${campusList}) have approved the design brief, learning arc, rubrics, and release candidate <strong>${esc(rel.label)}</strong>. All teaching assets are generated and ready for immediate download.</p>
           </div>
         </div>
       ` : `
         <p class="lede" style="margin-bottom: var(--space-4);">
-          Classroom-ready teaching materials for <strong>${esc(p.title)}</strong> (${esc(p1.institution)} and ${esc(p2.institution)}).
+          Classroom-ready teaching materials for <strong>${esc(p.title)}</strong> (${campusList}).
         </p>
       `}
 

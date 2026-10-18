@@ -34,11 +34,55 @@ app.view('home', {
       <section class="home-hero">
         <p class="eyebrow">International course co-design</p>
         <h1>Design a course <em>with</em> your international partners, not for them.</h1>
-        <p class="lede">Crosscourse is a shared workspace where professors in different countries turn different courses, calendars and perspectives into one jointly owned learning experience. AI proposes; partners decide.</p>
-        <div class="row gap">
-          <button class="btn primary lg" data-action="new-project">${icon.plus} Start a partnership</button>
-          <button class="btn lg" data-action="import-project">${icon.upload} Open a partner’s project file</button>
-          <button class="btn ghost lg" data-action="open-ai-demo-modal">${icon.sparkle} Co-Design with an AI Partner Professor</button>
+        <p class="lede">Crosscourse is a shared workspace where professors in different countries turn different courses, calendars and perspectives into one jointly owned learning experience. Co-develop with AI in natural language, or collaborate asynchronously across campuses.</p>
+
+        <!-- Natural Language AI Co-Design Studio Card -->
+        <div class="ai-prompt-studio card">
+          <form id="ai-prompt-form" class="stack">
+            <div class="field">
+              <label for="course-prompt" class="ai-prompt-label">
+                ${icon.sparkle} <strong>Co-Develop Course with AI (Natural Language Prompting)</strong>
+                <span class="muted small" style="display: block; font-weight: normal; margin-top: 2px;">Enter your topic, discipline, or vision. AI will co-develop the complete, approved international course package with zero intermediate steps.</span>
+              </label>
+              <textarea id="course-prompt" name="prompt" rows="3" required placeholder="e.g. A 5-week undergraduate module on Public Health and Epidemic Preparedness, partnering with Cheikh Anta Diop University in Senegal. Focus on community health posts and vaccine equity..."></textarea>
+            </div>
+
+            <div class="ai-prompt-chips-row">
+              <span class="muted small" style="font-weight: 500;">Quick inspiration:</span>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A 5-week shared module on AI, Ethics & Algorithmic Accountability, partnering with Kyoto University in Japan. Focus on algorithmic impact assessments.">AI Ethics & Systems (Japan)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="An undergraduate course collaboration on Water Resource Governance and Ecological Peacebuilding with Universidad de los Andes in Colombia.">Water Resource Stewardship (Colombia)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A 6-week module on Global Health Policy and Community Epidemiology with Cheikh Anta Diop University in Senegal.">Global Health & Equity (Senegal)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A joint semester course on Sustainable Cities, Transit Justice and Participatory Urbanism with Universidade de Sao Paulo in Brazil.">Sustainable Cities (Brazil)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-p="A 4-week module on Digital Media, Misinformation and Civic Agency with Lund University in Sweden.">Digital Misinformation (Sweden)</button>
+            </div>
+
+            <div class="row between wrap gap" style="margin-top: var(--space-3); align-items: center;">
+              <div class="row gap wrap" style="align-items: center;">
+                <label class="choice small" style="margin: 0;">
+                  <input type="radio" name="mode" value="module" checked>
+                  <span>Shared international module (4-8 weeks)</span>
+                </label>
+                <label class="choice small" style="margin: 0;">
+                  <input type="radio" name="mode" value="course">
+                  <span>Whole course collaboration (14-16 weeks)</span>
+                </label>
+              </div>
+              <div class="row gap wrap">
+                <button type="submit" class="btn primary lg" data-action="generate-from-prompt" style="min-width: 260px;">
+                  ${icon.sparkle} Generate Complete Course Package
+                </button>
+                <button type="button" class="btn ghost lg" data-action="open-ai-demo-modal">
+                  Guided Wizard...
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="row gap wrap" style="margin-top: var(--space-4);">
+          <span class="muted small" style="align-self: center;">Other ways to collaborate:</span>
+          <button class="btn" data-action="new-project">${icon.plus} Start manual partnership</button>
+          <button class="btn" data-action="import-project">${icon.upload} Open a partner’s project file</button>
         </div>
       </section>
 

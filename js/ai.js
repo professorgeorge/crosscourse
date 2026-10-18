@@ -267,7 +267,7 @@ Respond in character in 2 to 3 sentences. Decide whether to approve or raise a c
 };
 export const TASK_LABELS = Object.fromEntries(Object.entries(TASKS).map(([k, v]) => [k, v.label]));
 
-function parseJSON(text) {
+export function parseJSON(text) {
   let t = String(text || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
   try { return JSON.parse(t); } catch { }
   const s = t.indexOf('{'), e = t.lastIndexOf('}');
@@ -275,7 +275,7 @@ function parseJSON(text) {
   throw new Error('The model did not return valid JSON.');
 }
 
-async function callProvider(system, user) {
+export async function callProvider(system, user) {
   const c = aiConfig();
   const p = PROVIDERS[c.provider];
   const model = c.model || p?.models[0] || 'default';

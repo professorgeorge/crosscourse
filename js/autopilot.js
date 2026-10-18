@@ -7,6 +7,8 @@ import * as S from './store.js';
 import * as T from './time.js';
 import { esc, icon, modal, toast, download, md } from './ui.js';
 import { runChecks, releaseGate, decisionStatus, counterfactual, DIMENSIONS } from './checks.js';
+import { AI_PARTNER_PERSONAS, TOPIC_PRESETS, createAiPartnerDemo } from './demo.js';
+import { callProvider, aiEnabled, parseJSON } from './ai.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
 const active = p => p.partners.filter(x => x.status !== 'withdrawn');
@@ -745,6 +747,500 @@ app.register({
   },
   'open-download-pack'() {
     openDownloadPackModal(app.p, false);
+  },
+  async 'generate-from-prompt'(d, el) {
+    const form = el ? el.closest('form') : document.getElementById('ai-prompt-form');
+    if (!form) return;
+    const formData = new FormData(form);
+    const promptText = (formData.get('prompt') || '').trim();
+    const mode = formData.get('mode') || 'module';
+    if (!promptText) {
+      toast('Please enter a course topic, discipline, or vision to generate.', 'warn');
+      return;
+    }
+
+    const steps = [
+      { title: 'Interpreting natural language prompt & pedagogical intent', detail: promptText.slice(0, 80) + '...' },
+      { title: 'Selecting partner institution & faculty colleague persona', detail: 'Harmonizing global time zones, campus calendars, and cohort strengths.' },
+      { title: 'Drafting mutual learning brief & driving inquiry question', detail: 'Formulating core international challenge and counterfactual test.' },
+      { title: 'Mapping shared intercultural & disciplinary outcomes', detail: 'Linking shared outcomes to each institution\'s curriculum.' },
+      { title: 'Sequencing 6-stage collaborative learning arc', detail: 'Balancing live and async activities with fallback contingencies.' },
+      { title: 'Formulating student instructions & evaluation rubrics', detail: 'Generating weekly directions and 4-level grading rubrics.' },
+      { title: 'Signing institutional partnership charter & agreement', detail: 'Formalizing decision rights, attribution, and student care protocols.' },
+      { title: 'Freezing approved release candidate & classroom kit', detail: 'Zero intermediate human intervention: final deliverables ready.' }
+    ];
+
+    const renderSteps = (idx) => `
+      <div class="autopilot-step-list">
+        ${steps.map((st, i) => {
+          const isDone = i < idx;
+          const isCurrent = i === idx;
+          return `
+            <div class="autopilot-step-item ${isDone ? 'done' : ''} ${isCurrent ? 'active' : ''}">
+              <div class="autopilot-step-icon">
+                ${isDone ? icon.check : isCurrent ? '<span class="spinner"></span>' : `${i + 1}`}
+              </div>
+              <div class="autopilot-step-text">
+                <strong>${esc(st.title)}</strong>
+                <div class="muted small">${esc(st.detail)}</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+    const dlg = document.createElement('dialog');
+    dlg.className = 'modal wide autopilot-progress-modal';
+    dlg.innerHTML = `
+      <header class="modal-head">
+        <h2>${icon.sparkle} Co-Developing Course with AI</h2>
+      </header>
+      <div class="modal-body">
+        <p class="lede" style="margin-bottom: var(--space-3);">
+          AI is autonomously co-developing your complete course package from your natural language prompt. No intermediate manual steps required.
+        </p>
+        <div id="prompt-gen-steps">${renderSteps(0)}</div>
+      </div>
+    `;
+    document.body.appendChild(dlg);
+    dlg.showModal();
+
+    const container = dlg.querySelector('#prompt-gen-steps');
+
+    const genPromise = generateCourseFromPrompt(promptText, { mode });
+
+    for (let i = 1; i < steps.length; i++) {
+      await new Promise(r => setTimeout(r, 220));
+      if (container) container.innerHTML = renderSteps(i);
+    }
+
+    const project = await genPromise;
+    if (container) container.innerHTML = renderSteps(steps.length);
+    await new Promise(r => setTimeout(r, 200));
+
+    S.saveProject(project);
+    const s = S.settings.get();
+    s.identities[project.id] = project.partners[0].id;
+    S.settings.save(s);
+
+    dlg.remove();
+
+    app.p = project;
+    app.me = project.partners[0];
+    app.go(`#/p/${project.id}/overview`);
+    openDownloadPackModal(project, true);
+    toast(`Course co-developed successfully: "${project.title}"! All deliverables ready.`, 'ok');
+  },
+  'fill-prompt'(d, el) {
+    const text = el.dataset.p;
+    const form = document.getElementById('ai-prompt-form');
+    if (!form || !text) return;
+    const ta = form.querySelector('textarea[name=prompt]');
+    if (ta) {
+      ta.value = text;
+      ta.focus();
+    }
   }
 });
+
+function buildProjectFromHeuristic(prompt, mode, user) {
+  const lower = prompt.toLowerCase();
+  
+  let matchedPersona = null;
+  if (lower.includes('senegal') || lower.includes('dakar') || lower.includes('west africa')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'senegal');
+  else if (lower.includes('brazil') || lower.includes('sao paulo') || lower.includes('latin america')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'brazil');
+  else if (lower.includes('japan') || lower.includes('kyoto') || lower.includes('tokyo') || lower.includes('asia')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'japan');
+  else if (lower.includes('italy') || lower.includes('bologna')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'italy');
+  else if (lower.includes('uae') || lower.includes('emirates') || lower.includes('dubai') || lower.includes('middle east')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'uae');
+  else if (lower.includes('india') || lower.includes('delhi')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'india');
+  else if (lower.includes('colombia') || lower.includes('andes') || lower.includes('bogota')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'colombia');
+  else if (lower.includes('sweden') || lower.includes('lund') || lower.includes('nordic') || lower.includes('europe')) matchedPersona = AI_PARTNER_PERSONAS.find(p => p.key === 'sweden');
+
+  let matchedTopic = null;
+  if (lower.includes('health') || lower.includes('epidemic') || lower.includes('vaccine') || lower.includes('medical')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'health');
+  else if (lower.includes('ethic') || lower.includes('ai') || lower.includes('algorithm') || lower.includes('robot')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'ethics');
+  else if (lower.includes('city') || lower.includes('transit') || lower.includes('urban') || lower.includes('mobility')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'cities');
+  else if (lower.includes('water') || lower.includes('river') || lower.includes('basin') || lower.includes('watershed')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'water');
+  else if (lower.includes('supply') || lower.includes('trade') || lower.includes('waste') || lower.includes('circular') || lower.includes('logistics')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'supplychain');
+  else if (lower.includes('media') || lower.includes('news') || lower.includes('misinformation') || lower.includes('journalism') || lower.includes('disinformation')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'media');
+
+  const options = {
+    mode,
+    topicKey: matchedTopic ? matchedTopic.key : 'custom',
+    customTopic: matchedTopic ? undefined : (prompt.length > 50 ? prompt.slice(0, 50).trim() : prompt.trim()),
+    personaKey: matchedPersona ? matchedPersona.key : 'random',
+    userProfile: {
+      name: user.userName || 'Dr. Alex Taylor',
+      institution: user.userInst || 'Home University',
+      country: user.userCountry || 'United States'
+    }
+  };
+
+  return createAiPartnerDemo(options);
+}
+
+function buildProjectFromAiJson(parsed, mode, user) {
+  const p = S.blankProject(parsed.title || 'International Course Collaboration');
+  p.mode = mode;
+  p.isAiSimulation = true;
+  p.isAutopilotCompleted = true;
+
+  const nowD = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const fmtYmd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
+  const ago = h => new Date(Date.now() - h * 3600000).toISOString();
+
+  const termStartStr = fmtYmd(addDays(nowD, -14));
+  const termEndStr = fmtYmd(addDays(nowD, mode === 'course' ? 95 : 60));
+
+  const homePartner = S.blankPartner({
+    id: 'ptn_home',
+    name: user.userName || 'Dr. Alex Taylor',
+    email: 'professor@example.edu',
+    institution: user.userInst || 'Home University',
+    country: user.userCountry || 'United States',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
+    language: 'English',
+    role: 'representative',
+    status: 'active',
+    contributes: 'Home course evidence and student cohort inquiry.',
+    course: {
+      title: parsed.homeCourse?.title || 'Studies in Collaborative Inquiry',
+      code: parsed.homeCourse?.code || 'INT 350',
+      level: 'Upper-division undergraduate',
+      discipline: parsed.homeCourse?.discipline || 'Interdisciplinary Studies',
+      studentsCount: 25,
+      purpose: parsed.challenge || 'Collaborative international inquiry',
+      priorities: 'Methodological rigor, cross-cultural synthesis',
+      interculturalAims: 'Broaden perspective through reciprocal dialogue',
+      languages: 'English',
+      termStart: termStartStr,
+      termEnd: termEndStr,
+      workloadHoursPerWeek: 3.5,
+      tech: 'Canvas, Zoom, Google Docs',
+      techRestrictions: 'Standard campus access',
+      assessmentObligations: 'Individual written portfolio component (25%)',
+      breaks: [],
+      localOutcomes: [
+        { id: 'lo_h1', text: 'Analyze comparative evidence across international contexts.' },
+        { id: 'lo_h2', text: 'Communicate findings persuasively to diverse audiences.' }
+      ]
+    }
+  }, 0);
+
+  const aiP = parsed.partner || {};
+  const aiPartner = S.blankPartner({
+    id: 'ptn_ai',
+    name: aiP.name || 'Dr. International Colleague',
+    email: 'partner@univ.edu',
+    institution: aiP.institution || 'Partner University',
+    country: aiP.country || 'International',
+    city: aiP.city || 'Partner City',
+    timezone: aiP.timezone || 'UTC',
+    language: aiP.language || 'English',
+    role: 'representative',
+    status: 'active',
+    isAi: true,
+    contributes: aiP.contributes || 'Situated field cases and institutional perspectives.',
+    course: {
+      title: aiP.courseTitle || 'Comparative Seminar',
+      code: aiP.courseCode || 'GLO 300',
+      level: 'Undergraduate seminar',
+      discipline: aiP.discipline || 'Higher Education',
+      studentsCount: 28,
+      purpose: aiP.studentProfile || 'Situated contextual inquiry',
+      priorities: 'Community-grounded analysis',
+      interculturalAims: 'Question universal assumptions and share local traditions',
+      languages: aiP.language || 'English',
+      termStart: fmtYmd(addDays(nowD, -7)),
+      termEnd: fmtYmd(addDays(nowD, mode === 'course' ? 100 : 65)),
+      workloadHoursPerWeek: 3.5,
+      tech: 'Campus LMS, Video conferencing',
+      techRestrictions: 'Mobile-friendly formats preferred',
+      assessmentObligations: 'Continuous evaluation and final deliverable',
+      breaks: [],
+      localOutcomes: [
+        { id: 'lo_ai_1', text: 'Apply regional methodologies to analyze local data.' },
+        { id: 'lo_ai_2', text: 'Collaborate respectfully in multinational teams.' }
+      ]
+    }
+  }, 1);
+
+  p.partners = [homePartner, aiPartner];
+  p.aiPartnerId = aiPartner.id;
+
+  p.brief = {
+    id: 'brief',
+    challenge: parsed.challenge || 'Shared international inquiry',
+    question: parsed.question || 'How can our cohorts investigate this together?',
+    whyInternational: parsed.whyInternational || 'Each cohort possesses situated knowledge the other cannot access.',
+    counterfactual: parsed.counterfactual || 'Without collaboration, students evaluate only their domestic lens.',
+    status: 'approved',
+    approvedAt: S.now(),
+    updatedAt: S.now()
+  };
+
+  p.charter = {
+    purpose: `To co-design an authentic international learning collaboration between ${homePartner.institution} and ${aiPartner.institution}.`,
+    decisionRights: 'Substantive changes require affirmative agreement from both faculty representatives. Local grading is sovereign.',
+    responseDays: 3,
+    languages: 'Faculty coordination in English; student teams support bilingual collaboration.',
+    division: `${homePartner.name} coordinates synthesis templates; ${aiPartner.name} coordinates regional case dossiers.`,
+    studentComms: 'Faculty advise their own cohort; joint announcements posted in shared workspace.',
+    attribution: 'Shared materials licensed under CC BY-NC with mutual credit.',
+    disagreements: 'Articulate asynchronously; meet live if unresolved after 5 days.',
+    withdrawal: 'Two weeks advance notice with student grading protection.',
+    cohortLoss: 'Pre-recorded briefings and archived case studies preserve credit if disruption occurs.',
+    status: 'approved',
+    approvedAt: S.now(),
+    updatedAt: S.now()
+  };
+
+  const oIds = ['out_1', 'out_2', 'out_3'];
+  p.outcomes = (parsed.outcomes || []).map((o, i) => ({
+    id: oIds[i] || `out_${i + 1}`,
+    text: o.text,
+    type: o.type || (i === 1 ? 'intercultural' : 'disciplinary'),
+    evidence: o.evidence || 'Joint project dossier',
+    mappings: {
+      ptn_home: ['lo_h1'],
+      ptn_ai: ['lo_ai_1']
+    },
+    status: 'approved',
+    approvedAt: S.now(),
+    updatedAt: S.now()
+  }));
+
+  if (!p.outcomes.length) {
+    p.outcomes = [
+      { id: 'out_1', text: 'Analyze and contrast regional evidence from both contexts.', type: 'disciplinary', evidence: 'Joint dossier', mappings: { ptn_home: ['lo_h1'], ptn_ai: ['lo_ai_1'] }, status: 'approved' },
+      { id: 'out_2', text: 'Collaborate effectively across different institutional frameworks.', type: 'intercultural', evidence: 'Process reflection', mappings: { ptn_home: ['lo_h2'], ptn_ai: ['lo_ai_2'] }, status: 'approved' }
+    ];
+  }
+
+  const both = ['ptn_home', 'ptn_ai'];
+  p.activities = (parsed.activities || []).map((a, i) => {
+    const startD = addDays(nowD, i * 10 + 3);
+    const endD = addDays(startD, a.durationDays || 8);
+    const actId = `act_${i + 1}`;
+    return {
+      id: actId,
+      title: a.title,
+      stage: a.stage || (i === 0 ? 'trust' : i === 1 ? 'local' : i === 2 ? 'compare' : 'cocreate'),
+      summary: a.summary || '',
+      instructions: a.instructions || activityStudentInstructions(p, { stage: a.stage }),
+      sync: Boolean(a.sync),
+      start: fmtYmd(startD),
+      end: fmtYmd(endD),
+      participants: both,
+      contributions: {
+        ptn_home: a.homeContribution || 'Home student cohort contribution.',
+        ptn_ai: a.partnerContribution || 'Partner student cohort contribution.'
+      },
+      workload: { ptn_home: 3, ptn_ai: 3 },
+      owner: i % 2 === 0 ? 'ptn_ai' : 'ptn_home',
+      dependsOn: i > 0 ? [`act_${i}`] : [],
+      outcomes: [p.outcomes[0]?.id || 'out_1'],
+      tools: 'Google Drive, Padlet, Jitsi/Zoom',
+      contingency: a.contingency || 'Asynchronous video briefs and shared discussion board.',
+      accessibility: 'Captioned media and mobile-friendly templates.',
+      status: 'approved',
+      approvedAt: S.now(),
+      updatedAt: S.now()
+    };
+  });
+
+  if (!p.activities.length) {
+    p.activities = [
+      { id: 'act_1', title: 'Team Introductions & Communication Compact', stage: 'trust', sync: true, start: fmtYmd(addDays(nowD, 3)), end: fmtYmd(addDays(nowD, 10)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_ai', summary: 'Student introductions and team charter.', instructions: activityStudentInstructions(p, { stage: 'trust' }), contingency: 'Asynchronous video exchange.', status: 'approved' },
+      { id: 'act_2', title: 'Local Case Dossier', stage: 'local', sync: false, start: fmtYmd(addDays(nowD, 12)), end: fmtYmd(addDays(nowD, 24)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_home', summary: 'Regional field dossier.', instructions: activityStudentInstructions(p, { stage: 'local' }), contingency: 'Pre-recorded briefing.', status: 'approved' },
+      { id: 'act_3', title: 'Reciprocal Comparative Critique', stage: 'compare', sync: false, start: fmtYmd(addDays(nowD, 26)), end: fmtYmd(addDays(nowD, 38)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_ai', summary: 'Reciprocal analysis.', instructions: activityStudentInstructions(p, { stage: 'compare' }), contingency: 'Annotated document exchange.', status: 'approved' },
+      { id: 'act_4', title: 'Joint Synthesis & Recommendation', stage: 'cocreate', sync: false, start: fmtYmd(addDays(nowD, 40)), end: fmtYmd(addDays(nowD, 54)), participants: both, workload: { ptn_home: 3, ptn_ai: 3 }, owner: 'ptn_home', summary: 'Collaborative final deliverable.', instructions: activityStudentInstructions(p, { stage: 'cocreate' }), contingency: 'Asynchronous submission.', status: 'approved' }
+    ];
+  }
+
+  p.assessments = [
+    {
+      id: 'asm_1',
+      title: 'Collaborative Synthesis Deliverable',
+      layer: 'product',
+      outcomes: p.outcomes.map(o => o.id),
+      due: fmtYmd(addDays(nowD, mode === 'course' ? 65 : 45)),
+      criteria: (parsed.rubricCriteria || []).map((c, ci) => ({
+        id: `cr_${ci + 1}`,
+        name: c.name,
+        description: c.description || '',
+        levels: {
+          exemplary: c.exemplary || 'Exceptional synthesis and integration.',
+          proficient: c.proficient || 'Proficient and accurate integration.',
+          developing: c.developing || 'Developing with some gaps.',
+          beginning: c.beginning || 'Incomplete.'
+        }
+      })),
+      local: {
+        ptn_home: { weight: 25, notes: 'Counted towards course grade.' },
+        ptn_ai: { weight: 25, notes: 'Counted towards course grade.' }
+      },
+      status: 'approved',
+      approvedAt: S.now(),
+      updatedAt: S.now()
+    }
+  ];
+
+  p.differences = [
+    { id: 'dif_1', topic: 'Academic Calendar Overlap', detail: 'Harmonized term dates and exam schedules.', kind: 'hard', status: 'resolved', resolution: 'Aligned within shared teaching window.' },
+    { id: 'dif_2', topic: 'Digital Communication Platform', detail: 'Mobile-first access vs institutional LMS.', kind: 'negotiable', status: 'resolved', resolution: 'Lightweight web tools and async messaging.' },
+    { id: 'dif_3', topic: 'Grading Frameworks', detail: 'Numerical scale vs letter grades.', kind: 'negotiable', status: 'resolved', resolution: 'Shared rubric criteria with sovereign local grade weights.' }
+  ];
+
+  p.decisions = [
+    {
+      id: 'dec_1',
+      title: 'Approve Design Brief & Driving Question',
+      description: `Formal agreement on the joint challenge: "${p.brief.challenge}".`,
+      type: 'shared',
+      affected: both,
+      approvals: {
+        ptn_home: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() },
+        ptn_ai: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() }
+      },
+      linked: { kind: 'brief', id: 'brief' }
+    },
+    {
+      id: 'dec_2',
+      title: 'Approve Collaborative Learning Arc & Rubric',
+      description: 'Formal agreement on the weekly activity sequence and assessment criteria.',
+      type: 'shared',
+      affected: both,
+      approvals: {
+        ptn_home: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() },
+        ptn_ai: { status: 'approve', note: 'Approved under AI Co-Design consensus.', at: S.now() }
+      },
+      linked: null
+    }
+  ];
+
+  p.meetings = [
+    {
+      id: 'mtg_1',
+      title: `Co-Design Session: ${homePartner.name} & ${aiPartner.name}`,
+      start: addDays(nowD, 5).toISOString(),
+      duration: 50,
+      link: 'https://meet.jit.si/Crosscourse-co-design',
+      agenda: '1. Welcome & syllabus review\n2. Schedule & time zone coordination\n3. Student onboarding plan',
+      notes: '',
+      attendees: both
+    }
+  ];
+
+  p.glossary = [
+    { id: 'gls_1', term: 'Situated Inquiry', definitions: { English: 'Grounding analytical claims in local community data and lived reality.' }, note: 'Critical across both cohorts.' },
+    { id: 'gls_2', term: 'Reciprocal Critique', definitions: { English: 'Constructive peer evaluation balancing multiple geopolitical perspectives.' }, note: 'Core to the collaborative learning arc.' }
+  ];
+
+  p.events = [
+    { id: 'ev_1', at: ago(3), by: aiPartner.id, type: 'change', summary: `Co-developed course via AI prompt: "${p.title}"` },
+    { id: 'ev_2', at: ago(2), by: homePartner.id, type: 'change', summary: 'Aligned academic calendar and shared outcomes' },
+    { id: 'ev_3', at: ago(1), by: aiPartner.id, type: 'change', summary: 'Approved all decisions and generated final release' }
+  ];
+
+  return p;
+}
+
+export async function generateCourseFromPrompt(promptText, options = {}) {
+  const prompt = String(promptText || '').trim();
+  const lower = prompt.toLowerCase();
+  const mode = options.mode || (lower.includes('course') || lower.includes('semester') || lower.includes('14-16') ? 'course' : 'module');
+  const user = options.userProfile || {};
+  const userName = user.name || 'Dr. Alex Taylor';
+  const userInst = user.institution || 'Home University';
+  const userCountry = user.country || 'United States';
+
+  let project = null;
+
+  if (aiEnabled()) {
+    try {
+      const systemPrompt = `You are Crosscourse AI Co-Design Generator.
+Your task is to co-develop an authentic, rigorous international collaborative course or module based on the professor's natural language request.
+Output JSON ONLY matching this schema:
+{
+  "title": "Course or module title",
+  "challenge": "Core shared societal or scientific challenge",
+  "question": "Driving inquiry question for students",
+  "whyInternational": "Why reciprocal international collaboration across these cohorts is necessary",
+  "counterfactual": "What students miss if taught only domestically",
+  "partner": {
+    "name": "Dr. Full Name",
+    "institution": "University Name",
+    "country": "Country Name",
+    "city": "City Name",
+    "timezone": "Valid IANA timezone e.g. Europe/Stockholm, Asia/Tokyo, Africa/Dakar, or America/Sao_Paulo",
+    "language": "Working language e.g. Portuguese, French, Japanese, Spanish, Italian, or English",
+    "courseTitle": "Course title at partner institution",
+    "courseCode": "Course code e.g. GHP 402",
+    "discipline": "Discipline e.g. Environmental Policy",
+    "studentProfile": "Cohort background and skills",
+    "contributes": "What situated evidence and methods this cohort contributes"
+  },
+  "homeCourse": {
+    "title": "Home course title",
+    "code": "Course code e.g. INT 350",
+    "discipline": "Discipline"
+  },
+  "outcomes": [
+    { "text": "Disciplinary outcome 1...", "type": "disciplinary", "evidence": "Evidence deliverable..." },
+    { "text": "Intercultural outcome 2...", "type": "intercultural", "evidence": "Evidence deliverable..." },
+    { "text": "Comparative synthesis outcome 3...", "type": "disciplinary", "evidence": "Evidence deliverable..." }
+  ],
+  "activities": [
+    {
+      "title": "Activity Title",
+      "stage": "trust",
+      "sync": true,
+      "durationDays": 7,
+      "summary": "Brief summary",
+      "instructions": "Detailed student-facing instructions",
+      "homeContribution": "Home cohort contribution",
+      "partnerContribution": "Partner cohort contribution",
+      "contingency": "Asynchronous fallback plan"
+    }
+  ],
+  "rubricCriteria": [
+    {
+      "name": "Criterion Name",
+      "description": "Criterion description",
+      "exemplary": "Exemplary description",
+      "proficient": "Proficient description",
+      "developing": "Developing description",
+      "beginning": "Beginning description"
+    }
+  ]
+}`;
+
+      const userMsg = `Co-develop a complete international course collaboration based on this prompt:
+"${prompt}"
+Mode: ${mode === 'course' ? 'Full semester course collaboration (14 to 16 weeks)' : 'Shared international module embedded in existing courses (4 to 8 weeks)'}
+Home Professor: ${userName} at ${userInst} (${userCountry})`;
+
+      const responseText = await callProvider(systemPrompt, userMsg);
+      const parsed = parseJSON(responseText);
+
+      if (parsed && parsed.title && parsed.partner) {
+        project = buildProjectFromAiJson(parsed, mode, { userName, userInst, userCountry });
+      }
+    } catch (err) {
+      console.warn('Live AI generation failed or returned invalid format, falling back to heuristic engine:', err);
+    }
+  }
+
+  if (!project) {
+    project = buildProjectFromHeuristic(prompt, mode, { userName, userInst, userCountry });
+  }
+
+  runAutopilot(project);
+  return project;
+}
+
 

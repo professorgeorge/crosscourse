@@ -60,18 +60,17 @@ To run locally: `python3 -m http.server 8000` in this folder, then open `http://
 - Update files contain the project (including partner names and emails) but never AI keys.
 - No analytics, no tracking, no backend.
 
-## AI Autopilot & Co-Design Simulation
+## Co-Develop with AI (Natural Language Prompt to Course)
 
-Crosscourse includes an interactive simulation mode where you co-design with an AI colleague wearing the hat of an international professor.
-- **AI Autopilot Mode:** Rather than passively waiting for piecemeal queries, AI Autopilot co-drives the development across all eight stages (context cards, mutual learning brief, shared intercultural outcomes, 6-stage activity arc, assessment rubrics, and faculty charter), automatically creating an approved, classroom-ready release.
-- **Choose your scope:** Co-develop a whole course from scratch, or design a shared 4 to 8 week module embedded in existing courses.
-- **Authentic institutional personas:** Partner with faculty from Senegal, Brazil, Japan, Italy, UAE, India, Colombia, or Sweden. Each persona introduces genuine institutional schedules, student cohort constraints, local language environments, and grading regulations.
-- **Classroom-Ready Downloads:** Directly export or 1-click print complete teaching materials:
+Crosscourse provides a complete, first-class methodology to co-develop an international course or module using natural language prompting with zero intermediate human intervention:
+- **Prompt-to-Course Generation:** Describe any course, discipline, or collaboration vision in natural language. AI autonomously infers partner institutional constraints, calendars, and cohort strengths, co-developing the complete course across all eight design stages.
+- **Zero Intermediate Intervention:** Generates final approved deliverables automatically:
   1. Complete Course Syllabus & Implementation Guide (HTML & print to PDF)
   2. Student-Facing Onboarding & Assignment Handout (Markdown / LMS-ready)
   3. Institutional Partnership Charter & Agreement
   4. Shared Calendar Schedule (.ics for Google Calendar, Outlook, Apple Calendar)
   5. Full Structured Project Archive (.crosscourse.json)
+- **Authentic Global Partners:** Features eight institutional partner profiles across Senegal, Brazil, Japan, Italy, UAE, India, Colombia, and Sweden, reflecting genuine academic schedules, grading scales, language environments, and technical access realities.
 
 ## Architecture
 

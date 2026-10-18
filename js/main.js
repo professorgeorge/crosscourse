@@ -6,6 +6,7 @@ import './views/design.js';
 import './views/govern.js';
 import './views/schedule.js';
 import './views/sync.js';
+import './autopilot.js';
 
 // Re-render the settings form when the AI provider changes.
 document.addEventListener('change', e => {

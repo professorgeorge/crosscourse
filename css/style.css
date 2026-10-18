@@ -591,4 +591,98 @@ ul.stack { padding: 0; margin: 0; }
   padding-left: var(--space-4);
 }
 
+/* ---------- AI Autopilot & Download Center ---------- */
+.autopilot-banner {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+.autopilot-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+.autopilot-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  transition: all .2s ease;
+}
+.autopilot-step-item.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-highlight);
+}
+.autopilot-step-item.done {
+  border-color: color-mix(in oklab, var(--color-success) 40%, transparent);
+  background: var(--color-success-bg);
+}
+.autopilot-step-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  background: var(--color-offset-2);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.autopilot-step-item.done .autopilot-step-icon {
+  background: var(--color-success);
+  color: #fff;
+}
+.autopilot-step-item.active .autopilot-step-icon {
+  background: var(--color-primary);
+  color: #fff;
+}
+.autopilot-step-text strong {
+  display: block;
+  font-size: var(--text-sm);
+}
+.download-pack-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.download-pack-card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: border-color .15s ease;
+}
+.download-pack-card:hover {
+  border-color: var(--color-primary);
+}
+.download-card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.download-card-info h3 {
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-1);
+}
+.download-card-info p {
+  margin-bottom: var(--space-3);
+  line-height: 1.45;
+}
+
+
 

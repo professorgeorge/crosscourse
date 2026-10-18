@@ -5,6 +5,7 @@ import { allTimezones } from '../time.js';
 import { PROVIDERS, testConnection, detectLocalAndBrowserAI } from '../ai.js';
 import { createAiPartnerDemo, demoProject, AI_PARTNER_PERSONAS, TOPIC_PRESETS } from '../demo.js';
 import { importPacketFile } from './sync.js';
+import { showAutopilotProgressModal, openDownloadPackModal } from '../autopilot.js';
 
 let deferredInstall = null;
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; });
@@ -297,6 +298,23 @@ app.register({
         </select>
         <p class="hint" style="margin-top: 4px;">Your AI colleague navigates real-world university realities: local time zones, campus term dates, student cohort profiles, and grading standards.</p>
       </div>
+      <fieldset class="field" style="margin-bottom: var(--space-3);">
+        <legend><strong>How would you like AI to collaborate with you?</strong></legend>
+        <label class="choice">
+          <input type="radio" name="coDesignMode" value="autopilot" checked>
+          <span>
+            <strong>AI Autopilot Mode (Recommended)</strong><br>
+            <span class="muted small">AI partner co-creates and completes all 8 design stages (schedules, outcomes, rubrics, charter, approvals), producing ready-to-use downloadable course files immediately.</span>
+          </span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="coDesignMode" value="step">
+          <span>
+            <strong>Interactive Step-by-Step Mode</strong><br>
+            <span class="muted small">Starts as an initial draft where you step through each design stage with the AI partner proposing along the way.</span>
+          </span>
+        </label>
+      </fieldset>
       <fieldset class="field">
         <legend><strong>4. About you (Home Professor)</strong></legend>
         <div class="grid2">
@@ -342,8 +360,15 @@ app.register({
     s.identities[p.id] = p.partners[0].id;
     S.settings.save(s);
     const partner = p.partners[1];
-    app.go(`#/p/${p.id}/overview`);
-    toast(`AI Partner simulation started with ${partner.name} (${partner.institution}, ${partner.country})!`, 'ok');
+
+    if (d.coDesignMode === 'autopilot') {
+      showAutopilotProgressModal(p, () => {
+        app.go(`#/p/${p.id}/overview`);
+      });
+    } else {
+      app.go(`#/p/${p.id}/overview`);
+      toast(`AI Partner simulation started with ${partner.name} (${partner.institution}, ${partner.country})!`, 'ok');
+    }
   },
   'load-demo'() {
     app.actions['open-ai-demo-modal']();

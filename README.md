@@ -60,12 +60,18 @@ To run locally: `python3 -m http.server 8000` in this folder, then open `http://
 - Update files contain the project (including partner names and emails) but never AI keys.
 - No analytics, no tracking, no backend.
 
-## AI Partner Co-Design Simulation
+## AI Autopilot & Co-Design Simulation
 
-Crosscourse includes an interactive simulation mode where you co-design directly with an AI colleague wearing the hat of an international professor.
+Crosscourse includes an interactive simulation mode where you co-design with an AI colleague wearing the hat of an international professor.
+- **AI Autopilot Mode:** Rather than passively waiting for piecemeal queries, AI Autopilot co-drives the development across all eight stages (context cards, mutual learning brief, shared intercultural outcomes, 6-stage activity arc, assessment rubrics, and faculty charter), automatically creating an approved, classroom-ready release.
 - **Choose your scope:** Co-develop a whole course from scratch, or design a shared 4 to 8 week module embedded in existing courses.
 - **Authentic institutional personas:** Partner with faculty from Senegal, Brazil, Japan, Italy, UAE, India, Colombia, or Sweden. Each persona introduces genuine institutional schedules, student cohort constraints, local language environments, and grading regulations.
-- **Collaborative governance:** The AI partner reviews shared decisions, votes from their institutional perspective, and provides constructive feedback.
+- **Classroom-Ready Downloads:** Directly export or 1-click print complete teaching materials:
+  1. Complete Course Syllabus & Implementation Guide (HTML & print to PDF)
+  2. Student-Facing Onboarding & Assignment Handout (Markdown / LMS-ready)
+  3. Institutional Partnership Charter & Agreement
+  4. Shared Calendar Schedule (.ics for Google Calendar, Outlook, Apple Calendar)
+  5. Full Structured Project Archive (.crosscourse.json)
 
 ## Architecture
 
@@ -80,6 +86,7 @@ js/checks.js          deterministic alignment engine, release gate
 js/ai.js              provider adapters, task prompts, templates
 js/ui.js              rendering helpers, dialogs, toasts
 js/app.js             router, shell, data binding
+js/autopilot.js       AI autopilot engine, progress orchestrator & download center
 js/views/*.js         screens
 js/demo.js            interactive AI Partner co-design simulation engine
 ```

@@ -43,25 +43,45 @@ app.view('overview', {
           <h1 class="editable"><input class="title-input" data-model="title" value="${esc(p.title)}" aria-label="Project title"></h1>
           <div class="chips">${p.partners.map(x => chip(x, { me: x.id === me?.id })).join('')}</div>
         </div>
-        <div class="row gap wrap"><a class="btn" href="#/p/${p.id}/sync">${icon.sync} Send update to partners</a><a class="btn primary" href="#/p/${p.id}/meetings">${icon.video} Plan a live session</a></div>
+        <div class="row gap wrap">
+          <button class="btn" data-action="open-download-pack">${icon.download} Download Course Pack</button>
+          <a class="btn" href="#/p/${p.id}/sync">${icon.sync} Send update to partners</a>
+          <a class="btn primary" href="#/p/${p.id}/meetings">${icon.video} Plan a live session</a>
+        </div>
       </header>
 
       <ol class="stages" aria-label="Design-thinking progress">${stages.map((st, i) => `<li class="${st.done ? 'done' : ''}"><a href="#/p/${p.id}/${st.route}"><span class="num">${st.done ? icon.check : i + 1}</span><span>${st.label}</span></a></li>`).join('')}</ol>
 
       ${p.isAiSimulation ? `
-      <div class="banner info ai-simulation-banner" style="margin-bottom: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap;">
-        <div class="row gap" style="align-items: center;">
-          ${icon.sparkle}
-          <div>
-            <strong>AI Partner Simulation:</strong> You are co-designing with <strong>${esc(pn(p, p.aiPartnerId)?.name || 'International Partner')}</strong> (${esc(pn(p, p.aiPartnerId)?.institution || '')}, ${esc(pn(p, p.aiPartnerId)?.country || '')}).
-            <div class="muted small">Scope: ${p.mode === 'course' ? 'Co-developing a whole course' : 'Designing a shared international module in existing courses'}. Your AI colleague acts from their local university calendar, grading system, and student context.</div>
+      <div class="card autopilot-banner" style="margin-bottom: var(--space-4);">
+        <div class="row between wrap gap" style="align-items: center;">
+          <div class="grow">
+            <div class="row gap" style="align-items: center; margin-bottom: 4px;">
+              <span class="badge ${p.isAutopilotCompleted ? 'badge-ok' : 'badge-live'}">${p.isAutopilotCompleted ? 'Autopilot Complete' : 'AI Simulation Active'}</span>
+              <strong>AI Autopilot Co-Design Partner: ${esc(pn(p, p.aiPartnerId)?.name || 'International Colleague')}</strong>
+            </div>
+            <p class="muted small" style="margin: 0;">
+              Partner institution: <strong>${esc(pn(p, p.aiPartnerId)?.institution || '')}</strong> (${esc(pn(p, p.aiPartnerId)?.country || '')}) · 
+              Scope: <strong>${p.mode === 'course' ? 'Co-developed whole course' : 'Shared international module'}</strong>.
+              ${p.isAutopilotCompleted ? 'All 8 design stages are fully approved and ready for classroom teaching.' : 'Run AI Autopilot to automatically co-develop, align, and approve the complete course package.'}
+            </p>
+          </div>
+          <div class="row gap wrap">
+            <button class="btn sm ${p.isAutopilotCompleted ? '' : 'primary'}" data-action="run-autopilot">${icon.sparkle} ${p.isAutopilotCompleted ? 'Re-Run Autopilot' : 'Run AI Autopilot'}</button>
+            <button class="btn sm ${p.isAutopilotCompleted ? 'primary' : ''}" data-action="open-download-pack">${icon.download} Download Course Pack</button>
+            <a class="btn sm ghost" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} Partner Context</a>
           </div>
         </div>
-        <div class="row gap">
-          <a class="btn sm" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} View Context Card</a>
-          <a class="btn sm primary" href="#/p/${p.id}/decisions">${icon.vote} Review Decisions</a>
+      </div>` : `
+      <div class="card" style="margin-bottom: var(--space-4);">
+        <div class="row between wrap gap" style="align-items: center;">
+          <div>
+            <strong>Ready-to-Use Course Pack & Syllabus</strong>
+            <p class="muted small" style="margin: 0;">Download classroom-ready syllabus, student guide, and calendar for this course.</p>
+          </div>
+          <button class="btn sm primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
         </div>
-      </div>` : ''}
+      </div>`}
 
       ${renderCoach({
         stage: 'Overview & Guidance',

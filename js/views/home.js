@@ -52,19 +52,7 @@ app.view('home', {
                 <label for="prompt-partner-uni" class="small" style="font-weight: 600;">
                   2. Partner University (University 2)
                 </label>
-                <input id="prompt-partner-uni" name="partnerUniversity" required list="partner-uni-datalist" placeholder="e.g. Kyoto University">
-                <datalist id="partner-uni-datalist">
-                  <option value="Kyoto University (Japan)">
-                  <option value="Cheikh Anta Diop University (Senegal)">
-                  <option value="Universidade de São Paulo (Brazil)">
-                  <option value="Universidad de los Andes (Colombia)">
-                  <option value="University of Bologna (Italy)">
-                  <option value="Lund University (Sweden)">
-                  <option value="American University of Sharjah (UAE)">
-                  <option value="Indian Institute of Technology Delhi (India)">
-                  <option value="University of Ghana (Ghana)">
-                  <option value="National University of Singapore (Singapore)">
-                </datalist>
+                <input id="prompt-partner-uni" name="partnerUniversity" required placeholder="e.g. Kyoto University">
               </div>
             </div>
 
@@ -87,20 +75,9 @@ app.view('home', {
             <div class="ai-customization-bar grid2 gap" style="padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
               <div class="field" style="margin: 0;">
                 <label for="prompt-dur-weeks" class="small" style="font-weight: 600;">
-                  4. Course Duration (Weeks & Pace)
+                  4. Course Duration (Weeks)
                 </label>
-                <div class="row gap" style="align-items: center;">
-                  <select id="prompt-dur-weeks" name="durationWeeks" class="grow">
-                    <option value="5" selected>5 weeks (Accelerated Intensive)</option>
-                    <option value="7">7 weeks (Accelerated Term)</option>
-                    <option value="8">8 weeks (Standard Module)</option>
-                    <option value="12">12 weeks (Quarter / Trimester)</option>
-                    <option value="14">14 weeks (Full Semester)</option>
-                    <option value="16">16 weeks (Extended Semester)</option>
-                    <option value="custom">Custom duration...</option>
-                  </select>
-                  <input type="number" id="prompt-custom-weeks" name="customWeeks" min="2" max="30" placeholder="Weeks" style="width: 80px; display: none;" aria-label="Custom weeks">
-                </div>
+                <input type="number" id="prompt-dur-weeks" name="durationWeeks" min="1" max="52" required placeholder="Number of weeks (e.g. 5 or 14)" value="5">
               </div>
 
               <div class="field" style="margin: 0;">
@@ -108,13 +85,17 @@ app.view('home', {
                   5. Cross-Country Mobility & Format
                 </label>
                 <select id="prompt-visit-format" name="visitFormat">
-                  <option value="virtual" selected>100% Fully Virtual Exchange (COIL, online collaboration)</option>
+                  <option value="virtual" selected>100% Fully Virtual Exchange (Online collaboration)</option>
                   <option value="student-visit">Blended: Virtual Collaboration + Reciprocal Student Immersion Visit</option>
                   <option value="faculty-visit">Blended: Virtual Collaboration + Visiting Faculty Mobility / Colloquium</option>
                   <option value="parallel-studios">Dual-Campus Synchronized Labs / Parallel Studios</option>
                   <option value="async-distributed">Asynchronous Distributed Teams (Optimized for large time-zone differences)</option>
                   <option value="field-practicum">Virtual Preparation + Joint On-Site Field Practicum / Community Action</option>
+                  <option value="custom">Other / Custom Mobility Format (Specify below)...</option>
                 </select>
+                <div id="prompt-custom-visit-box" style="display: none; margin-top: var(--space-2);">
+                  <input id="prompt-custom-visit" name="customVisitFormat" placeholder="Describe your mobility/delivery format (e.g. 2-week student field practicum followed by virtual showcase)">
+                </div>
               </div>
             </div>
 
@@ -125,6 +106,31 @@ app.view('home', {
               </label>
               <textarea id="course-prompt" name="prompt" rows="3" required placeholder="e.g. AI Ethics, Algorithmic Bias and Public Policy. Focus on algorithmic accountability audits and comparative cultural governance..."></textarea>
             </div>
+
+            <!-- Optional Professor & Institutional Profiles -->
+            <details style="padding: var(--space-2) var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <summary class="small muted" style="cursor: pointer; font-weight: 600;">
+                Optional: Add Professor Contact & Institutional Details
+              </summary>
+              <div class="grid2 gap" style="margin-top: var(--space-2);">
+                <div class="field" style="margin: 0;">
+                  <label for="prompt-my-name" class="small">Your Name</label>
+                  <input id="prompt-my-name" name="myName" placeholder="e.g. Professor Name">
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label for="prompt-my-email" class="small">Your Email</label>
+                  <input id="prompt-my-email" name="myEmail" type="email" placeholder="e.g. professor@university.edu">
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label for="prompt-partner-name" class="small">Partner Colleague Name</label>
+                  <input id="prompt-partner-name" name="partnerName" placeholder="e.g. Dr. Colleague Name">
+                </div>
+                <div class="field" style="margin: 0;">
+                  <label for="prompt-working-lang" class="small">Preferred Working Language</label>
+                  <input id="prompt-working-lang" name="workingLanguage" placeholder="e.g. English">
+                </div>
+              </div>
+            </details>
 
             <div class="row between wrap gap" style="margin-top: var(--space-3); align-items: center;">
               <span class="muted small">All 5 deliverables (Syllabus HTML & PDF, Student Handout MD, Partnership Charter, .ics Calendar, and Project File) will be created immediately.</span>
@@ -139,16 +145,16 @@ app.view('home', {
             </div>
           </form>
         </div>
-
-        <div class="row gap wrap" style="margin-top: var(--space-4);">
-          <span class="muted small" style="align-self: center;">Other ways to collaborate:</span>
-          <button class="btn" data-action="new-project">${icon.plus} Start manual partnership</button>
-          <button class="btn" data-action="import-project">${icon.upload} Open a partner’s project file</button>
-        </div>
       </section>
 
       <section class="section">
-        <div class="section-head"><h2>Your projects</h2><span class="muted">${projects.length ? `${projects.length} on this device` : ''}</span></div>
+        <div class="section-head">
+          <h2>Your projects</h2>
+          <div class="row gap" style="align-items: center;">
+            <button class="btn sm" data-action="import-project">${icon.upload} Open project file</button>
+            <span class="muted">${projects.length ? `${projects.length} on this device` : ''}</span>
+          </div>
+        </div>
         ${projects.length ? `<div class="project-grid">${projects.map(p => `
           <a class="project-card" href="#/p/${p.id}/overview">
             <span class="pc-mode">${p.mode === 'course' ? 'Co-developed course' : 'Shared international module'}</span>
@@ -375,32 +381,24 @@ app.register({
       </fieldset>
       <div class="grid2 gap" style="margin-bottom: var(--space-3);">
         <div class="field" style="margin: 0;">
-          <label for="ai-demo-duration"><strong>2. Course Duration & Pace</strong></label>
-          <select id="ai-demo-duration" name="durationWeeks">
-            <option value="5" selected>5 weeks (Accelerated Intensive)</option>
-            <option value="7">7 weeks (Accelerated Term)</option>
-            <option value="8">8 weeks (Standard Module)</option>
-            <option value="12">12 weeks (Quarter / Trimester)</option>
-            <option value="14">14 weeks (Full Semester)</option>
-            <option value="16">16 weeks (Extended Semester)</option>
-            <option value="custom">Custom duration...</option>
-          </select>
-          <div id="ai-demo-custom-weeks-box" style="display: none; margin-top: var(--space-2);">
-            <label for="ai-demo-custom-weeks" class="small muted">Duration in weeks (2 to 30)</label>
-            <input type="number" id="ai-demo-custom-weeks" name="customWeeks" min="2" max="30" value="7">
-          </div>
+          <label for="ai-demo-duration"><strong>2. Course Duration (Weeks)</strong></label>
+          <input type="number" id="ai-demo-duration" name="durationWeeks" min="1" max="52" required placeholder="Number of weeks (e.g. 5 or 14)" value="5">
         </div>
 
         <div class="field" style="margin: 0;">
           <label for="ai-demo-visit"><strong>3. Cross-Country Mobility & Format</strong></label>
           <select id="ai-demo-visit" name="visitFormat">
-            <option value="virtual" selected>100% Fully Virtual Exchange (COIL, online collaboration)</option>
+            <option value="virtual" selected>100% Fully Virtual Exchange (Online collaboration)</option>
             <option value="student-visit">Blended: Virtual Collaboration + Reciprocal Student Immersion Visit</option>
             <option value="faculty-visit">Blended: Virtual Collaboration + Visiting Faculty Mobility / Colloquium</option>
             <option value="parallel-studios">Dual-Campus Synchronized Labs / Parallel Studios</option>
             <option value="async-distributed">Asynchronous Distributed Teams (Optimized for large time-zone differences)</option>
             <option value="field-practicum">Virtual Preparation + Joint On-Site Field Practicum / Community Action</option>
+            <option value="custom">Other / Custom Mobility Format (Specify below)...</option>
           </select>
+          <div id="ai-demo-custom-visit-box" style="display: none; margin-top: var(--space-2);">
+            <input id="ai-demo-custom-visit" name="customVisitFormat" placeholder="Describe your mobility/delivery format">
+          </div>
         </div>
       </div>
       <div class="field" style="margin-bottom: var(--space-3);">
@@ -452,11 +450,11 @@ app.register({
         { label: 'Launch Co-Design Simulation', value: 'ok', kind: 'primary', validate: f => f.reportValidity() }
       ],
       onOpen(dlg) {
-        const selDur = dlg.querySelector('#ai-demo-duration');
-        const customWeeksBox = dlg.querySelector('#ai-demo-custom-weeks-box');
-        if (selDur && customWeeksBox) {
-          selDur.addEventListener('change', () => {
-            customWeeksBox.style.display = selDur.value === 'custom' ? 'block' : 'none';
+        const selVisit = dlg.querySelector('#ai-demo-visit');
+        const customVisitBox = dlg.querySelector('#ai-demo-custom-visit-box');
+        if (selVisit && customVisitBox) {
+          selVisit.addEventListener('change', () => {
+            customVisitBox.style.display = selVisit.value === 'custom' ? 'block' : 'none';
           });
         }
       }
@@ -464,17 +462,16 @@ app.register({
 
     if (!r?.value) return;
     const d = r.data;
-    let dWeeks = d.durationWeeks;
-    if (dWeeks === 'custom') {
-      dWeeks = parseInt(d.customWeeks, 10) || 7;
-    } else {
-      dWeeks = parseInt(dWeeks, 10) || (d.mode === 'course' ? 14 : 5);
-    }
+    const dWeeks = parseInt(d.durationWeeks, 10) || (d.mode === 'course' ? 14 : 5);
+    const visitFormat = d.visitFormat || 'virtual';
+    const customVisitFormat = (d.customVisitFormat || '').trim();
+    const effectiveVisit = (visitFormat === 'custom' && customVisitFormat) ? 'custom' : visitFormat;
 
     const p = createAiPartnerDemo({
       mode: d.mode,
       durationWeeks: dWeeks,
-      visitFormat: d.visitFormat || 'virtual',
+      visitFormat: effectiveVisit,
+      customVisitFormat: customVisitFormat,
       topic: d.topic,
       customTopic: d.topic,
       homeUniversity: d.myInst || 'Home University',
@@ -590,5 +587,12 @@ app.register({
     if (!(await confirmBox('Delete all local data?', 'This removes every project and setting from this browser. Partners keep their own copies.', 'Delete everything'))) return;
     for (const k of S.kv.keys()) if (k.startsWith('xc:')) S.kv.del(k);
     app.go('#/'); app.render();
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target && e.target.id === 'prompt-visit-format') {
+    const box = document.getElementById('prompt-custom-visit-box');
+    if (box) box.style.display = e.target.value === 'custom' ? 'block' : 'none';
   }
 });

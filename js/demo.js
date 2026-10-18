@@ -638,7 +638,9 @@ export function createAiPartnerDemo(options = {}) {
 
   // Partnership Charter
   let mobilityClause = '';
-  if (visitFormat === 'student-visit') {
+  if (visitFormat === 'custom' && options.customVisitFormat) {
+    mobilityClause = `Custom International Mobility & Delivery Format: ${options.customVisitFormat}. Activities and institutional support are tailored accordingly across ${partnerInst} and the home campus.`;
+  } else if (visitFormat === 'student-visit') {
     mobilityClause = `Blended Virtual + Student Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partnerInst} in ${persona.city}, ${persona.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
   } else if (visitFormat === 'faculty-visit') {
     mobilityClause = `Blended Virtual + Faculty Mobility: Visiting professor travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary. Student cohort collaboration remains online.`;
@@ -649,7 +651,7 @@ export function createAiPartnerDemo(options = {}) {
   } else if (visitFormat === 'field-practicum') {
     mobilityClause = `Virtual Preparation + Field Practicum: Cohorts complete collaborative virtual preparatory modules, followed by an intensive joint on-site practicum or community-based fieldwork with civic or industry partners in the host region.`;
   } else {
-    mobilityClause = `100% Fully Virtual Exchange (COIL): All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
+    mobilityClause = `100% Fully Virtual Exchange: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
   }
 
   Object.assign(p.charter, {

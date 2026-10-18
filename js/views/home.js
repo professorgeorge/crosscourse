@@ -2,7 +2,7 @@ import { app } from '../app.js';
 import * as S from '../store.js';
 import { esc, icon, modal, toast, pickFile, download, fmtAgo, chip, confirmBox } from '../ui.js';
 import { allTimezones } from '../time.js';
-import { PROVIDERS, testConnection, detectLocalAndBrowserAI } from '../ai.js';
+import { PROVIDERS, testConnection, detectLocalAndBrowserAI, structureRawPrompt } from '../ai.js';
 import { createAiPartnerDemo, demoProject } from '../demo.js';
 import { importPacketFile } from './sync.js';
 import { showAutopilotProgressModal, openDownloadPackModal } from '../autopilot.js';
@@ -34,7 +34,7 @@ app.view('home', {
       <section class="home-hero">
         <p class="eyebrow">Autonomous International Course Co-Design</p>
         <h1>Autonomous AI Co-Design for International Courses Across Partner Universities.</h1>
-        <p class="lede">Specify two partner universities and collaboration scope—either conversationally in natural language or through structured choices—and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
+        <p class="lede">Specify two partner universities and collaboration scope (either conversationally in natural language or through structured choices), and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
 
         <!-- Natural Language & Structured AI Co-Design Studio Card -->
         <div class="ai-prompt-studio card">
@@ -100,11 +100,18 @@ app.view('home', {
             </div>
 
             <div class="field" style="margin: 0;">
-              <label for="course-prompt" class="ai-prompt-label">
-                ${icon.sparkle} <strong>6. Course Topic, Discipline, or Driving Inquiry Vision</strong>
-                <span class="muted small" style="display: block; font-weight: normal; margin-top: 2px;">Enter your topic, syllabus goals, or inquiry question. AI will co-develop the complete, approved international course package with zero intermediate steps.</span>
-              </label>
-              <textarea id="course-prompt" name="prompt" rows="3" required placeholder="e.g. AI Ethics, Algorithmic Bias and Public Policy. Focus on algorithmic accountability audits and comparative cultural governance..."></textarea>
+              <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: flex-end;">
+                <label for="course-prompt" class="ai-prompt-label" style="margin: 0;">
+                  ${icon.sparkle} <strong>6. Course Topic, Discipline, or Driving Inquiry Vision</strong>
+                </label>
+                <button type="button" class="btn text sm" data-action="structure-raw-prompt" data-target="course-prompt" style="padding: 2px 8px; font-size: 0.82rem;" title="Convert rough or unstructured notes into a structured prompt">
+                  ${icon.sparkle} Convert Rough Notes to Structured Prompt
+                </button>
+              </div>
+              <span class="muted small" style="display: block; font-weight: normal; margin-bottom: var(--space-2);">
+                Enter your topic, syllabus ideas, or raw notes. You can click <strong>Convert Rough Notes to Structured Prompt</strong> to instantly format them into a comprehensive, editable prompt.
+              </span>
+              <textarea id="course-prompt" name="prompt" rows="4" required placeholder="e.g. Enter your topic, rough syllabus notes, or paste unformatted text here (e.g. Sustainable urban mobility and public transit equity across US and Brazil, 5-week module, student team comparative reports)..."></textarea>
             </div>
 
             <!-- Optional Professor & Institutional Profiles -->
@@ -136,10 +143,10 @@ app.view('home', {
               <span class="muted small">All 5 deliverables (Syllabus HTML & PDF, Student Handout MD, Partnership Charter, .ics Calendar, and Project File) will be created immediately.</span>
               <div class="row gap wrap">
                 <button type="submit" class="btn primary lg" data-action="generate-from-prompt" style="min-width: 260px;">
-                  ${icon.sparkle} Generate Complete Course Package
+                  ${icon.sparkle} Autonomously Generate Deliverables
                 </button>
                 <button type="button" class="btn ghost lg" data-action="open-ai-demo-modal">
-                  Guided Wizard...
+                  Co-Design with an AI Partner Professor...
                 </button>
               </div>
             </div>
@@ -359,8 +366,8 @@ app.register({
       title: 'Co-Design with an AI Partner Professor',
       wide: true,
       body: `<p class="lede" style="margin-bottom: var(--space-3);">
-        Collaborate with an AI partner representing your international partner university.
-        Crosscourse aligns institutional contexts, calendars, and outcomes to co-develop complete, approved course deliverables.
+        Collaborate step-by-step with an AI partner professor representing your international partner university.
+        This mode provides interactive AI Assistance across all course design stages, with no automatic autopilot.
       </p>
       <fieldset class="field" style="margin-bottom: var(--space-3);">
         <legend><strong>1. Collaboration scope</strong></legend>
@@ -402,8 +409,13 @@ app.register({
         </div>
       </div>
       <div class="field" style="margin-bottom: var(--space-3);">
-        <label for="ai-demo-topic"><strong>4. Collaboration Topic or Inquiry Vision</strong></label>
-        <input id="ai-demo-topic" name="topic" required placeholder="e.g. Comparative Climate Resilience, AI Ethics, or Global Supply Chains">
+        <div class="row between wrap gap" style="margin-bottom: var(--space-1); align-items: flex-end;">
+          <label for="ai-demo-topic" style="margin: 0;"><strong>4. Collaboration Topic or Inquiry Vision</strong></label>
+          <button type="button" class="btn text sm" id="btn-modal-structure-topic" style="padding: 2px 8px; font-size: 0.82rem;" title="Convert rough notes into a structured prompt">
+            ${icon.sparkle} Convert Rough Notes to Structured Prompt
+          </button>
+        </div>
+        <textarea id="ai-demo-topic" name="topic" rows="3" required placeholder="e.g. Enter your topic, rough syllabus notes, or paste unformatted text (e.g. Comparative Climate Resilience, AI Ethics, Global Supply Chains)..."></textarea>
       </div>
       <div class="grid2 gap" style="margin-bottom: var(--space-3);">
         <div class="field" style="margin: 0;">
@@ -415,23 +427,6 @@ app.register({
           <input id="ai-demo-partner-name" name="partnerName" placeholder="e.g. Dr. Colleague Name">
         </div>
       </div>
-      <fieldset class="field" style="margin-bottom: var(--space-3);">
-        <legend><strong>How would you like AI to collaborate with you?</strong></legend>
-        <label class="choice">
-          <input type="radio" name="coDesignMode" value="autopilot" checked>
-          <span>
-            <strong>AI Autopilot Mode (Recommended)</strong><br>
-            <span class="muted small">AI partner co-creates and completes all 8 design stages (schedules, outcomes, rubrics, charter, approvals), producing ready-to-use downloadable course files immediately.</span>
-          </span>
-        </label>
-        <label class="choice">
-          <input type="radio" name="coDesignMode" value="step">
-          <span>
-            <strong>Interactive Step-by-Step Mode (AI Assisted)</strong><br>
-            <span class="muted small">Starts as an initial draft with your customized parameters, where you step through each design stage with the AI partner proposing along the way.</span>
-          </span>
-        </label>
-      </fieldset>
       <fieldset class="field">
         <legend><strong>6. About you (Home Professor)</strong></legend>
         <div class="grid2">
@@ -447,7 +442,7 @@ app.register({
       </fieldset>`,
       actions: [
         { label: 'Cancel', value: null },
-        { label: 'Launch Co-Design Simulation', value: 'ok', kind: 'primary', validate: f => f.reportValidity() }
+        { label: 'Start AI-Assisted Co-Design', value: 'ok', kind: 'primary', validate: f => f.reportValidity() }
       ],
       onOpen(dlg) {
         const selVisit = dlg.querySelector('#ai-demo-visit');
@@ -455,6 +450,42 @@ app.register({
         if (selVisit && customVisitBox) {
           selVisit.addEventListener('change', () => {
             customVisitBox.style.display = selVisit.value === 'custom' ? 'block' : 'none';
+          });
+        }
+
+        const btnStruct = dlg.querySelector('#btn-modal-structure-topic');
+        const topicTa = dlg.querySelector('#ai-demo-topic');
+        if (btnStruct && topicTa) {
+          btnStruct.addEventListener('click', async () => {
+            const raw = topicTa.value.trim();
+            if (!raw) {
+              toast('Enter some rough notes or keywords in the topic field first.', 'info');
+              topicTa.focus();
+              return;
+            }
+            btnStruct.disabled = true;
+            const oldHtml = btnStruct.innerHTML;
+            btnStruct.innerHTML = '<span class="spinner"></span> Structuring...';
+            try {
+              const homeUni = dlg.querySelector('#ai-demo-myinst')?.value || '';
+              const partnerUni = dlg.querySelector('#ai-demo-partner-inst')?.value || '';
+              const mode = dlg.querySelector('input[name=mode]:checked')?.value || 'module';
+              const dWeeks = parseInt(dlg.querySelector('#ai-demo-duration')?.value, 10) || (mode === 'course' ? 14 : 5);
+              const structured = await structureRawPrompt(raw, {
+                homeUniversity: homeUni,
+                partnerUniversity: partnerUni,
+                mode,
+                durationWeeks: dWeeks
+              });
+              topicTa.value = structured;
+              topicTa.focus();
+              toast('Rough notes converted into structured prompt! You can review or edit below.', 'ok');
+            } catch (e) {
+              toast('Could not structure prompt: ' + e.message, 'warn');
+            } finally {
+              btnStruct.disabled = false;
+              btnStruct.innerHTML = oldHtml;
+            }
           });
         }
       }
@@ -482,20 +513,17 @@ app.register({
         institution: d.myInst || 'Home University'
       }
     });
+    p.isAiSimulation = true;
+    p.coDesignMode = 'assist';
+    p.isAutopilotCompleted = false;
     S.saveProject(p);
     const s = S.settings.get();
     s.identities[p.id] = p.partners[0].id;
     S.settings.save(s);
     const partner = p.partners[1];
 
-    if (d.coDesignMode === 'autopilot') {
-      showAutopilotProgressModal(p, () => {
-        app.go(`#/p/${p.id}/overview`);
-      });
-    } else {
-      app.go(`#/p/${p.id}/overview`);
-      toast(`AI Partner simulation started with ${partner.name} (${partner.institution}, ${partner.country})! ${dWeeks} weeks, ${d.visitFormat === 'student-visit' ? 'Hybrid Student Immersion' : (d.visitFormat === 'faculty-visit' ? 'Hybrid Faculty Visit' : 'Virtual')}`, 'ok');
-    }
+    app.go(`#/p/${p.id}/overview`);
+    toast(`AI-Assisted Co-Design started with ${partner.name} (${partner.institution}, ${partner.country})! Use AI Assistance at each stage to draft, refine, and align your course.`, 'ok');
   },
   'load-demo'() {
     app.actions['open-ai-demo-modal']();
@@ -574,6 +602,42 @@ app.register({
       toast('Connection test failed: ' + e.message, 'error');
     } finally {
       if (el) { el.disabled = false; el.textContent = 'Test connection'; }
+    }
+  },
+  async 'structure-raw-prompt'(d, btn) {
+    const targetId = d?.target || btn?.dataset?.target || 'course-prompt';
+    const ta = document.getElementById(targetId);
+    if (!ta) return;
+    const raw = ta.value.trim();
+    if (!raw) {
+      toast('Enter some rough notes, syllabus ideas, or keywords first, then click Convert.', 'info');
+      ta.focus();
+      return;
+    }
+    const form = ta.closest('form') || document.getElementById('ai-prompt-form');
+    const homeUni = form?.querySelector('input[name=homeUniversity]')?.value || '';
+    const partnerUni = form?.querySelector('input[name=partnerUniversity]')?.value || '';
+    const mode = form?.querySelector('input[name=mode]:checked')?.value || 'module';
+    const dWeeks = parseInt(form?.querySelector('input[name=durationWeeks]')?.value, 10) || (mode === 'course' ? 14 : 5);
+
+    btn.disabled = true;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> Structuring prompt...';
+    try {
+      const res = await structureRawPrompt(raw, {
+        homeUniversity: homeUni,
+        partnerUniversity: partnerUni,
+        mode,
+        durationWeeks: dWeeks
+      });
+      ta.value = res;
+      ta.focus();
+      toast('Rough notes converted into structured prompt! You can review or edit below.', 'ok');
+    } catch (err) {
+      toast('Could not structure prompt: ' + err.message, 'warn');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = oldText;
     }
   },
   async install() {

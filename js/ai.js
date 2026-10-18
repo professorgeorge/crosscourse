@@ -580,3 +580,83 @@ export function designOptionToActivities(p, option) {
     };
   });
 }
+
+export function heuristicStructurePrompt(rawText, options = {}) {
+  const clean = (rawText || '').trim().replace(/[\u2014\u2013]/g, ' - ');
+  const home = options.homeUniversity || 'Home University';
+  const partner = options.partnerUniversity || 'Partner University';
+  const weeks = options.durationWeeks || (options.mode === 'course' ? 14 : 5);
+  const scope = options.mode === 'course' ? 'Whole New Course' : 'Shared Course Segment / Module';
+
+  return `1. Course Vision & Driving Inquiry:
+Focus: ${clean}
+Core Question: How do situated perspectives from ${home} and ${partner} illuminate key theoretical and practical challenges in this field?
+
+2. Dual-University Collaborative Rationale:
+Institutional Synergy: Combines curriculum strengths and student cohorts from ${home} and ${partner}.
+Comparative Perspective: Students examine local vs international dimensions over a ${weeks}-week ${scope} framework without treating either context as universal.
+
+3. Student Cohort Dynamics & Joint Work:
+Interaction: Bi-national student teams engage in reciprocal peer inquiry, asynchronous case workshops, and live dialogic sessions.
+Workload: Structured for manageable student time commitments with clear communication protocols and time-zone flexibility.
+
+4. Concrete Deliverables & Culminating Evidence:
+Joint Student Artifacts: Collaborative comparative analysis dossier, joint solution prototype or policy brief, and final co-presented findings.
+Classroom Readiness: Includes syllabus integration, student onboarding guide, and shared assessment criteria with sovereign local grading.`;
+}
+
+export async function structureRawPrompt(rawText, options = {}) {
+  const text = (rawText || '').trim().replace(/[\u2014\u2013]/g, ' - ');
+  if (!text) throw new Error('Please enter some text, syllabus notes, or keywords first.');
+
+  const home = options.homeUniversity || 'Home University';
+  const partner = options.partnerUniversity || 'Partner University';
+  const weeks = options.durationWeeks || (options.mode === 'course' ? 14 : 5);
+  const scope = options.mode === 'course' ? 'Whole New Course' : 'Shared Course Segment / Module';
+
+  if (aiEnabled()) {
+    try {
+      const system = `You are an expert curriculum architect specializing in international higher education course co-design across partner universities.
+Your task is to take the user's raw, unformatted, informal notes or keywords and convert them into a structured, highly professional, inspiring course co-design prompt.
+The output will be placed directly into an editable text field for the professor to review and refine.
+
+CRITICAL FORMAT RULES:
+- Do NOT use Em dashes anywhere.
+- Do NOT include conversational filler, preamble, backticks, or meta comments.
+- Organize the prompt with clear headings and bullet points matching this structure:
+
+1. Course Vision & Driving Inquiry:
+[Articulate the core academic discipline, central problem, and driving question based on the user's text]
+
+2. Dual-University Collaborative Rationale:
+[Explain why collaboration between ${home} and ${partner} is essential, highlighting comparative perspectives]
+
+3. Student Cohort Dynamics & Joint Work:
+[Describe student team interactions, collaborative problem-solving, and cross-cultural dialogue over ${weeks} weeks]
+
+4. Concrete Deliverables & Culminating Evidence:
+[Specific tangible artifacts students produce together (joint case analysis, prototype, symposium, or policy brief)]`;
+
+      const user = `Raw Notes / Unformatted Text from Professor:
+"""
+${text}
+"""
+
+Context:
+- Home University: ${home}
+- Partner University: ${partner}
+- Scope: ${scope} (${weeks} weeks)
+
+Convert this raw text into the structured, professional course co-design prompt now:`;
+
+      const res = await callProvider(system, user);
+      if (res && res.trim().length > 30) {
+        return res.trim().replace(/[\u2014\u2013]/g, ' - ');
+      }
+    } catch (err) {
+      console.warn('Live AI prompt structuring failed or offline, falling back to heuristic engine:', err);
+    }
+  }
+
+  return heuristicStructurePrompt(text, options);
+}

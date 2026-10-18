@@ -52,23 +52,41 @@ app.view('overview', {
 
       <ol class="stages" aria-label="Design-thinking progress">${stages.map((st, i) => `<li class="${st.done ? 'done' : ''}"><a href="#/p/${p.id}/${st.route}"><span class="num">${st.done ? icon.check : i + 1}</span><span>${st.label}</span></a></li>`).join('')}</ol>
 
-      ${p.isAiSimulation ? `
+      ${p.isAiSimulation && !p.isAutopilotCompleted ? `
+      <div class="card ai-assist-partner-banner" style="margin-bottom: var(--space-3); border-left: 3px solid var(--color-primary);">
+        <div class="row between wrap gap" style="align-items: center;">
+          <div class="grow">
+            <div class="row gap" style="align-items: center; margin-bottom: 4px;">
+              <span class="badge badge-live">AI Partner: Active</span>
+              <strong>Co-Designing with ${esc(pn(p, p.aiPartnerId)?.name || 'International Colleague')}</strong>
+            </div>
+            <p class="muted small" style="margin: 0;">
+              Partner institution: <strong>${esc(pn(p, p.aiPartnerId)?.institution || '')}</strong> (${esc(pn(p, p.aiPartnerId)?.country || '')}) · 
+              Mode: <strong>Interactive AI Assistance</strong> (collaborate step-by-step across all design stages without autopilot).
+            </p>
+          </div>
+          <div class="row gap wrap">
+            <a class="btn sm primary" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} View Partner Context Card</a>
+            <a class="btn sm" href="#/p/${p.id}/frame">${icon.sparkle} Frame Design Brief</a>
+            <button class="btn sm ghost" data-action="open-download-pack">${icon.download} Course Pack</button>
+          </div>
+        </div>
+      </div>` : (p.isAutopilotCompleted ? `
       <div class="card autopilot-banner" style="margin-bottom: var(--space-3);">
         <div class="row between wrap gap" style="align-items: center;">
           <div class="grow">
             <div class="row gap" style="align-items: center; margin-bottom: 4px;">
-              <span class="badge ${p.isAutopilotCompleted ? 'badge-ok' : 'badge-live'}">${p.isAutopilotCompleted ? 'Autopilot Complete' : 'AI Simulation Active'}</span>
-              <strong>AI Autopilot Co-Design Partner: ${esc(pn(p, p.aiPartnerId)?.name || 'International Colleague')}</strong>
+              <span class="badge badge-ok">Autonomous Deliverables Ready</span>
+              <strong>Autonomous Co-Design: ${esc(pn(p, p.aiPartnerId)?.name || 'International Colleague')}</strong>
             </div>
             <p class="muted small" style="margin: 0;">
               Partner institution: <strong>${esc(pn(p, p.aiPartnerId)?.institution || '')}</strong> (${esc(pn(p, p.aiPartnerId)?.country || '')}) · 
               Scope: <strong>${p.mode === 'course' ? 'Co-developed whole course' : 'Shared international module'}</strong>.
-              ${p.isAutopilotCompleted ? 'All 8 design stages are fully approved and ready for classroom teaching.' : 'Run AI Autopilot to automatically co-develop, align, and approve the complete course package.'}
+              All design deliverables are fully drafted, aligned, and ready for your classroom.
             </p>
           </div>
           <div class="row gap wrap">
-            <button class="btn sm ${p.isAutopilotCompleted ? '' : 'primary'}" data-action="run-autopilot">${icon.sparkle} ${p.isAutopilotCompleted ? 'Re-Run Autopilot' : 'Run AI Autopilot'}</button>
-            <button class="btn sm ${p.isAutopilotCompleted ? 'primary' : ''}" data-action="open-download-pack">${icon.download} Download Course Pack</button>
+            <button class="btn sm primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
             <a class="btn sm ghost" href="#/p/${p.id}/partners/${p.aiPartnerId}">${icon.eye} Partner Context</a>
           </div>
         </div>
@@ -81,7 +99,7 @@ app.view('overview', {
           </div>
           <button class="btn sm primary" data-action="open-download-pack">${icon.download} Download Course Pack</button>
         </div>
-      </div>`}
+      </div>`)}
 
       <div class="card collab-format-card" style="margin-bottom: var(--space-4); border-left: 3px solid var(--color-primary);">
         <div class="row between wrap gap" style="align-items: center;">

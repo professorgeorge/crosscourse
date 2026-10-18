@@ -2,7 +2,7 @@
 
 An autonomous AI co-design studio and workspace for creating collaborative international courses across partner universities.
 
-Specify two partner universities, the academic course term, and the collaboration format (course segment or whole new course)—either conversationally or through structured options—and Crosscourse autonomously generates complete, classroom-ready deliverables.
+Specify two partner universities, the course duration, and the collaboration format (course segment or whole new course), either conversationally or through structured options, and Crosscourse autonomously generates complete, classroom-ready deliverables.
 
 Crosscourse is a static Progressive Web App (PWA). There is no server and no account system: every project runs directly in the browser and can be hosted free on GitHub Pages and installed on desktop or mobile.
 

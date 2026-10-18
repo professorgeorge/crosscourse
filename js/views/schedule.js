@@ -1,6 +1,6 @@
 import { app } from '../app.js';
 import * as S from '../store.js';
-import { esc, icon, field, chip, badge, modal, toast, download, md, empty, confirmBox } from '../ui.js';
+import { esc, icon, field, chip, badge, modal, toast, download, md, empty, confirmBox, renderCoach } from '../ui.js';
 import * as T from '../time.js';
 import { head } from './project.js';
 import { propose, proposalsFor } from './proposals.js';
@@ -55,6 +55,20 @@ app.view('schedule', {
     const flex = !!app._flex;
     const wins = active(p).length >= 2 ? T.findOverlaps(active(p), day, 14, { flex, minMinutes: 30 }) : [];
     return `<div class="page">${head('Calendar & time zones', 'Calculated, not guessed: academic-calendar overlap and DST-aware working-hour windows for every partner.')}
+      ${renderCoach({
+        stage: 'Schedule & Time Zones',
+        title: 'Time Zone & Calendar Coach',
+        goal: 'Identify fair overlapping calendar weeks and working-hour windows without placing an unfair scheduling burden on one institution.',
+        actions: [
+          { action: 'ai-coach', data: { stage: 'schedule' }, label: 'Coach guidance on calendar sync', icon: 'sparkle' }
+        ],
+        tips: [
+          'Are you alternating early/late meeting times so one partner does not always bear the flexible hour burden?',
+          'Do you have at least 3 to 4 overlapping teaching weeks free of campus holidays and exam breaks?',
+          'Have you accounted for Daylight Saving Time shifts between the Southern and Northern hemispheres?'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
       <section class="card"><h2>Academic calendars</h2>${timeline(p)}</section>
       <section class="card">
         <div class="section-head"><h2>Working hours on a day</h2><div class="field inline"><label for="grid-day">Date</label><input type="date" id="grid-day" value="${day}" data-action-change="grid-day"></div></div>
@@ -110,6 +124,20 @@ app.view('meetings', {
       </article>`;
     };
     return `<div class="page">${head('Live sessions', 'Most co-design happens asynchronously. Meet live for what genuinely needs conversation, and record outcomes for anyone who couldn’t join.', `<a class="btn" href="#/p/${p.id}/schedule">${icon.clock} Find a fair time</a><button class="btn primary" data-action="new-meeting">${icon.plus} Schedule session</button>`)}
+      ${renderCoach({
+        stage: 'Live Sessions',
+        title: 'Live Session Coach',
+        goal: 'Plan high-impact synchronous sessions with crisp agendas, equitable speaking opportunities, and complete notes for absent students.',
+        actions: [
+          { action: 'ai-coach', data: { stage: 'meetings' }, label: 'Coach guidance on live sessions', icon: 'sparkle' }
+        ],
+        tips: [
+          'Is the agenda focused on cross-cohort interaction rather than one-way faculty presentation?',
+          'Are meeting times verified in every partner’s local time zone?',
+          'Are session outcomes and decisions documented promptly in Crosscourse?'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
       <section class="section"><h2>Upcoming</h2>${up.length ? `<div class="stack">${up.map(card).join('')}</div>` : empty('No upcoming sessions', 'Use “Find a fair time” to see windows inside everyone’s working hours.')}</section>
       ${past.length ? `<section class="section"><h2>Past</h2><div class="stack">${past.map(card).join('')}</div></section>` : ''}
     </div>`;
@@ -117,6 +145,7 @@ app.view('meetings', {
 });
 
 app.register({
+  'ai-coach'(d, btn) { return propose('coach', { stage: d.stage || 'schedule' }, {}, btn); },
   async 'new-meeting'(d = {}) {
     const p = app.p, tz = viewerTz();
     const start = d.start ? new Date(d.start) : new Date(Date.now() + 86400000 * 2);

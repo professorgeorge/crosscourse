@@ -1,6 +1,6 @@
 import { app } from '../app.js';
 import * as S from '../store.js';
-import { esc, icon, field, chip, badge, toast, md, empty, confirmBox } from '../ui.js';
+import { esc, icon, field, chip, badge, toast, md, empty, confirmBox, renderCoach } from '../ui.js';
 import { counterfactual } from '../checks.js';
 import { fmtDate } from '../time.js';
 import { head, statusBadge, approvalBtn } from './project.js';
@@ -14,7 +14,21 @@ const active = p => p.partners.filter(x => x.status !== 'withdrawn');
 app.view('outcomes', {
   render({ p }) {
     return `<div class="page">${head('Shared learning outcomes', 'What students will learn together, mapped onto each partner’s local course so the collaboration counts everywhere.', `<button class="btn" data-action="ai-outcomes">${icon.sparkle} Propose outcomes</button><button class="btn primary" data-action="add-outcome">${icon.plus} Add outcome</button>`)}
-      ${proposalsFor(p, ['outcomes'])}
+      ${renderCoach({
+        stage: 'Stage 4: Learning Outcomes',
+        title: 'Outcomes Alignment Coach',
+        goal: 'Formulate shared disciplinary and intercultural learning outcomes, then map them directly onto each partner’s local course outcomes.',
+        actions: [
+          { action: 'ai-outcomes', label: 'Propose Shared Outcomes', icon: 'sparkle' },
+          { action: 'ai-coach', data: { stage: 'outcomes' }, label: 'Coach guidance on outcomes', icon: 'sparkle' }
+        ],
+        tips: [
+          'Does the module include both disciplinary competence and intercultural capability outcomes?',
+          'Are outcomes observable and verifiable through student artifacts?',
+          'Is every shared outcome mapped to at least one local course outcome for each partner?'
+        ]
+      })}
+      ${proposalsFor(p, ['outcomes', 'coach'])}
       ${p.outcomes.length ? `<div class="stack">${p.outcomes.map((o, i) => `<article class="card outcome">
         <div class="section-head"><div class="row gap"><span class="num-tag">O${i + 1}</span>${statusBadge(o.status)}${o.source === 'ai' ? badge('from AI proposal', 'ai') : ''}</div>
           <div class="row gap">${approvalBtn('outcomes', o.id, 'Outcome O' + (i + 1), o.status)}<button class="icon-btn" data-action="del-item" data-col="outcomes" data-id="${o.id}" aria-label="Delete outcome">${icon.trash}</button></div></div>
@@ -71,7 +85,21 @@ app.view('design', {
     if (params[0]) return activityEditor(p, params[0]);
     const cf = counterfactual(p);
     return `<div class="page">${head('Learning experience', 'What students will actually do together, sequenced from trust to co-creation and reflection.', `<button class="btn" data-action="ai-designs">${icon.sparkle} Generate contrasting designs</button><button class="btn primary" data-action="add-activity">${icon.plus} Add activity</button>`)}
-      ${proposalsFor(p, ['designs'])}
+      ${renderCoach({
+        stage: 'Stage 5: Learning Sequence',
+        title: 'Experience Architecture Coach',
+        goal: 'Sequence student activities along the 6-stage arc: Trust -> Local Exploration -> Cross-Cohort Comparison -> Critical Analysis -> Joint Co-Creation -> Reflection.',
+        actions: [
+          { action: 'ai-designs', label: 'Generate Contrasting Designs', icon: 'sparkle' },
+          { action: 'ai-coach', data: { stage: 'design' }, label: 'Coach guidance on sequence', icon: 'sparkle' }
+        ],
+        tips: [
+          'Do students build trust and asynchronous rapport before high-stakes collaborative assignments?',
+          'Are dependencies between student groups supported by clear fallback/contingency plans?',
+          'Is synchronous time reserved for genuine dialogue rather than passive lectures?'
+        ]
+      })}
+      ${proposalsFor(p, ['designs', 'coach'])}
       ${p.activities.length ? `
       <section class="card flush"><div class="section-head pad"><h2>Collaboration dependency map</h2></div>${depMap(p)}</section>
       <section class="section">
@@ -103,6 +131,19 @@ function activityEditor(p, id) {
     <a href="#/p/${p.id}/design" class="back">${icon.back} Learning experience</a>
     <header class="page-head"><div class="grow"><p class="eyebrow">${esc(S.STAGES.find(s => s.key === a.stage)?.label)}</p><h1 class="editable"><input class="title-input" data-model="${A}.title" value="${esc(a.title)}" aria-label="Activity title"></h1><div class="row gap">${statusBadge(a.status)}${contribBar(p, a)}</div></div>
       <div class="row gap wrap">${approvalBtn('activities', a.id, a.title, a.status)}<button class="btn danger ghost sm" data-action="del-activity" data-id="${a.id}">${icon.trash} Delete</button></div></header>
+    ${renderCoach({
+      stage: 'Activity Co-Design',
+      title: a.title || 'Activity Designer',
+      goal: 'Ensure mutual interdependence: every participating cohort must have an active, explicit contribution, not just passive presence.',
+      actions: [
+        { action: 'ai-instructions', data: { id: a.id }, label: 'Draft Student Instructions', icon: 'sparkle' }
+      ],
+      tips: [
+        'What specific evidence or perspective does each cohort bring to this activity?',
+        'If one cohort faces a campus closure or delay, what is the fair fallback plan?',
+        'Are instructions clear on translation, evidence types, and whether consensus is required?'
+      ]
+    })}
     <div class="cols">
       <div class="col-main stack">
         <section class="card">
@@ -182,6 +223,20 @@ const LAYERS = { product: 'Collaborative product', process: 'Collaboration proce
 app.view('assess', {
   render({ p }) {
     return `<div class="page">${head('Assessment', 'Shared where necessary, local where appropriate. Shared criteria; local grade weighting. The assistant drafts criteria; it never grades students.', `<button class="btn primary" data-action="add-assessment">${icon.plus} Add assessment</button>`)}
+      ${renderCoach({
+        stage: 'Stage 6: Assessment Architecture',
+        title: 'Fair Assessment Coach',
+        goal: 'Balance shared evaluation criteria with local grading sovereignty across collaborative product, collaboration process, and individual reflection.',
+        actions: [
+          { action: 'ai-coach', data: { stage: 'assess' }, label: 'Coach guidance on rubrics', icon: 'sparkle' }
+        ],
+        tips: [
+          'Do criteria assess collaborative process and reflection, not merely the final slide deck?',
+          'Does each institution retain full sovereignty over local grade weights?',
+          'Is peer feedback structured constructively with clear cultural guidelines?'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
       <div class="layers-legend">${Object.entries(LAYERS).map(([k, v]) => `<span class="badge l-${k}">${v}</span>`).join('')}</div>
       ${p.assessments.length ? `<div class="stack">${p.assessments.map(s => assessmentCard(p, s)).join('')}</div>` : empty('No assessments yet', 'Plan evidence for each shared outcome: a collaborative product, the collaboration process, and individual learning.')}
     </div>`;
@@ -204,6 +259,7 @@ function assessmentCard(p, s) {
   </article>`;
 }
 app.register({
+  'ai-coach'(d, btn) { return propose('coach', { stage: d.stage || 'design' }, {}, btn); },
   'add-assessment'() { app.mutate(pp => pp.assessments.push({ id: S.uid('asm_'), title: 'New assessment', layer: 'product', outcomes: [], activityId: '', due: '', criteria: [], local: {}, status: 'draft', updatedAt: S.now(), updatedBy: app.me?.id }), 'Added an assessment'); },
   'add-criterion'(d) { const s = app.p.assessments.find(x => x.id === d.id); app.mutate(() => { s.criteria = s.criteria || []; s.criteria.push({ id: S.uid('cr_'), name: '', description: '', levels: {} }); app.touch(s); }); },
   'del-criterion'(d) { const s = app.p.assessments.find(x => x.id === d.id); app.mutate(() => { s.criteria = s.criteria.filter(c => c.id !== d.cid); app.touch(s); }); },

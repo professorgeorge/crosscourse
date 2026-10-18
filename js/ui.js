@@ -146,3 +146,15 @@ export function md(src = '') {
   close();
   return html;
 }
+
+export function renderCoach({ stage = '', title = '', goal = '', actions = [], tips = [] }) {
+  return `<section class="coach-box" aria-label="AI Co-Design Coach">
+    <div class="coach-head">
+      <div class="coach-title">${icon.sparkle} <span>${stage ? `<small class="badge ai">${esc(stage)}</small> ` : ''}${esc(title || 'AI Co-Design Coach')}</span></div>
+    </div>
+    <div class="coach-goal">${goal}</div>
+    ${actions?.length ? `<div class="coach-actions">${actions.map(a => `<button type="button" class="btn sm" data-action="${esc(a.action)}" ${a.data ? Object.entries(a.data).map(([k, v]) => `data-${k}="${esc(v)}"`).join(' ') : ''}>${a.icon ? (icon[a.icon] || icon.sparkle) : icon.sparkle} ${esc(a.label)}</button>`).join('')}</div>` : ''}
+    ${tips?.length ? `<details class="coach-tips"><summary>Guiding pedagogical questions for you and your partner</summary><ul>${tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></details>` : ''}
+  </section>`;
+}
+

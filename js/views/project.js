@@ -1,6 +1,6 @@
 import { app } from '../app.js';
 import * as S from '../store.js';
-import { esc, icon, field, chip, badge, modal, toast, fmtAgo, pickFile, confirmBox, empty } from '../ui.js';
+import { esc, icon, field, chip, badge, modal, toast, fmtAgo, pickFile, confirmBox, empty, renderCoach } from '../ui.js';
 import { stageProgress, releaseGate, decisionStatus, runChecks } from '../checks.js';
 import { fmtTime, tzAbbrev, termOverlap } from '../time.js';
 import { partnerFormFields } from './home.js';
@@ -48,6 +48,19 @@ app.view('overview', {
 
       <ol class="stages" aria-label="Design-thinking progress">${stages.map((st, i) => `<li class="${st.done ? 'done' : ''}"><a href="#/p/${p.id}/${st.route}"><span class="num">${st.done ? icon.check : i + 1}</span><span>${st.label}</span></a></li>`).join('')}</ol>
 
+      ${renderCoach({
+        stage: 'Overview & Guidance',
+        title: 'Course Co-Design Coach',
+        goal: 'Welcome! This dashboard orchestrates your international co-design workflow across institutional contexts. Follow the 8-stage progress tracker above, resolve pending approvals, and keep calendars synchronized.',
+        actions: [{ action: 'ai-coach', data: { stage: 'overview' }, label: 'Coach guidance for our next step', icon: 'sparkle' }],
+        tips: [
+          'Have both partner faculty chosen their identity so edits and votes are recorded?',
+          'Are there any open blockers flagged in the Alignment box?',
+          'Have you agreed on an update-exchange rhythm in Share & sync?'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
+
       <div class="dash">
         <section class="card span2">
           <div class="section-head"><h2>Waiting on you</h2></div>
@@ -93,7 +106,20 @@ app.view('partners', {
     let content;
     if (tab === 'compare') content = compareView(p);
     else { const x = pn(p, tab); content = x ? partnerCard(p, x, me) : empty('Partner not found', ''); }
-    return `<div class="page">${head('Partners & context cards', 'Each partner describes their own course and constraints first. The comparison shows differences; it doesn’t average them away.', actions)}${tabs}${content}</div>`;
+    return `<div class="page">${head('Partners & context cards', 'Each partner describes their own course and constraints first. The comparison shows differences; it doesn’t average them away.', actions)}
+      ${renderCoach({
+        stage: 'Stage 1: Institutional Context',
+        title: 'Context Cards & Cohort Profile Coach',
+        goal: 'Solid partnerships start with transparency about local realities. Each partner details their academic calendar, student demographics, linguistic background, and technical constraints before designing activities.',
+        actions: [{ action: 'ai-coach', data: { stage: 'partners' }, label: 'Coach tips on context gaps', icon: 'sparkle' }],
+        tips: [
+          'Are term dates entered accurately with all campus holidays and exam breaks?',
+          'What digital tools are officially approved and accessible without paywalls or VPNs?',
+          'What local disciplinary outcomes must this international module satisfy for your institution?'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
+      ${tabs}${content}</div>`;
   }
 });
 
@@ -151,7 +177,8 @@ function partnerCard(p, x, me) {
         <button class="btn sm" data-action="add-break" data-pid="${x.id}">${icon.plus} Add break</button>
       </section>
       <section class="card">
-        <h2>What we bring</h2>
+        <div class="section-head"><h2>What we bring</h2><button type="button" class="btn sm" data-action="ai-partner-contribution" data-pid="${x.id}">${icon.sparkle} Draft cohort contribution</button></div>
+        ${proposalsFor({ ...p, proposals: p.proposals.filter(y => y.partnerId === x.id) }, ['partnerContribution'])}
         ${field('Expertise, perspectives, resources this cohort contributes', `${P}.contributes`, x.contributes, { type: 'textarea', rows: 4 })}
       </section>
     </aside>
@@ -239,8 +266,22 @@ app.view('frame', {
   render({ p }) {
     const b = p.brief;
     const kinds = Object.entries(S.DIFF_KINDS);
-    return `<div class="page">${head('Design brief', 'Frame a learning challenge that becomes possible only because your cohorts work together.', `<button class="btn" data-action="ai-common-ground">${icon.sparkle} Surface common ground & differences</button>`)}
-      ${proposalsFor(p, ['commonGround'])}
+    return `<div class="page">${head('Design brief', 'Frame a learning challenge that becomes possible only because your cohorts work together.', `<button class="btn" data-action="ai-brief">${icon.sparkle} Draft shared brief</button><button class="btn" data-action="ai-common-ground">${icon.sparkle} Surface common ground & differences</button>`)}
+      ${renderCoach({
+        stage: 'Stage 2: Design Brief',
+        title: 'Framing & Driving Question Coach',
+        goal: 'Define a shared challenge that becomes possible only because your diverse cohorts work together. Preserve productive cultural and disciplinary differences rather than smoothing them away.',
+        actions: [
+          { action: 'ai-brief', label: 'Draft Shared Brief & Driving Question', icon: 'sparkle' },
+          { action: 'ai-common-ground', label: 'Surface Common Ground & Differences', icon: 'sparkle' }
+        ],
+        tips: [
+          'Counterfactual test: if one cohort disappeared, what learning would become impossible?',
+          'Are differences categorized into productive contrasts vs hard operational blockers?',
+          'Does the driving question invite authentic inquiry from both student cohorts?'
+        ]
+      })}
+      ${proposalsFor(p, ['brief', 'commonGround', 'coach'])}
       <div class="cols">
         <section class="card col-main">
           <div class="section-head"><h2>Joint brief ${statusBadge(b.status)}</h2>${approvalBtn('brief', 'brief', 'Design brief', b.status)}</div>
@@ -270,6 +311,10 @@ app.view('frame', {
 });
 
 app.register({
+  'ai-coach'(d, btn) { return propose('coach', { stage: d.stage || 'overview' }, {}, btn); },
+  'ai-partner-contribution'(d, btn) { return propose('partnerContribution', { partnerId: d.pid }, { partnerId: d.pid }, btn); },
+  'ai-brief'(d, btn) { return propose('brief', {}, {}, btn); },
+  'ai-charter'(d, btn) { return propose('charter', {}, {}, btn); },
   'ai-common-ground'(d, btn) { return propose('commonGround', {}, {}, btn); },
   'add-cg'() { app.mutate(pp => pp.commonGround.push({ id: S.uid('cg_'), theme: '', evidence: 'Added by ' + (app.me?.name || 'a partner'), updatedAt: S.now(), updatedBy: app.me?.id })); },
   'add-diff'() { app.mutate(pp => pp.differences.push({ id: S.uid('dif_'), topic: 'New difference', detail: '', kind: 'unknown', status: 'open', updatedAt: S.now(), updatedBy: app.me?.id }), 'Added a difference'); },
@@ -295,8 +340,21 @@ const CHARTER = [
 app.view('charter', {
   render({ p }) {
     const c = p.charter;
-    return `<div class="page narrow-ish">${head('Partnership charter', 'Agree how you will work together before designing what students will do.', approvalBtn('charter', 'charter', 'Partnership charter', c.status))}
+    const actions = `<button class="btn" data-action="ai-charter">${icon.sparkle} Propose charter draft</button>${approvalBtn('charter', 'charter', 'Partnership charter', c.status)}`;
+    return `<div class="page narrow-ish">${head('Partnership charter', 'Agree how you will work together before designing what students will do.', actions)}
       <div class="row gap"><span>Status: ${statusBadge(c.status)}</span></div>
+      ${renderCoach({
+        stage: 'Stage 3: Partnership Charter',
+        title: 'Partnership Charter Coach',
+        goal: 'Agree on mutual expectations, response rhythms, attribution, and contingency plans before students are introduced to the collaboration.',
+        actions: [{ action: 'ai-charter', label: 'Propose Complete Charter Draft', icon: 'sparkle' }],
+        tips: [
+          'What is the agreed response time for asynchronous reviews (e.g. 2 to 3 working days)?',
+          'How will grading disagreements or cohort delays be handled?',
+          'Who retains attribution and reuse rights to jointly developed materials?'
+        ]
+      })}
+      ${proposalsFor(p, ['charter', 'coach'])}
       <section class="card stack">
         ${field('Expected response time for asynchronous requests (working days)', 'charter.responseDays', c.responseDays, { type: 'number', min: 1 })}
         ${CHARTER.map(([k, l, h]) => field(l, 'charter.' + k, c[k], { type: 'textarea', rows: 3, placeholder: h })).join('')}

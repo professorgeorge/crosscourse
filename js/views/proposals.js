@@ -51,6 +51,12 @@ function body(p, x) {
     case 'instructions': return `<div class="prose">${md(r.instructions || '')}</div>${r.plainLanguageNotes ? `<p class="muted small">${esc(r.plainLanguageNotes)}</p>` : ''}`;
     case 'agenda': return `<ol>${(r.agenda || []).map(a => `<li>${esc(a.item)} <span class="muted small">(${a.minutes} min${a.decisionNeeded ? ', decision' : ''})</span>${a.prework ? `<br><span class="small">Pre-work: ${esc(a.prework)}</span>` : ''}</li>`).join('')}</ol><p class="small"><strong>For partners who can’t attend:</strong> ${esc(r.asyncAlternative)}</p>`;
     case 'mediate': return `<p>${esc(r.summary)}</p>${(r.positions || []).map(x => `<p class="small"><strong>${esc(x.partner)}:</strong> ${esc(x.position)} <span class="muted">(concern: ${esc(x.underlyingConcern)})</span></p>`).join('')}<h4>Options</h4><ul>${(r.options || []).map(o => `<li><strong>${esc(o.option)}</strong>: ${esc((o.consequences || []).join('; '))} <span class="muted">(${esc(o.whoIsAffected)})</span></li>`).join('')}</ul>${list(r.questions)}`;
+    case 'brief': return `<div class="mini-card stack"><p><strong>Shared Challenge:</strong> ${esc(r.challenge || '')}</p><p><strong>Driving Question:</strong> ${esc(r.question || '')}</p><p><strong>Why International:</strong> ${esc(r.whyInternational || '')}</p><p><strong>Counterfactual Test:</strong> ${esc(r.counterfactual || '')}</p></div>`;
+    case 'charter': return `<table class="tbl"><tbody>${Object.entries(r.charter || {}).map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table>`;
+    case 'partnerContribution': return `<div class="mini-card"><p><strong>Proposed Contribution for ${esc(pn(p, x.partnerId)?.institution || 'Partner')}:</strong></p><p>${esc(r.contributes || '')}</p></div>`;
+    case 'glossarySuggest': return `<ul class="plain">${(r.terms || []).map((t, i) => `<li><label class="check">${sel('gls', i)}<span><strong>${esc(t.term)}</strong>: ${Object.entries(t.definitions || {}).map(([lang, def]) => `<em>${esc(lang)}:</em> ${esc(def)}`).join(' | ')} <small class="muted">${esc(t.note || '')}</small></span></label></li>`).join('')}</ul>`;
+    case 'studentBrief': return `<div class="prose">${md(r.brief || '')}</div>`;
+    case 'coach': return `<div class="stack"><div class="banner info">${icon.sparkle} <span><strong>Assessment:</strong> ${esc(r.assessment || '')}</span></div>${r.recommendations?.length ? `<h4>Actionable Next Steps</h4>${list(r.recommendations)}` : ''}${r.discussionQuestions?.length ? `<h4>Questions to Discuss with Your Partner</h4>${list(r.discussionQuestions)}` : ''}${r.risksToWatch?.length ? `<h4>Potential Pitfalls</h4>${list(r.risksToWatch)}` : ''}</div>`;
     default: return `<pre class="err">${esc(JSON.stringify(r, null, 2))}</pre>`;
   }
 }
@@ -58,7 +64,7 @@ function body(p, x) {
 export function proposalCard(p, x) {
   const by = pn(p, x.createdBy);
   const assumptions = x.result?.assumptions;
-  const selectable = ['extract', 'commonGround', 'outcomes', 'review'].includes(x.kind);
+  const selectable = ['extract', 'commonGround', 'outcomes', 'review', 'glossarySuggest'].includes(x.kind);
   return `<article class="proposal ${x.status}" id="${x.id}">
     <header class="prop-head">
       <div><span class="prop-kind">${icon.sparkle} ${esc(x.title)}</span> ${badge(x.source === 'ai' ? 'AI proposal' : 'Template', x.source === 'ai' ? 'ai' : '')} ${x.status !== 'pending' ? badge(x.status, x.status === 'accepted' ? 'ok' : '') : ''}</div>
@@ -67,7 +73,7 @@ export function proposalCard(p, x) {
     ${assumptions?.length ? `<div class="assumptions"><strong>Assumptions</strong>${list(assumptions)}</div>` : ''}
     <div class="prop-body">${body(p, x)}</div>
     ${x.status === 'pending' ? `<footer class="prop-foot">
-      ${selectable || ['rubric', 'instructions', 'agenda', 'mediate'].includes(x.kind) ? `<button class="btn primary sm" data-action="accept-proposal" data-id="${x.id}">${icon.check} ${selectable ? 'Add selected as drafts' : 'Accept as draft'}</button>` : ''}
+      ${selectable || ['rubric', 'instructions', 'agenda', 'mediate', 'brief', 'charter', 'partnerContribution', 'coach', 'studentBrief'].includes(x.kind) ? `<button class="btn primary sm" data-action="accept-proposal" data-id="${x.id}">${icon.check} ${selectable ? 'Add selected as drafts' : (x.kind === 'coach' ? 'Mark reviewed' : 'Accept as draft')}</button>` : ''}
       <button class="btn sm" data-action="reject-proposal" data-id="${x.id}">Dismiss</button>
       <span class="muted small">Accepted items enter the design as drafts. Shared items still need partner approval.</span>
     </footer>` : ''}
@@ -107,8 +113,35 @@ app.register({
       if (x.kind === 'instructions') { const a = pp.activities.find(y => y.id === x.activityId); if (a) { a.instructions = r.instructions || ''; app.touch(a); if (a.status === 'approved') a.status = 'changed'; } }
       if (x.kind === 'agenda') { const m = pp.meetings.find(y => y.id === x.meetingId); if (m) { m.agenda = (r.agenda || []).map((a, i) => `${i + 1}. ${a.item} (${a.minutes} min)${a.decisionNeeded ? ' (decision needed)' : ''}`).join('\n') + (r.asyncAlternative ? `\n\nCan’t attend? ${r.asyncAlternative}` : ''); app.touch(m); } }
       if (x.kind === 'mediate') pp.comments.push({ id: S.uid('cmt_'), target: { kind: 'decisions', id: x.decisionId }, author: by, ai: true, text: `Assistant’s neutral summary (proposal, not a recommendation):\n${r.summary}\n\nOptions:\n${(r.options || []).map(o => `- ${o.option}: ${(o.consequences || []).join('; ')}`).join('\n')}`, at });
+      if (x.kind === 'brief') {
+        Object.assign(pp.brief, {
+          challenge: r.challenge || pp.brief.challenge,
+          question: r.question || pp.brief.question,
+          whyInternational: r.whyInternational || pp.brief.whyInternational,
+          counterfactual: r.counterfactual || pp.brief.counterfactual
+        });
+        app.touch(pp.brief);
+        if (pp.brief.status === 'approved') pp.brief.status = 'changed';
+      }
+      if (x.kind === 'charter') {
+        Object.assign(pp.charter, r.charter || {});
+        app.touch(pp.charter);
+        if (pp.charter.status === 'approved') pp.charter.status = 'changed';
+      }
+      if (x.kind === 'partnerContribution') {
+        const pt = pp.partners.find(y => y.id === x.partnerId);
+        if (pt) { pt.contributes = r.contributes || pt.contributes; app.touch(pt); }
+      }
+      if (x.kind === 'glossarySuggest') {
+        for (const i of selected(el, 'gls')) {
+          const t = r.terms[+i];
+          pp.glossary.push({ id: S.uid('gls_'), term: t.term, definitions: t.definitions || {}, note: t.note || '', updatedAt: at, updatedBy: by });
+        }
+      }
       close(pp, x, 'accepted');
     }, `Accepted proposal: ${x.title}`, { kind: 'proposals', id: x.id });
+    toast('Added as drafts.', 'ok');
+  },
     toast('Added as drafts.', 'ok');
   },
   'reject-proposal'(d) {

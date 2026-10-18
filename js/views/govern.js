@@ -1,6 +1,6 @@
 import { app } from '../app.js';
 import * as S from '../store.js';
-import { esc, icon, field, chip, badge, modal, toast, fmtAgo, empty, md } from '../ui.js';
+import { esc, icon, field, chip, badge, modal, toast, fmtAgo, empty, md, renderCoach } from '../ui.js';
 import { decisionStatus, runChecks, matrix, DIMENSIONS, counterfactual } from '../checks.js';
 import { head } from './project.js';
 import { propose, proposalsFor, proposalCard } from './proposals.js';
@@ -82,6 +82,20 @@ app.view('decisions', {
     const open = p.decisions.filter(d => !['approved', 'adopted'].includes(decisionStatus(p, d).status)).reverse();
     const closed = p.decisions.filter(d => ['approved', 'adopted'].includes(decisionStatus(p, d).status)).reverse();
     return `<div class="page narrow-ish">${head('Decisions & proposals', 'Shared decisions need explicit approval from every affected institution. Silence is not consent.', `<button class="btn primary" data-action="new-decision">${icon.plus} New decision</button>`)}
+      ${renderCoach({
+        stage: 'Governance & Decisions',
+        title: 'Consensus & Decision Coach',
+        goal: 'Consequential shared decisions require explicit approval from each partner’s representative. Silence is never taken as consent.',
+        actions: [
+          { action: 'ai-coach', data: { stage: 'decisions' }, label: 'Coach guidance on decisions', icon: 'sparkle' }
+        ],
+        tips: [
+          'Are any critical decisions pending partner response before module launch?',
+          'If an objection was raised, use Articulate Alternatives to mediate constructive compromises.',
+          'Decisions are merged across update files so institutional accountability is permanently preserved.'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
       <div class="tabs"><button class="tab ${tab === 'open' ? 'active' : ''}" data-action="dec-tab" data-t="open">Open <span class="count">${open.length}</span></button><button class="tab ${tab === 'proposals' ? 'active' : ''}" data-action="dec-tab" data-t="proposals">Assistant proposals <span class="count">${pend.length}</span></button><button class="tab ${tab === 'closed' ? 'active' : ''}" data-action="dec-tab" data-t="closed">Settled <span class="count">${closed.length}</span></button></div>
       ${tab === 'open' ? (open.length ? `<div class="stack">${open.map(d => decisionCard(p, d)).join('')}</div>` : empty('No open decisions', 'Request approval from any brief, outcome, activity or assessment, or create a decision for anything else partners need to agree.')) : ''}
       ${tab === 'closed' ? (closed.length ? `<div class="stack">${closed.map(d => decisionCard(p, d)).join('')}</div>` : empty('Nothing settled yet', '')) : ''}
@@ -153,7 +167,21 @@ app.view('review', {
     const groups = ['blocker', 'discuss', 'missing', 'ok'];
     const link = f => f.target?.kind === 'activity' ? `#/p/${p.id}/design/${f.target.id}` : f.target?.kind === 'outcome' ? `#/p/${p.id}/outcomes` : f.target?.kind === 'assessment' ? `#/p/${p.id}/assess` : f.target?.kind === 'partner' ? `#/p/${p.id}/partners/${f.target.id}` : f.fix ? `#/p/${p.id}/${f.fix}` : '';
     return `<div class="page">${head('Alignment review', 'Deterministic checks run continuously. The assistant’s semantic review adds interpretive findings, for discussion, never as verdicts.', `<button class="btn primary" data-action="ai-review">${icon.sparkle} Run semantic review</button>`)}
-      ${proposalsFor(p, ['review'])}
+      ${renderCoach({
+        stage: 'Stage 7: Alignment Review',
+        title: 'Quality & Alignment Audit Coach',
+        goal: 'Deterministic checks flag feasibility blockers continuously, while semantic review evaluates equity, workload balance, and pedagogical depth.',
+        actions: [
+          { action: 'ai-review', label: 'Run Semantic Review', icon: 'sparkle' },
+          { action: 'ai-coach', data: { stage: 'review' }, label: 'Coach guidance on blockers', icon: 'sparkle' }
+        ],
+        tips: [
+          'Are there any zero-tolerance feasibility blockers (e.g. 0 shared weeks, unmapped outcomes)?',
+          'Is student workload realistic and equitable across all institutions?',
+          'Does the counterfactual test confirm that collaboration is genuinely necessary?'
+        ]
+      })}
+      ${proposalsFor(p, ['review', 'coach'])}
       <section class="card flush"><div class="table-wrap"><table class="tbl matrix"><thead><tr><th>Review dimension</th><th>Status</th><th>Open findings</th></tr></thead><tbody>
         ${M.map(m => `<tr><th scope="row">${esc(m.label)}</th><td>${m.status === 'na' ? `<span class="muted">${p.activities.length ? 'No rule-based issues' : 'Not yet assessed'}</span>` : badge(SEV[m.status][0], SEV[m.status][1])}</td><td>${m.count || '0'}</td></tr>`).join('')}
       </tbody></table></div></section>
@@ -168,6 +196,8 @@ app.view('review', {
   }
 });
 app.register({
+  'ai-coach'(d, btn) { return propose('coach', { stage: d.stage || 'review' }, {}, btn); },
+  'ai-glossary'(d, btn) { return propose('glossarySuggest', {}, {}, btn); },
   'ai-review'(d, btn) {
     if (!aiEnabled()) { toast('Semantic review needs an AI provider (Settings). The deterministic checks above work without one.'); return; }
     return propose('review', {}, {}, btn);
@@ -184,7 +214,22 @@ app.register({
 app.view('language', {
   render({ p }) {
     const langs = [...new Set(p.partners.map(x => x.language).filter(Boolean))];
-    return `<div class="page">${head('Language & terminology', 'Work in your preferred language. Keep originals beside translations, and agree key terms so meaning doesn’t drift.', `<button class="btn primary" data-action="add-term">${icon.plus} Add term</button>`)}
+    const actions = `<button class="btn" data-action="ai-glossary">${icon.sparkle} Suggest glossary terms</button><button class="btn primary" data-action="add-term">${icon.plus} Add term</button>`;
+    return `<div class="page">${head('Language & terminology', 'Work in your preferred language. Keep originals beside translations, and agree key terms so meaning doesn’t drift.', actions)}
+      ${renderCoach({
+        stage: 'Cross-Cultural Glossary',
+        title: 'Language & Terminology Coach',
+        goal: 'Avoid misunderstandings by aligning on false friends, academic jargon, and terms with divergent local meanings across contexts.',
+        actions: [
+          { action: 'ai-glossary', label: 'Suggest Cross-Cultural Glossary Terms', icon: 'sparkle' }
+        ],
+        tips: [
+          'Which disciplinary terms carry different connotations in your partner’s academic tradition?',
+          'Are students encouraged to use draft translations as comprehension aids rather than final authority?',
+          'Is the collaboration language accessible to non-native speakers with ample asynchronous reading time?'
+        ]
+      })}
+      ${proposalsFor(p, ['glossarySuggest', 'coach'])}
       <section class="card flush"><div class="section-head pad"><h2>Shared glossary</h2><span class="muted small">${langs.join(' · ')}</span></div>
       ${p.glossary.length ? `<div class="table-wrap"><table class="tbl glossary"><thead><tr><th>Term</th>${langs.map(l => `<th>${esc(l)}</th>`).join('')}<th>Note</th><th></th></tr></thead><tbody>${p.glossary.map(g => `<tr><td><input data-model="glossary[${g.id}].term" value="${esc(g.term)}" aria-label="Term"></td>${langs.map(l => `<td><textarea rows="2" data-model="glossary[${g.id}].definitions.${l.replace(/[^\w]/g, '_')}" aria-label="${esc(l)}">${esc(g.definitions?.[l.replace(/[^\w]/g, '_')] || '')}</textarea></td>`).join('')}<td><textarea rows="2" data-model="glossary[${g.id}].note" aria-label="Note">${esc(g.note || '')}</textarea></td><td><button class="icon-btn" data-action="del-item" data-col="glossary" data-id="${g.id}" aria-label="Delete">${icon.trash}</button></td></tr>`).join('')}</tbody></table></div>` : `<div class="pad">${empty('No terms yet', 'Add discipline terms that may carry different meanings across contexts, e.g. “community”, “policy evaluation”, “participation”.')}</div>`}
       </section>

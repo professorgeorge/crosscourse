@@ -1,10 +1,11 @@
 import { app } from '../app.js';
 import * as S from '../store.js';
-import { esc, icon, chip, badge, modal, toast, download, pickFile, fmtAgo, empty, md } from '../ui.js';
+import { esc, icon, chip, badge, modal, toast, download, pickFile, fmtAgo, empty, md, renderCoach } from '../ui.js';
 import { releaseGate, runChecks, decisionStatus, DIMENSIONS, counterfactual } from '../checks.js';
 import * as T from '../time.js';
 import { head } from './project.js';
 import { settleDecisions } from './govern.js';
+import { propose, proposalsFor } from './proposals.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
 const active = p => p.partners.filter(x => x.status !== 'withdrawn');
@@ -57,6 +58,20 @@ app.view('sync', {
     const mine = changesSince(p, last);
     const conflicts = (p.conflicts || []).filter(c => !c.resolved);
     return `<div class="page narrow-ish">${head('Share & sync', 'There’s no central server: each partner keeps their own copy. Exchange update files by email or a shared drive. Crosscourse merges them item by item.')}
+      ${renderCoach({
+        stage: 'Decentralized Sync',
+        title: 'Collaboration & Sync Coach',
+        goal: 'Crosscourse operates without a central server. You own your data. Export your update file and send it to partners via email or shared drive.',
+        actions: [
+          { action: 'ai-coach', data: { stage: 'sync' }, label: 'Coach guidance on sync & merges', icon: 'sparkle' }
+        ],
+        tips: [
+          'Have you established a regular rhythm for exchanging update files (e.g. after every co-design session)?',
+          'When importing an update, review any concurrent edits in the conflict log.',
+          'Never share or paste private API keys in project files; keys are kept strictly in local browser storage.'
+        ]
+      })}
+      ${proposalsFor(p, ['coach'])}
       <div class="cols eq">
         <section class="card">
           <h2>${icon.upload} Send your update</h2>
@@ -121,7 +136,23 @@ app.view('release', {
   render({ p }) {
     const gate = releaseGate(p);
     const passed = gate.filter(g => g.ok).length;
-    return `<div class="page narrow-ish">${head('Release & export', 'Generate implementation documents only from an approved release, so every partner can verify they’re using the same plan.')}
+    const actions = `<button class="btn" data-action="ai-student-brief">${icon.sparkle} Draft student guide</button><button class="btn primary" data-action="create-release">${icon.package} Create release candidate</button>`;
+    return `<div class="page narrow-ish">${head('Release & export', 'Generate implementation documents only from an approved release, so every partner can verify they’re using the same plan.', actions)}
+      ${renderCoach({
+        stage: 'Stage 8: Release & Implementation',
+        title: 'Launch Readiness Coach',
+        goal: 'Freeze approved learning designs into immutable release candidates, audit all gate checks, and export student-facing guides and design packages.',
+        actions: [
+          { action: 'ai-student-brief', label: 'Draft Student Onboarding Guide', icon: 'sparkle' },
+          { action: 'ai-coach', data: { stage: 'release' }, label: 'Coach guidance on launch', icon: 'sparkle' }
+        ],
+        tips: [
+          'Are all 8 release gate criteria met or explicitly acknowledged by all partner representatives?',
+          'Have you generated the student onboarding guide for distribution before the first module week?',
+          'Are LMS course codes and emergency contact details clearly communicated to students?'
+        ]
+      })}
+      ${proposalsFor(p, ['studentBrief', 'coach'])}
       <section class="card">
         <div class="section-head"><h2>Release gate</h2><span class="muted small">${passed} of ${gate.length} met</span></div>
         <ul class="gate">${gate.map(g => `<li class="${g.ok ? 'ok' : ''}"><span class="tick">${g.ok ? icon.check : ''}</span><span>${esc(g.label)}<small>${esc(g.detail)}</small></span></li>`).join('')}</ul>
@@ -220,5 +251,7 @@ app.register({
     const evs = [...p.activities.filter(a => a.start).map(a => ({ uid: a.id, title: `[Crosscourse] ${a.title}`, allDay: true, startYmd: a.start, endYmd: a.end || a.start, description: a.summary })),
     ...p.meetings.map(m => ({ uid: m.id, title: m.title, start: new Date(m.start), end: new Date(Date.parse(m.start) + m.duration * 60000), description: m.agenda, location: m.link }))];
     download(`${slug(p.title)}-calendar.ics`, T.buildICS(evs), 'text/calendar');
-  }
+  },
+  'ai-coach'(d, btn) { return propose('coach', { stage: d.stage || 'release' }, {}, btn); },
+  'ai-student-brief'(d, btn) { return propose('studentBrief', {}, {}, btn); }
 });

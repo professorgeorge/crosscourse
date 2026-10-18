@@ -219,6 +219,36 @@ const TASKS = {
     label: 'Articulate alternatives for a disagreement',
     schema: `{"summary":"neutral restatement","positions":[{"partner":"","position":"","underlyingConcern":""}],"options":[{"option":"","consequences":[""],"whoIsAffected":""}],"questions":["questions that could help partners decide"]}. Do NOT recommend a winner.`,
     build: (p, x) => `Partners disagree on the decision below. Articulate alternatives and consequences neutrally.\nDecision: ${JSON.stringify(x.decision)}\nComments: ${JSON.stringify(x.comments)}\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  brief: {
+    label: 'Propose shared design brief & driving question',
+    schema: `{"challenge":"Clear, shared title/challenge","question":"Driving question that both cohorts investigate together","whyInternational":"Why neither cohort could do this alone","counterfactual":"What learning fails if one cohort is removed","assumptions":["..."]}`,
+    build: p => `Propose a shared learning challenge, driving question, international rationale, and counterfactual test based on the partner context cards.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  charter: {
+    label: 'Propose complete partnership charter',
+    schema: `{"charter":{"purpose":"...","decisionRights":"...","responseTime":"3 business days","languages":"...","division":"...","attribution":"...","studentComms":"...","disagreements":"...","withdrawal":"...","cohortLoss":"..."}}`,
+    build: p => `Draft balanced partnership charter terms for these institutions. Respect differing time zones, languages, and equity.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  partnerContribution: {
+    label: 'Draft cohort contribution',
+    schema: `{"contributes":"Concrete contribution this cohort brings (data, situated perspective, community links, local methods)","assumptions":["..."]}`,
+    build: (p, x) => `Draft what students from partner "${x.partnerName}" (${x.institution}, course: "${x.courseTitle}", discipline: "${x.discipline}") can uniquely contribute to this international collaboration.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  glossarySuggest: {
+    label: 'Suggest cross-cultural glossary terms',
+    schema: `{"terms":[{"term":"...","definitions":{"English":"..."},"note":"why this word differs in meaning or emphasis across contexts"}]}`,
+    build: p => `Suggest 4-6 key concepts in this field that carry different meanings or political/institutional nuances in the partner countries.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  studentBrief: {
+    label: 'Draft student onboarding brief',
+    schema: `{"brief":"Inspiring markdown document for students explaining the international collaboration, why they are working together, what to expect, and communication norms."}`,
+    build: p => `Write an inspiring, accessible student onboarding brief explaining this international collaboration.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
+  },
+  coach: {
+    label: 'Stage coaching advice & next steps',
+    schema: `{"assessment":"Current status and readiness of this stage","recommendations":["Step 1...","Step 2..."],"discussionQuestions":["Question to discuss with partner..."],"risksToWatch":["Potential pitfall..."]}`,
+    build: (p, x) => `You are the international course co-design coach. Review the current state of stage "${x.stage}" and give specific, actionable recommendations and discussion prompts for the teaching partners.\n<project_data>\n${JSON.stringify(compactProject(p))}\n</project_data>`
   }
 };
 export const TASK_LABELS = Object.fromEntries(Object.entries(TASKS).map(([k, v]) => [k, v.label]));
@@ -436,6 +466,74 @@ const TEMPLATES = {
   },
   agenda(p, x) {
     return { agenda: [{ item: 'Check-in and context updates', minutes: 5, decisionNeeded: false, prework: '' }, ...x.open.slice(0, 4).map(o => ({ item: o, minutes: 10, decisionNeeded: true, prework: 'Read the decision and comments beforehand' })), { item: 'Confirm owners and next async steps', minutes: 5, decisionNeeded: false, prework: '' }], asyncAlternative: 'Post your position as a comment on each decision before the meeting; it will be read aloud.' };
+  },
+  brief(p) {
+    const ps = p.partners.filter(x => x.status !== 'withdrawn');
+    const d1 = ps[0]?.course?.discipline || 'Disciplinary';
+    const d2 = ps[1]?.course?.discipline || 'International';
+    return {
+      challenge: `Comparative study of ${p.title || 'shared themes'} across ${ps.map(x => x.country || x.institution).join(' and ')}`,
+      question: `How does the local institutional and cultural context shape how problems in ${d1} and ${d2} are investigated and resolved?`,
+      whyInternational: 'Each cohort holds situated local evidence, lived community perspectives, and institutional frameworks that the other cohort cannot access alone.',
+      counterfactual: 'Without the partner cohort, students would only analyze their own domestic assumptions and would lack comparative validation.',
+      assumptions: ['Template brief generated from partner context cards. Review and edit together.']
+    };
+  },
+  charter(p) {
+    const ps = p.partners.filter(x => x.status !== 'withdrawn');
+    return {
+      charter: {
+        purpose: `Enable students from ${ps.map(x => x.institution || x.name).join(' and ')} to collaboratively co-create shared artifacts while honoring local institutional calendars.`,
+        decisionRights: 'Shared curriculum, calendar, deliverables, and public artifacts require consensus of all representative partners. Local student grading remains the sole responsibility of each institutional instructor.',
+        responseTime: '3 business days (excluding declared institution holidays)',
+        languages: 'Instructor co-design conducted in English. Student collaborative artifacts may be submitted bilingually or in the shared working language with translation support.',
+        division: 'Partner representatives share facilitation of live sessions equally, rotating convenient time zones. Each instructor manages their own institutional LMS and grading.',
+        attribution: 'Shared pedagogical materials licensed CC BY-NC with mutual attribution to all contributing faculty and institutions.',
+        studentComms: 'Announcements and grading conducted via each institution\'s local platform, with a designated shared space (Padlet, Google Drive, or Teams) for student team work.',
+        disagreements: 'Unresolved pedagogical disagreements will be documented as a formal Decision in Crosscourse. If unresolved asynchronously within 7 days, partners hold a live video conference.',
+        withdrawal: 'A partner may pause or withdraw with a minimum of 2 weeks notice, providing archived student materials so no student is penalized.',
+        cohortLoss: 'If one cohort faces unexpected campus disruption, instructors activate the documented contingency fallbacks and instructor-mediated dossiers.'
+      }
+    };
+  },
+  partnerContribution(p, x) {
+    return {
+      contributes: `Situated case studies, access to local datasets and institutional policy documents, and student lived perspectives from ${x.institution || 'their region'}.`,
+      assumptions: ['Drafted based on course title and discipline. Edit to highlight your students\' unique assets.']
+    };
+  },
+  glossarySuggest(p) {
+    return {
+      terms: [
+        { term: 'Evidence', definitions: { English: 'Data, documentation, empirical studies, or community testimonials used to support a claim.' }, note: 'Different disciplines and cultural contexts prioritize quantitative vs narrative evidence differently.' },
+        { term: 'Stakeholders', definitions: { English: 'Individuals, communities, or institutions affected by a decision.' }, note: 'In some governance contexts, community members are partners rather than mere "stakeholders".' },
+        { term: 'Policy', definitions: { English: 'Formal regulations, municipal plans, or governmental frameworks.' }, note: 'Consider whether informal community practices carry the same local weight as written policy.' },
+        { term: 'Assessment', definitions: { English: 'Evaluation of student learning according to stated criteria.' }, note: 'Different universities have strict grading scales (e.g. 0-10 vs letter grades).' }
+      ]
+    };
+  },
+  studentBrief(p) {
+    const ps = p.partners.filter(x => x.status !== 'withdrawn');
+    return {
+      brief: `## Welcome to Your International Collaborative Learning Module\n\nThis semester, you will be collaborating with students from **${ps.map(x => `${x.institution} (${x.country})`).join('** and **')}**.\n\n### Why are we doing this?\nGlobal challenges require collaboration across borders. By working directly with peers in another country, you will examine how perspectives, evidence, and solutions differ across institutional and cultural contexts.\n\n### What to expect\n- **Asynchronous Collaboration:** Most work happens in your own time through shared documents and video exchanges.\n- **Mutual Respect & Generosity:** Second-language English speakers are valued for their insights. Focus on reasoning and ideas rather than perfection.\n- **Shared Artifact:** You and your international teammates will co-produce a tangible joint deliverable.\n\n### Communication Norms\n1. Respond to team messages within 48 hours.\n2. Respect your partners' time zones and academic breaks.\n3. Celebrate different perspectives; ask questions when things are understood differently.`
+    };
+  },
+  coach(p, x) {
+    return {
+      assessment: `Currently reviewing stage: ${x.stage || 'General'}. Check that both partner context cards are complete before finalizing dates.`,
+      recommendations: [
+        'Review the stated student weekly workload on both sides to prevent asymmetry.',
+        'Ensure that each collaborative activity has a concrete, written fallback contingency plan.',
+        'Schedule at least one live trust-building session within the fair time-zone window.'
+      ],
+      discussionQuestions: [
+        'If one cohort experienced a sudden delay, could the other continue without failing?',
+        'How will student grades be handled locally so that grading norms feel fair to both cohorts?'
+      ],
+      risksToWatch: [
+        'Dominant-language bias: Ensure non-native speakers have time to draft asynchronously rather than being pressured in live sessions.'
+      ]
+    };
   }
 };
 

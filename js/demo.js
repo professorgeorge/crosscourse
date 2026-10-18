@@ -368,12 +368,60 @@ export function randomTopicPreset() {
 }
 
 /**
+ * Calculates start and end dates calibrated to academic terms.
+ */
+export function getTermDates(term, durationWeeks = 5) {
+  const t = String(term || '').toLowerCase();
+  let startYear = 2026;
+  const yearMatch = t.match(/20\d\d/);
+  if (yearMatch) startYear = parseInt(yearMatch[0], 10);
+
+  let startMonth = 8; // August (1-based)
+  let startDay = 24;
+
+  if (t.includes('spring')) {
+    startMonth = 1; // January
+    startDay = 18;
+    if (!yearMatch) startYear = 2027;
+  } else if (t.includes('summer')) {
+    startMonth = 6; // June
+    startDay = 1;
+    if (!yearMatch) startYear = 2027;
+  } else if (t.includes('winter')) {
+    startMonth = 1; // January
+    startDay = 4;
+    if (!yearMatch) startYear = 2027;
+  } else if (t.includes('fall')) {
+    startMonth = 8; // August
+    startDay = 24;
+  }
+
+  const startDate = new Date(startYear, startMonth - 1, startDay);
+  const totalDays = durationWeeks * 7 + 14;
+  const endDate = new Date(startDate.getTime() + totalDays * 86400000);
+
+  const pad = n => String(n).padStart(2, '0');
+  const fmtYmd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  return {
+    term: term || (startMonth === 8 ? `Fall ${startYear}` : `Spring ${startYear}`),
+    startStr: fmtYmd(startDate),
+    endStr: fmtYmd(endDate),
+    startDate,
+    endDate
+  };
+}
+
+/**
  * Creates an interactive AI Partner Simulation project.
  * @param {Object} options
  * @param {string} [options.topicKey] Key from TOPIC_PRESETS or 'custom'
  * @param {string} [options.customTopic] Custom topic if topicKey is custom
  * @param {string} [options.mode] 'module' (default) or 'course'
  * @param {string} [options.personaKey] Key from AI_PARTNER_PERSONAS or 'random'
+ * @param {string} [options.homeUniversity] Name of home institution
+ * @param {string} [options.partnerUniversity] Name of partner institution
+ * @param {string} [options.term] Academic term (e.g. 'Fall 2026', 'Spring 2027')
  * @param {Object} [options.userProfile] Optional name, institution, country for the user
  */
 export function createAiPartnerDemo(options = {}) {
@@ -418,25 +466,26 @@ export function createAiPartnerDemo(options = {}) {
   p.isAiSimulation = true;
   p.aiPartnerPersona = persona.key;
 
+  const termInfo = getTermDates(options.term || 'Fall 2026', durationWeeks);
+  const termStartStr = termInfo.startStr;
+  const termEndStr = termInfo.endStr;
+  p.term = termInfo.term;
+
   const nowD = new Date();
   const pad = n => String(n).padStart(2, '0');
   const fmtYmd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
   const ago = h => new Date(Date.now() - h * 3600000).toISOString();
 
-  // Anchor term dates around current time and calibrated duration
-  const termDays = durationWeeks * 7 + 21;
-  const termStartD = addDays(nowD, -7);
-  const termEndD = addDays(termStartD, termDays);
-  const termStartStr = fmtYmd(termStartD);
-  const termEndStr = fmtYmd(termEndD);
-
   const user = options.userProfile || {};
   const userTz = user.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
   const userCountry = user.country || 'United States';
-  const userInst = user.institution || 'Home University';
+  const userInst = options.homeUniversity || options.homeInst || user.institution || 'Alcorn State University';
   const userName = user.name || 'Professor You';
   const userLang = user.language || 'English';
+
+  const partnerInst = options.partnerUniversity || options.partnerInst || persona.institution;
+  const partnerCountry = options.partnerCountry || persona.country;
 
   // Partner 1: Home Professor (The User)
   const homePartner = S.blankPartner({
@@ -474,7 +523,7 @@ export function createAiPartnerDemo(options = {}) {
       accessibility: 'Screen-reader compatibility and flexible deadline grace periods.',
       careTopics: 'Students may hold personal connections to geopolitical or socio-economic aspects of the topic.',
       constraints: 'Institutional midterm grading deadline in week 7.',
-      hopes: `Learn directly from ${persona.institution} about their situated methodologies and local case dynamics.`,
+      hopes: `Learn directly from ${partnerInst} about their situated methodologies and local case dynamics.`,
       breaks: [
         { id: 'brk_h1', label: 'Mid-term break', start: fmtYmd(addDays(nowD, 28)), end: fmtYmd(addDays(nowD, 35)) }
       ],
@@ -498,8 +547,8 @@ export function createAiPartnerDemo(options = {}) {
     id: 'ptn_ai',
     name: persona.name,
     email: persona.email,
-    institution: persona.institution,
-    country: persona.country,
+    institution: partnerInst,
+    country: partnerCountry,
     city: persona.city,
     timezone: persona.timezone,
     language: persona.language,
@@ -522,8 +571,8 @@ export function createAiPartnerDemo(options = {}) {
       priorities: 'Community-grounded inquiry, participatory methods, ethical accountability',
       interculturalAims: 'Question universalizing assumptions from abroad and share local traditions of knowledge.',
       languages: `${persona.language} as primary working language; students have intermediate to high English comprehension.`,
-      termStart: fmtYmd(addDays(nowD, -7)),
-      termEnd: fmtYmd(addDays(nowD, mode === 'course' ? 105 : 70)),
+      termStart: termStartStr,
+      termEnd: termEndStr,
       studentAvailability: persona.studentProfile,
       workloadHoursPerWeek: 3.5,
       tech: persona.tech,
@@ -573,7 +622,7 @@ export function createAiPartnerDemo(options = {}) {
   // Partnership Charter
   let mobilityClause = '';
   if (visitFormat === 'student-visit') {
-    mobilityClause = `In-Person Cross-Country Immersion: Student cohort participates in an intensive reciprocal field study visit at ${persona.institution} in ${persona.city}, ${persona.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
+    mobilityClause = `In-Person Cross-Country Immersion: Student cohort participates in an intensive reciprocal field study visit at ${partnerInst} in ${persona.city}, ${persona.country}. Host institution provides campus facilities, safety briefings, and field site coordination. Traveling students observe host institution codes of conduct. Remote or non-traveling students participate through synchronized video links and annotated collaborative documents with complete academic parity.`;
   } else if (visitFormat === 'faculty-visit') {
     mobilityClause = `Faculty Mobility & Guest Colloquium: Visiting professor travels to partner campus for guest lectures and a joint research colloquium. Host institution assists with campus credentials and academic itinerary. Student cohort collaboration remains online.`;
   } else {
@@ -581,7 +630,7 @@ export function createAiPartnerDemo(options = {}) {
   }
 
   Object.assign(p.charter, {
-    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${durationWeeks} weeks, ${visitFormat === 'student-visit' ? 'hybrid with student immersion' : (visitFormat === 'faculty-visit' ? 'hybrid with faculty visit' : 'virtual')}) where students from ${userInst} and ${persona.institution} investigate ${topic.title} together.`,
+    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${durationWeeks} weeks, ${visitFormat === 'student-visit' ? 'hybrid with student immersion' : (visitFormat === 'faculty-visit' ? 'hybrid with faculty visit' : 'virtual')}) where students from ${userInst} and ${partnerInst} investigate ${topic.title} together for ${p.term}.`,
     decisionRights: 'Substantive changes to shared deliverables, schedule, and outcomes require explicit approval from both representatives. Local grading remains sovereign at each institution.',
     responseDays: 3,
     languages: `Faculty coordination in English (with bilingual glossary support). Student team deliverables submitted with bilingual executive summaries.`,

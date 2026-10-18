@@ -7,7 +7,7 @@ import * as S from './store.js';
 import * as T from './time.js';
 import { esc, icon, modal, toast, download, md } from './ui.js';
 import { runChecks, releaseGate, decisionStatus, counterfactual, DIMENSIONS } from './checks.js';
-import { AI_PARTNER_PERSONAS, TOPIC_PRESETS, createAiPartnerDemo } from './demo.js';
+import { AI_PARTNER_PERSONAS, TOPIC_PRESETS, createAiPartnerDemo, getTermDates } from './demo.js';
 import { callProvider, aiEnabled, parseJSON } from './ai.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
@@ -772,6 +772,9 @@ app.register({
     if (!form) return;
     const formData = new FormData(form);
     const promptText = (formData.get('prompt') || '').trim();
+    const homeUniversity = (formData.get('homeUniversity') || '').trim() || 'Alcorn State University';
+    const partnerUniversity = (formData.get('partnerUniversity') || '').trim() || 'Partner University';
+    const term = (formData.get('term') || '').trim() || 'Fall 2026';
     const mode = formData.get('mode') || 'module';
     const durationWeeks = formData.get('durationWeeks');
     const customWeeks = formData.get('customWeeks');
@@ -782,15 +785,16 @@ app.register({
       return;
     }
 
+    const durText = durationWeeks === 'custom' ? `${customWeeks} weeks` : `${durationWeeks || 5} weeks`;
     const steps = [
-      { title: 'Interpreting natural language prompt & pedagogical intent', detail: promptText.slice(0, 80) + '...' },
-      { title: 'Calibrating duration & cross-country mobility format', detail: `Duration: ${durationWeeks === 'custom' ? `${customWeeks} weeks` : `${durationWeeks || 5} weeks`} · Mobility: ${visitFormat === 'student-visit' ? 'In-Person Immersion' : (visitFormat === 'faculty-visit' ? 'Faculty Exchange' : '100% Virtual')}` },
-      { title: 'Selecting partner institution & faculty colleague persona', detail: 'Harmonizing global time zones, campus calendars, and cohort strengths.' },
+      { title: 'Interpreting course specifications & academic parameters', detail: `${homeUniversity} ↔ ${partnerUniversity} · ${term} · ${mode === 'course' ? 'Whole Course' : 'Course Segment'}` },
+      { title: 'Calibrating duration & cross-country mobility format', detail: `Duration: ${durText} · Mobility: ${visitFormat === 'student-visit' ? 'In-Person Immersion' : (visitFormat === 'faculty-visit' ? 'Faculty Exchange' : '100% Virtual')}` },
+      { title: 'Harmonizing institutional contexts & term calendars', detail: `Aligning ${homeUniversity} with ${partnerUniversity} for ${term}.` },
       { title: 'Drafting mutual learning brief & driving inquiry question', detail: 'Formulating core international challenge and counterfactual test.' },
       { title: 'Mapping shared intercultural & disciplinary outcomes', detail: 'Linking shared outcomes to each institution\'s curriculum.' },
       { title: 'Sequencing collaborative learning arc & weekly milestones', detail: 'Balancing live and async activities with fallback contingencies.' },
       { title: 'Formulating student instructions & evaluation rubrics', detail: 'Generating weekly directions and 4-level grading rubrics.' },
-      { title: 'Signing institutional partnership charter & agreement', detail: 'Formalizing decision rights, mobility protocols, and student care.' },
+      { title: 'Signing institutional partnership charter & agreement', detail: `Binding bilateral agreement between ${homeUniversity} and ${partnerUniversity}.` },
       { title: 'Freezing approved release candidate & classroom kit', detail: 'Zero intermediate human intervention: final deliverables ready.' }
     ];
 
@@ -822,7 +826,7 @@ app.register({
       </header>
       <div class="modal-body">
         <p class="lede" style="margin-bottom: var(--space-3);">
-          AI is autonomously co-developing your complete course package from your natural language prompt. No intermediate manual steps required.
+          AI is autonomously co-developing the complete course package for <strong>${esc(homeUniversity)}</strong> and <strong>${esc(partnerUniversity)}</strong> (${esc(term)}). No intermediate manual steps required.
         </p>
         <div id="prompt-gen-steps">${renderSteps(0)}</div>
       </div>
@@ -832,7 +836,15 @@ app.register({
 
     const container = dlg.querySelector('#prompt-gen-steps');
 
-    const genPromise = generateCourseFromPrompt(promptText, { mode, durationWeeks, customWeeks, visitFormat });
+    const genPromise = generateCourseFromPrompt(promptText, {
+      homeUniversity,
+      partnerUniversity,
+      term,
+      mode,
+      durationWeeks,
+      customWeeks,
+      visitFormat
+    });
 
     for (let i = 1; i < steps.length; i++) {
       await new Promise(r => setTimeout(r, 220));
@@ -858,6 +870,10 @@ app.register({
   },
   'fill-prompt'(d, el) {
     const text = el.dataset.p;
+    const u1 = el.dataset.u1;
+    const u2 = el.dataset.u2;
+    const term = el.dataset.term;
+    const mode = el.dataset.mode;
     const dur = el.dataset.dur;
     const visit = el.dataset.visit;
     const form = document.getElementById('ai-prompt-form');
@@ -866,6 +882,22 @@ app.register({
     if (ta) {
       ta.value = text;
       ta.focus();
+    }
+    if (u1) {
+      const u1Input = form.querySelector('input[name=homeUniversity]');
+      if (u1Input) u1Input.value = u1;
+    }
+    if (u2) {
+      const u2Input = form.querySelector('input[name=partnerUniversity]');
+      if (u2Input) u2Input.value = u2;
+    }
+    if (term) {
+      const termSel = form.querySelector('select[name=term]');
+      if (termSel) termSel.value = term;
+    }
+    if (mode) {
+      const modeRadio = form.querySelector(`input[name=mode][value="${mode}"]`);
+      if (modeRadio) modeRadio.checked = true;
     }
     if (dur) {
       const durSel = form.querySelector('select[name=durationWeeks]');
@@ -1039,16 +1071,23 @@ function buildProjectFromHeuristic(prompt, mode, user, options = {}) {
   else if (lower.includes('supply') || lower.includes('trade') || lower.includes('waste') || lower.includes('circular') || lower.includes('logistics')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'supplychain');
   else if (lower.includes('media') || lower.includes('news') || lower.includes('misinformation') || lower.includes('journalism') || lower.includes('disinformation')) matchedTopic = TOPIC_PRESETS.find(t => t.key === 'media');
 
+  const homeInst = options.homeUniversity || user.userInst || 'Alcorn State University';
+  const partnerInst = options.partnerUniversity || (matchedPersona ? matchedPersona.institution : null);
+  const term = options.term || 'Fall 2026';
+
   const demoOptions = {
     mode,
     durationWeeks: options.durationWeeks,
     visitFormat: options.visitFormat,
+    term,
+    homeUniversity: homeInst,
+    partnerUniversity: partnerInst,
     topicKey: matchedTopic ? matchedTopic.key : 'custom',
     customTopic: matchedTopic ? undefined : (prompt.length > 50 ? prompt.slice(0, 50).trim() : prompt.trim()),
     personaKey: matchedPersona ? matchedPersona.key : 'random',
     userProfile: {
-      name: user.userName || 'Dr. Alex Taylor',
-      institution: user.userInst || 'Home University',
+      name: user.userName || 'Professor You',
+      institution: homeInst,
       country: user.userCountry || 'United States'
     }
   };
@@ -1064,23 +1103,25 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
   p.isAiSimulation = true;
   p.isAutopilotCompleted = true;
 
+  const homeInst = options.homeUniversity || user.userInst || 'Alcorn State University';
+  const aiP = parsed.partner || {};
+  const partnerInst = options.partnerUniversity || aiP.institution || 'Partner University';
+  const termInfo = getTermDates(options.term || 'Fall 2026', p.durationWeeks);
+  const termStartStr = termInfo.startStr;
+  const termEndStr = termInfo.endStr;
+  p.term = termInfo.term;
+
   const nowD = new Date();
   const pad = n => String(n).padStart(2, '0');
   const fmtYmd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const addDays = (d, n) => new Date(d.getTime() + n * 86400000);
   const ago = h => new Date(Date.now() - h * 3600000).toISOString();
 
-  const termDays = p.durationWeeks * 7 + 21;
-  const termStartD = addDays(nowD, -7);
-  const termEndD = addDays(termStartD, termDays);
-  const termStartStr = fmtYmd(termStartD);
-  const termEndStr = fmtYmd(termEndD);
-
   const homePartner = S.blankPartner({
     id: 'ptn_home',
-    name: user.userName || 'Dr. Alex Taylor',
+    name: user.userName || 'Professor You',
     email: 'professor@example.edu',
-    institution: user.userInst || 'Home University',
+    institution: homeInst,
     country: user.userCountry || 'United States',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York',
     language: 'English',
@@ -1111,12 +1152,11 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
     }
   }, 0);
 
-  const aiP = parsed.partner || {};
   const aiPartner = S.blankPartner({
     id: 'ptn_ai',
     name: aiP.name || 'Dr. International Colleague',
     email: 'partner@univ.edu',
-    institution: aiP.institution || 'Partner University',
+    institution: partnerInst,
     country: aiP.country || 'International',
     city: aiP.city || 'Partner City',
     timezone: aiP.timezone || 'UTC',
@@ -1135,8 +1175,8 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
       priorities: 'Community-grounded analysis',
       interculturalAims: 'Question universal assumptions and share local traditions',
       languages: aiP.language || 'English',
-      termStart: fmtYmd(addDays(nowD, -7)),
-      termEnd: fmtYmd(addDays(nowD, mode === 'course' ? 100 : 65)),
+      termStart: termStartStr,
+      termEnd: termEndStr,
       workloadHoursPerWeek: 3.5,
       tech: 'Campus LMS, Video conferencing',
       techRestrictions: 'Mobile-friendly formats preferred',
@@ -1163,8 +1203,17 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
     updatedAt: S.now()
   };
 
+  let mobilityClause = '';
+  if (p.visitFormat === 'student-visit') {
+    mobilityClause = `In-Person Immersion: Cohorts participate in a reciprocal field study visit hosted at ${partnerInst}. Host institution provides campus facilities and safety orientation. Remote alternatives provided with full academic parity.`;
+  } else if (p.visitFormat === 'faculty-visit') {
+    mobilityClause = `Faculty Mobility: Visiting faculty guest lecture exchange at ${partnerInst} and ${homeInst}. Student collaboration remains online.`;
+  } else {
+    mobilityClause = `100% Fully Virtual Collaboration: All student and faculty interactions take place online via asynchronous shared workspaces and scheduled video sessions. No international travel is required.`;
+  }
+
   p.charter = {
-    purpose: `To co-design an authentic international learning collaboration between ${homePartner.institution} and ${aiPartner.institution}.`,
+    purpose: `To co-design an authentic ${mode === 'course' ? 'course collaboration' : 'international learning module'} (${p.durationWeeks} weeks, ${p.visitFormat === 'student-visit' ? 'hybrid with student immersion' : (p.visitFormat === 'faculty-visit' ? 'hybrid with faculty visit' : 'virtual')}) between ${homePartner.institution} and ${aiPartner.institution} for ${p.term}.`,
     decisionRights: 'Substantive changes require affirmative agreement from both faculty representatives. Local grading is sovereign.',
     responseDays: 3,
     languages: 'Faculty coordination in English; student teams support bilingual collaboration.',
@@ -1174,6 +1223,7 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
     disagreements: 'Articulate asynchronously; meet live if unresolved after 5 days.',
     withdrawal: 'Two weeks advance notice with student grading protection.',
     cohortLoss: 'Pre-recorded briefings and archived case studies preserve credit if disruption occurs.',
+    mobility: mobilityClause,
     status: 'approved',
     approvedAt: S.now(),
     updatedAt: S.now()
@@ -1331,7 +1381,35 @@ function buildProjectFromAiJson(parsed, mode, user, options = {}) {
 }
 
 export function parsePromptCustomizations(promptText, defaultOptions = {}) {
-  const text = String(promptText || '').toLowerCase();
+  const text = String(promptText || '').trim();
+  const lower = text.toLowerCase();
+
+  let homeUniversity = defaultOptions.homeUniversity || defaultOptions.university1 || null;
+  let partnerUniversity = defaultOptions.partnerUniversity || defaultOptions.partnerInst || defaultOptions.university2 || null;
+
+  if (!partnerUniversity) {
+    const betweenMatch = text.match(/between\s+([A-Za-z0-9\s.,'&-]+?)\s+and\s+([A-Za-z0-9\s.,'&-]+?)(?:[,.]|$|\s+in|\s+for|\s+focusing)/i);
+    if (betweenMatch) {
+      if (!homeUniversity) homeUniversity = betweenMatch[1].trim();
+      partnerUniversity = betweenMatch[2].trim();
+    } else {
+      const partnerWithMatch = text.match(/(?:partnering with|partnered with|with partner|collaborating with|partner institution:?)\s+([A-Za-z0-9\s.,'&-]+?)(?:[,.]|$|\s+in\s+[A-Z]|\s+for|\s+focusing)/i);
+      if (partnerWithMatch) {
+        partnerUniversity = partnerWithMatch[1].trim();
+      }
+    }
+  }
+
+  let term = defaultOptions.term || null;
+  if (!term) {
+    const termMatch = text.match(/(Fall|Spring|Summer|Winter)\s*(20\d\d)?/i);
+    if (termMatch) {
+      term = `${termMatch[1].charAt(0).toUpperCase() + termMatch[1].slice(1).toLowerCase()} ${termMatch[2] || '2026'}`;
+    } else {
+      term = 'Fall 2026';
+    }
+  }
+
   let durationWeeks = defaultOptions.durationWeeks ? parseInt(defaultOptions.durationWeeks, 10) : null;
   let customWeeks = defaultOptions.customWeeks ? parseInt(defaultOptions.customWeeks, 10) : null;
   if (!durationWeeks && customWeeks) {
@@ -1345,16 +1423,16 @@ export function parsePromptCustomizations(promptText, defaultOptions = {}) {
     const weekMatch = text.match(/(\d+)\s*[- ]\s*week/i);
     if (weekMatch) {
       durationWeeks = parseInt(weekMatch[1], 10);
-    } else if (text.includes('accelerated') || text.includes('intensive') || text.includes('bootcamp')) {
+    } else if (lower.includes('accelerated') || lower.includes('intensive') || lower.includes('bootcamp')) {
       durationWeeks = 5;
-    } else if (text.includes('semester') || text.includes('full term') || text.includes('whole semester') || text.includes('14 week') || text.includes('15 week') || text.includes('16 week')) {
+    } else if (lower.includes('semester') || lower.includes('full term') || lower.includes('whole semester') || lower.includes('14 week') || lower.includes('15 week') || lower.includes('16 week')) {
       durationWeeks = 14;
     }
   }
 
   if (!mode) {
     if (durationWeeks && durationWeeks >= 10) mode = 'course';
-    else if (text.includes('course') || text.includes('semester')) mode = 'course';
+    else if (lower.includes('whole course') || lower.includes('new course') || lower.includes('full course') || lower.includes('full semester')) mode = 'course';
     else mode = 'module';
   }
 
@@ -1364,16 +1442,16 @@ export function parsePromptCustomizations(promptText, defaultOptions = {}) {
 
   // Natural language parsing of in-person visit/travel
   if (!visitFormat || visitFormat === 'virtual') {
-    if (text.includes('faculty visit') || text.includes('professor visit') || text.includes('faculty exchange') || text.includes('guest lecture visit')) {
+    if (lower.includes('faculty visit') || lower.includes('professor visit') || lower.includes('faculty exchange') || lower.includes('guest lecture visit')) {
       visitFormat = 'faculty-visit';
-    } else if (text.includes('in-person') || text.includes('in person') || text.includes('travel') || text.includes('field study') || text.includes('field trip') || text.includes('study abroad') || text.includes('immersion') || text.includes('on campus') || text.includes('on-site')) {
+    } else if (lower.includes('in-person') || lower.includes('in person') || lower.includes('travel') || lower.includes('field study') || lower.includes('field trip') || lower.includes('study abroad') || lower.includes('immersion') || lower.includes('on campus') || lower.includes('on-site')) {
       visitFormat = 'student-visit';
     } else {
       visitFormat = defaultOptions.visitFormat || 'virtual';
     }
   }
 
-  return { durationWeeks, visitFormat, mode };
+  return { homeUniversity, partnerUniversity, term, durationWeeks, visitFormat, mode };
 }
 
 export async function generateCourseFromPrompt(promptText, options = {}) {
@@ -1382,9 +1460,13 @@ export async function generateCourseFromPrompt(promptText, options = {}) {
   const mode = custom.mode;
   const durationWeeks = custom.durationWeeks;
   const visitFormat = custom.visitFormat;
+  const homeUniversity = custom.homeUniversity || options.homeUniversity || options.userProfile?.institution || 'Alcorn State University';
+  const partnerUniversity = custom.partnerUniversity || options.partnerUniversity || 'Partner University';
+  const term = custom.term || options.term || 'Fall 2026';
+
   const user = options.userProfile || {};
-  const userName = user.name || 'Dr. Alex Taylor';
-  const userInst = user.institution || 'Home University';
+  const userName = user.name || 'Professor You';
+  const userInst = homeUniversity;
   const userCountry = user.country || 'United States';
 
   let project = null;
@@ -1402,7 +1484,7 @@ Output JSON ONLY matching this schema:
   "counterfactual": "What students miss if taught only domestically",
   "partner": {
     "name": "Dr. Full Name",
-    "institution": "University Name",
+    "institution": "${partnerUniversity}",
     "country": "Country Name",
     "city": "City Name",
     "timezone": "Valid IANA timezone e.g. Europe/Stockholm, Asia/Tokyo, Africa/Dakar, or America/Sao_Paulo",
@@ -1450,16 +1532,20 @@ Output JSON ONLY matching this schema:
 
       const userMsg = `Co-develop a complete international course collaboration based on this prompt:
 "${prompt}"
-Mode: ${mode === 'course' ? 'Full semester course collaboration' : 'Shared international collaborative module'}
+Partner Institutions:
+- University 1 (Home Institution): ${homeUniversity} (${userCountry})
+- University 2 (Partner Institution): ${partnerUniversity}
+Academic Term: ${term}
+Scope: ${mode === 'course' ? 'Whole New Course (14-16 weeks designed jointly from scratch)' : 'Shared Course Segment / Module (4-8 weeks embedded in existing courses)'}
 Duration: ${durationWeeks} weeks (${durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full length semester'})
-Mobility & Format: ${visitFormat === 'student-visit' ? 'Hybrid with a 1-week in-person student field study immersion visit on partner campus' : (visitFormat === 'faculty-visit' ? 'Hybrid with faculty cross-country exchange and guest lectures' : '100% Fully Virtual Online Collaboration')}
-Home Professor: ${userName} at ${userInst} (${userCountry})`;
+Mobility & Format: ${visitFormat === 'student-visit' ? `Hybrid with a 1-week in-person student field study immersion visit at ${partnerUniversity}` : (visitFormat === 'faculty-visit' ? 'Hybrid with faculty cross-country exchange and guest lectures' : '100% Fully Virtual Online Collaboration')}
+Home Professor: ${userName} at ${homeUniversity} (${userCountry})`;
 
       const responseText = await callProvider(systemPrompt, userMsg);
       const parsed = parseJSON(responseText);
 
       if (parsed && parsed.title && parsed.partner) {
-        project = buildProjectFromAiJson(parsed, mode, { userName, userInst, userCountry }, { durationWeeks, visitFormat });
+        project = buildProjectFromAiJson(parsed, mode, { userName, userInst: homeUniversity, userCountry }, { durationWeeks, visitFormat, term, homeUniversity, partnerUniversity });
       }
     } catch (err) {
       console.warn('Live AI generation failed or returned invalid format, falling back to heuristic engine:', err);
@@ -1467,11 +1553,12 @@ Home Professor: ${userName} at ${userInst} (${userCountry})`;
   }
 
   if (!project) {
-    project = buildProjectFromHeuristic(prompt, mode, { userName, userInst, userCountry }, { durationWeeks, visitFormat });
+    project = buildProjectFromHeuristic(prompt, mode, { userName, userInst: homeUniversity, userCountry }, { durationWeeks, visitFormat, term, homeUniversity, partnerUniversity });
   }
 
   project.durationWeeks = durationWeeks;
   project.visitFormat = visitFormat;
+  project.term = term;
   runAutopilot(project);
   return project;
 }

@@ -32,35 +32,75 @@ app.view('home', {
     const projects = S.listProjects();
     return `<div class="page home">
       <section class="home-hero">
-        <p class="eyebrow">International course co-design</p>
-        <h1>Design a course <em>with</em> your international partners, not for them.</h1>
-        <p class="lede">Crosscourse is a shared workspace where professors in different countries turn different courses, calendars and perspectives into one jointly owned learning experience. Co-develop with AI in natural language, or collaborate asynchronously across campuses.</p>
+        <p class="eyebrow">Autonomous International Course Co-Design</p>
+        <h1>Autonomous AI Co-Design for International Courses Across Partner Universities.</h1>
+        <p class="lede">Specify two partner universities, the academic term, and collaboration scope—either conversationally in natural language or through structured choices—and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
 
-        <!-- Natural Language AI Co-Design Studio Card -->
+        <!-- Natural Language & Structured AI Co-Design Studio Card -->
         <div class="ai-prompt-studio card">
           <form id="ai-prompt-form" class="stack">
-            <div class="field">
-              <label for="course-prompt" class="ai-prompt-label">
-                ${icon.sparkle} <strong>Co-Develop Course with AI (Natural Language Prompting)</strong>
-                <span class="muted small" style="display: block; font-weight: normal; margin-top: 2px;">Enter your topic, discipline, or vision. AI will co-develop the complete, approved international course package with zero intermediate steps.</span>
-              </label>
-              <textarea id="course-prompt" name="prompt" rows="3" required placeholder="e.g. A 5-week undergraduate module on Public Health and Epidemic Preparedness, partnering with Cheikh Anta Diop University in Senegal. Focus on community health posts and vaccine equity..."></textarea>
+            <!-- Dedicated Dual-University & Academic Term Controls -->
+            <div class="grid3 gap" style="padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <div class="field" style="margin: 0;">
+                <label for="prompt-home-uni" class="small" style="font-weight: 600;">
+                  1. Home University (University 1)
+                </label>
+                <input id="prompt-home-uni" name="homeUniversity" required value="Alcorn State University" placeholder="e.g. Alcorn State University">
+              </div>
+
+              <div class="field" style="margin: 0;">
+                <label for="prompt-partner-uni" class="small" style="font-weight: 600;">
+                  2. Partner University (University 2)
+                </label>
+                <input id="prompt-partner-uni" name="partnerUniversity" required list="partner-uni-datalist" value="Kyoto University" placeholder="e.g. Kyoto University">
+                <datalist id="partner-uni-datalist">
+                  <option value="Kyoto University (Japan)">
+                  <option value="Cheikh Anta Diop University (Senegal)">
+                  <option value="Universidade de São Paulo (Brazil)">
+                  <option value="Universidad de los Andes (Colombia)">
+                  <option value="University of Bologna (Italy)">
+                  <option value="Lund University (Sweden)">
+                  <option value="American University of Sharjah (UAE)">
+                  <option value="Indian Institute of Technology Delhi (India)">
+                  <option value="University of Ghana (Ghana)">
+                  <option value="National University of Singapore (Singapore)">
+                </datalist>
+              </div>
+
+              <div class="field" style="margin: 0;">
+                <label for="prompt-term" class="small" style="font-weight: 600;">
+                  3. Academic Course Term
+                </label>
+                <select id="prompt-term" name="term">
+                  <option value="Fall 2026" selected>Fall 2026 (Aug – Dec 2026)</option>
+                  <option value="Spring 2027">Spring 2027 (Jan – May 2027)</option>
+                  <option value="Summer 2027">Summer 2027 (Jun – Aug 2027)</option>
+                  <option value="Winter 2027">Winter 2027 (Jan Accelerated Term)</option>
+                  <option value="Fall 2027">Fall 2027 (Aug – Dec 2027)</option>
+                </select>
+              </div>
             </div>
 
-            <div class="ai-prompt-chips-row">
-              <span class="muted small" style="font-weight: 500;">Quick inspiration:</span>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="5" data-visit="virtual" data-p="A 5-week accelerated module on AI Ethics, Algorithmic Bias and Public Policy, partnering with Kyoto University in Japan. Focus on algorithmic accountability audits.">AI Ethics & Systems (Japan, 5-wk)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="7" data-visit="student-visit" data-p="A 7-week accelerated collaborative course on Water Resource Governance with Universidad de los Andes in Colombia, including a 1-week in-person field study immersion in Bogota.">Water Stewardship (Colombia, 7-wk + Visit)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="7" data-visit="faculty-visit" data-p="A 7-week module on Global Health Systems and Epidemic Preparedness with Cheikh Anta Diop University in Senegal, with a visiting faculty exchange colloquium in Dakar.">Global Health (Senegal, 7-wk + Faculty)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="14" data-visit="student-visit" data-p="A joint semester course on Sustainable Cities, Transit Justice and Urbanism with Universidade de Sao Paulo in Brazil, featuring a 1-week student immersion laboratory.">Sustainable Cities (Brazil, 14-wk + Visit)</button>
-              <button type="button" class="prompt-chip" data-action="fill-prompt" data-dur="5" data-visit="virtual" data-p="A 5-week intensive virtual module on Digital Media, Misinformation and Civic Agency with Lund University in Sweden. Fully online.">Digital Misinformation (Sweden, 5-wk)</button>
-            </div>
+            <!-- Scope Selection: Course Segment vs Whole New Course -->
+            <fieldset class="field" style="margin: 0; padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <legend class="small" style="font-weight: 600; margin-bottom: var(--space-2);">4. Collaboration Scope</legend>
+              <div class="row gap wrap">
+                <label class="choice small grow" style="margin: 0;">
+                  <input type="radio" name="mode" value="module" checked>
+                  <span><strong>Shared Course Segment / Module</strong><br><span class="muted">4–8 week collaborative module embedded into each university's existing course</span></span>
+                </label>
+                <label class="choice small grow" style="margin: 0;">
+                  <input type="radio" name="mode" value="course">
+                  <span><strong>Whole New Course Collaboration</strong><br><span class="muted">14–16 week complete joint semester course designed together from the ground up</span></span>
+                </label>
+              </div>
+            </fieldset>
 
-            <!-- Typical Course Customization Controls: Duration in Weeks & Cross-Country Visit -->
-            <div class="ai-customization-bar grid2 gap" style="margin-top: var(--space-3); padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+            <!-- Duration & Cross-Country Mobility Controls -->
+            <div class="ai-customization-bar grid2 gap" style="padding: var(--space-3); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
               <div class="field" style="margin: 0;">
                 <label for="prompt-dur-weeks" class="small" style="font-weight: 600;">
-                  Course Duration (Weeks & Pace)
+                  5. Course Duration (Weeks & Pace)
                 </label>
                 <div class="row gap" style="align-items: center;">
                   <select id="prompt-dur-weeks" name="durationWeeks" class="grow">
@@ -78,7 +118,7 @@ app.view('home', {
 
               <div class="field" style="margin: 0;">
                 <label for="prompt-visit-format" class="small" style="font-weight: 600;">
-                  Cross-Country Mobility & Format
+                  6. Cross-Country Mobility & Format
                 </label>
                 <select id="prompt-visit-format" name="visitFormat">
                   <option value="virtual" selected>100% Fully Virtual (Online exchange, zero travel)</option>
@@ -88,17 +128,25 @@ app.view('home', {
               </div>
             </div>
 
+            <div class="field" style="margin: 0;">
+              <label for="course-prompt" class="ai-prompt-label">
+                ${icon.sparkle} <strong>7. Course Topic, Discipline, or Driving Inquiry Vision</strong>
+                <span class="muted small" style="display: block; font-weight: normal; margin-top: 2px;">Enter your topic, syllabus goals, or inquiry question. AI will co-develop the complete, approved international course package with zero intermediate steps.</span>
+              </label>
+              <textarea id="course-prompt" name="prompt" rows="3" required placeholder="e.g. A collaborative course on AI Ethics, Algorithmic Bias and Public Policy between Alcorn State University and Kyoto University. Focus on algorithmic accountability audits and comparative cultural governance..."></textarea>
+            </div>
+
+            <div class="ai-prompt-chips-row">
+              <span class="muted small" style="font-weight: 500;">Quick inspiration presets:</span>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-u1="Alcorn State University" data-u2="Kyoto University" data-term="Fall 2026" data-mode="module" data-dur="5" data-visit="virtual" data-p="A 5-week accelerated module on AI Ethics, Algorithmic Bias and Public Policy between Alcorn State University and Kyoto University in Japan. Focus on algorithmic accountability audits.">AI Ethics & Systems (Alcorn + Kyoto, Fall 2026)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-u1="Alcorn State University" data-u2="Universidad de los Andes" data-term="Spring 2027" data-mode="module" data-dur="7" data-visit="student-visit" data-p="A 7-week accelerated collaborative course on Water Resource Governance with Universidad de los Andes in Colombia, including a 1-week in-person field study immersion in Bogota.">Water Stewardship (Alcorn + UniAndes, Spring 2027 + Visit)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-u1="Alcorn State University" data-u2="Cheikh Anta Diop University" data-term="Fall 2026" data-mode="module" data-dur="7" data-visit="faculty-visit" data-p="A 7-week module on Global Health Systems and Epidemic Preparedness with Cheikh Anta Diop University in Senegal, with a visiting faculty exchange colloquium in Dakar.">Global Health (Alcorn + Senegal, Fall 2026 + Faculty)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-u1="Alcorn State University" data-u2="Universidade de São Paulo" data-term="Fall 2026" data-mode="course" data-dur="14" data-visit="student-visit" data-p="A joint semester course on Sustainable Cities, Transit Justice and Urbanism with Universidade de Sao Paulo in Brazil, featuring a 1-week student immersion laboratory.">Sustainable Cities (Alcorn + USP Brazil, Fall 2026 Full Course)</button>
+              <button type="button" class="prompt-chip" data-action="fill-prompt" data-u1="Alcorn State University" data-u2="Lund University" data-term="Spring 2027" data-mode="module" data-dur="5" data-visit="virtual" data-p="A 5-week intensive virtual module on Digital Media, Misinformation and Civic Agency with Lund University in Sweden. Fully online.">Digital Media (Alcorn + Lund, Spring 2027 Virtual)</button>
+            </div>
+
             <div class="row between wrap gap" style="margin-top: var(--space-3); align-items: center;">
-              <div class="row gap wrap" style="align-items: center;">
-                <label class="choice small" style="margin: 0;">
-                  <input type="radio" name="mode" value="module" checked>
-                  <span>Shared international module (4-8 weeks)</span>
-                </label>
-                <label class="choice small" style="margin: 0;">
-                  <input type="radio" name="mode" value="course">
-                  <span>Whole course collaboration (14-16 weeks)</span>
-                </label>
-              </div>
+              <span class="muted small">All 5 deliverables (Syllabus HTML & PDF, Student Handout MD, Partnership Charter, .ics Calendar, and Project File) will be created immediately.</span>
               <div class="row gap wrap">
                 <button type="submit" class="btn primary lg" data-action="generate-from-prompt" style="min-width: 260px;">
                   ${icon.sparkle} Generate Complete Course Package
@@ -130,11 +178,11 @@ app.view('home', {
       </section>
 
       <section class="section how">
-        <h2>How asynchronous co-design works here</h2>
+        <h2>How autonomous international co-design works</h2>
         <ol class="how-steps">
-          <li><strong>Each partner describes their own context.</strong> Context cards stay separate before anything is merged, so differences are visible rather than smoothed over.</li>
-          <li><strong>Work happens in your own time.</strong> Your project lives on your device. Send an update file to partners by email or a shared drive; when they open it, changes merge item by item and approvals from every partner are preserved.</li>
-          <li><strong>AI drafts, the partnership decides.</strong> Every AI output lands in a proposal queue with its assumptions. Shared decisions need explicit approval from each affected institution; silence is never consent.</li>
+          <li><strong>Each partner describes their institutional context.</strong> Context cards specify university calendars, student profiles, and curricular aims so authentic differences are leveraged rather than smoothed over.</li>
+          <li><strong>Work happens in your own time.</strong> Your project lives on your device. Exchange update files directly with colleagues without needing third-party cloud servers or shared logins.</li>
+          <li><strong>Dual-institution AI synthesis & deliverable generation.</strong> AI autonomously harmonizes academic calendars, student cohort backgrounds, learning outcomes, and assessment rubrics across both universities to generate complete, ready-to-use course deliverables.</li>
           <li><strong>Meet live only when it helps.</strong> The time-zone planner finds fair windows across daylight-saving changes and creates calendar invitations.</li>
           <li><strong>Release a plan everyone has signed.</strong> An alignment review and release gate check reciprocity, feasibility and assessment before students arrive.</li>
         </ol>
@@ -395,12 +443,26 @@ app.register({
         </div>
       </div>
       <div class="field" style="margin-bottom: var(--space-3);">
-        <label for="ai-demo-partner"><strong>5. International AI Partner Professor</strong></label>
+        <label for="ai-demo-term"><strong>5. Academic Course Term</strong></label>
+        <select id="ai-demo-term" name="term">
+          <option value="Fall 2026" selected>Fall 2026 (Aug – Dec 2026)</option>
+          <option value="Spring 2027">Spring 2027 (Jan – May 2027)</option>
+          <option value="Summer 2027">Summer 2027 (Jun – Aug 2027)</option>
+          <option value="Winter 2027">Winter 2027 (Jan Accelerated Term)</option>
+          <option value="Fall 2027">Fall 2027 (Aug – Dec 2027)</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom: var(--space-3);">
+        <label for="ai-demo-partner"><strong>6. Partner University & Colleague Profile</strong></label>
         <select id="ai-demo-partner" name="personaKey">
-          <option value="random" selected>Surprise me! (Random professor from around the world)</option>
+          <option value="random" selected>Surprise me! (Random global partner university)</option>
           ${AI_PARTNER_PERSONAS.map(p => `<option value="${p.key}">${esc(p.name)} (${esc(p.institution)}, ${esc(p.country)})</option>`).join('')}
         </select>
-        <p class="hint" style="margin-top: 4px;">Your AI colleague navigates real-world university realities: local time zones, campus term dates, student cohort profiles, and grading standards.</p>
+        <div style="margin-top: var(--space-2);">
+          <label for="ai-demo-partner-inst" class="small muted">Or enter a custom partner university:</label>
+          <input id="ai-demo-partner-inst" name="partnerInst" placeholder="e.g. Kyoto University or University of Ghana">
+        </div>
+        <p class="hint" style="margin-top: 4px;">Your partner colleague brings real-world university realities: campus term dates, student cohort profiles, and grading standards.</p>
       </div>
       <fieldset class="field" style="margin-bottom: var(--space-3);">
         <legend><strong>How would you like AI to collaborate with you?</strong></legend>
@@ -420,15 +482,15 @@ app.register({
         </label>
       </fieldset>
       <fieldset class="field">
-        <legend><strong>6. About you (Home Professor)</strong></legend>
+        <legend><strong>7. About you (Home Professor)</strong></legend>
         <div class="grid2">
           <div class="field">
             <label for="ai-demo-myname">Your name</label>
-            <input id="ai-demo-myname" name="myName" value="Dr. Alex Taylor" required>
+            <input id="ai-demo-myname" name="myName" value="Dr. Babu George" required>
           </div>
           <div class="field">
-            <label for="ai-demo-myinst">Your institution</label>
-            <input id="ai-demo-myinst" name="myInst" value="State University" required>
+            <label for="ai-demo-myinst">Your institution (University 1)</label>
+            <input id="ai-demo-myinst" name="myInst" value="Alcorn State University" required>
           </div>
         </div>
       </fieldset>`,
@@ -470,9 +532,12 @@ app.register({
       topicKey: d.topicKey,
       customTopic: d.customTopic,
       personaKey: d.personaKey,
+      term: d.term || 'Fall 2026',
+      homeUniversity: d.myInst || 'Alcorn State University',
+      partnerUniversity: d.partnerInst || undefined,
       userProfile: {
-        name: d.myName || 'Dr. Alex Taylor',
-        institution: d.myInst || 'State University'
+        name: d.myName || 'Dr. Babu George',
+        institution: d.myInst || 'Alcorn State University'
       }
     });
     S.saveProject(p);

@@ -2,7 +2,7 @@ import { app } from '../app.js';
 import * as S from '../store.js';
 import { esc, icon, modal, toast, pickFile, download, fmtAgo, chip, confirmBox } from '../ui.js';
 import { allTimezones } from '../time.js';
-import { PROVIDERS, testConnection } from '../ai.js';
+import { PROVIDERS, testConnection, detectLocalAndBrowserAI } from '../ai.js';
 import { demoProject } from '../demo.js';
 import { importPacketFile } from './sync.js';
 
@@ -71,19 +71,144 @@ app.view('settings', {
     const s = S.settings.get();
     const ai = s.ai;
     const prov = PROVIDERS[ai.provider] || PROVIDERS.none;
+    const scan = app._aiScanReport || null;
+    const isScanning = app._aiScanning || false;
+
     return `<div class="page narrow">
       <a href="#/" class="back">${icon.back} Projects</a>
       <h1>Settings</h1>
       <section class="card">
-        <h2>AI assistant</h2>
-        <p class="muted">Crosscourse has no server. If you add a key, your browser calls the provider you choose directly; the key stays on this device and is never included in project files. Check your institution’s policy before sending course material to an AI provider.</p>
+        <div class="section-head">
+          <h2>AI assistant</h2>
+          <span class="ai-badge-pill ${ai.provider === 'none' ? 'free' : (ai.provider === 'chrome' || ai.provider === 'ollama' ? 'local' : 'cloud')}">${esc(prov.badge || 'Configured')}</span>
+        </div>
+        <p class="muted">Crosscourse has no server. All AI calls go directly from your browser to your provider, or run entirely on your computer. Your key stays only on this device and is never written into shared project files.</p>
+
+        <!-- Auto-Detection Card for Non-Techies -->
+        <div class="ai-detect-card">
+          <div class="row between wrap gap">
+            <div class="grow">
+              <strong>Auto-Detect AI on your Device</strong>
+              <p class="ai-help-text">Check if Google Chrome Built-in AI, Ollama, or LM Studio are already installed and running on your machine.</p>
+            </div>
+            <button type="button" class="btn sm primary" data-action="scan-ai" ${isScanning ? 'disabled' : ''}>
+              ${isScanning ? '<span class="spinner"></span> Scanning...' : `${icon.sparkle} Scan my device`}
+            </button>
+          </div>
+
+          ${scan ? `
+          <div class="ai-detect-results">
+            ${scan.chrome?.available ? `
+            <div class="ai-detect-row">
+              <div>
+                <strong>Google Chrome Built-in AI (Gemini Nano)</strong>
+                <span class="ai-badge-pill free">Ready</span>
+                <p class="ai-help-text">Runs on your device inside Chrome. 100% free, zero setup, private.</p>
+              </div>
+              <button type="button" class="btn sm" data-action="use-detected-ai" data-provider="chrome" data-model="gemini-nano">Use Chrome AI</button>
+            </div>` : ''}
+
+            ${scan.ollama?.available ? `
+            <div class="ai-detect-row">
+              <div>
+                <strong>Ollama Local AI</strong>
+                <span class="ai-badge-pill local">Found ${scan.ollama.models.length} model(s)</span>
+                <p class="ai-help-text">${scan.ollama.models.slice(0, 4).join(', ')}${scan.ollama.models.length > 4 ? '...' : ''}</p>
+              </div>
+              <button type="button" class="btn sm" data-action="use-detected-ai" data-provider="ollama" data-model="${esc(scan.ollama.models[0] || 'llama3.2')}" data-base="${esc(scan.ollama.baseUrl)}">Use Ollama</button>
+            </div>` : ''}
+
+            ${scan.lmstudio?.available ? `
+            <div class="ai-detect-row">
+              <div>
+                <strong>LM Studio Local AI</strong>
+                <span class="ai-badge-pill local">Found ${scan.lmstudio.models.length} model(s)</span>
+                <p class="ai-help-text">${scan.lmstudio.models.slice(0, 3).join(', ')}</p>
+              </div>
+              <button type="button" class="btn sm" data-action="use-detected-ai" data-provider="ollama" data-model="${esc(scan.lmstudio.models[0] || '')}" data-base="${esc(scan.lmstudio.baseUrl)}">Use LM Studio</button>
+            </div>` : ''}
+
+            ${!scan.chrome?.available && !scan.ollama?.available && !scan.lmstudio?.available ? `
+            <p class="ai-help-text" style="margin: 0; padding-top: var(--space-2);">No local AI models are currently running on this computer. That is completely normal! You can use the built-in pedagogical templates below with zero setup, or connect a free Google Gemini key in 30 seconds.</p>` : ''}
+          </div>` : ''}
+        </div>
+
         <form id="ai-form" class="stack">
-          <div class="field"><label for="ai-prov">Provider</label><select id="ai-prov" name="provider">${Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${k === ai.provider ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>
-          ${ai.provider !== 'none' ? `
-          <div class="field"><label for="ai-key">API key</label><input id="ai-key" name="apiKey" type="password" autocomplete="off" value="${esc(ai.apiKey)}" placeholder="${esc(prov.keyHint || '')}"></div>
-          <div class="field"><label for="ai-model">Model</label><input id="ai-model" name="model" list="model-list" value="${esc(ai.model)}" placeholder="${esc(prov.models[0] || 'model name')}"><datalist id="model-list">${prov.models.map(m => `<option value="${m}">`).join('')}</datalist><p class="hint">Any model your account can access. Leave blank for the default.</p></div>
-          ${ai.provider === 'compatible' ? `<div class="field"><label for="ai-base">Base URL</label><input id="ai-base" name="baseUrl" value="${esc(ai.baseUrl)}" placeholder="https://openrouter.ai/api/v1 or http://localhost:11434/v1"></div>` : ''}` : `<p class="hint">Without AI, the alignment engine, calendar tools, approvals and exports all work fully. Assistants offer clearly-labelled templates instead of generated suggestions.</p>`}
-          <div class="row gap"><button class="btn primary" data-action="save-ai">Save</button>${ai.provider !== 'none' ? `<button class="btn" data-action="test-ai">Test connection</button>` : ''}</div>
+          <div class="field">
+            <label for="ai-prov">AI Provider</label>
+            <select id="ai-prov" name="provider">${Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}" ${k === ai.provider ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>
+          </div>
+
+          <div class="ai-provider-info">
+            <p style="margin: 0;">${esc(prov.desc)}</p>
+            ${prov.getKeyUrl ? `<a href="${esc(prov.getKeyUrl)}" target="_blank" rel="noopener noreferrer" class="ai-help-link">${esc(prov.getKeyLabel)} ↗</a>` : ''}
+          </div>
+
+          ${ai.provider === 'none' ? `
+          <div class="banner info" style="margin-top: var(--space-2);">
+            ${icon.checks}
+            <span><strong>Zero setup needed:</strong> All course co-design features, alignment checks, calendar overlap calculations, and exports are fully active without any AI. Crosscourse provides expert pedagogical templates whenever you request drafting assistance.</span>
+          </div>` : ''}
+
+          ${ai.provider === 'chrome' ? `
+          <div class="field">
+            <label>Browser Model</label>
+            <input type="text" readonly value="gemini-nano (Chrome Built-in)" style="background: var(--color-offset); opacity: 0.9;">
+            <p class="ai-help-text">Chrome Built-in AI runs locally on your computer with Gemini Nano. If not yet turned on in your browser, visit <code>chrome://flags/#prompt-api-for-gemini-nano</code> in Chrome and set it to Enabled.</p>
+          </div>` : ''}
+
+          ${ai.provider === 'ollama' ? `
+          <div class="grid2">
+            <div class="field">
+              <label for="ai-base">Ollama / Local Server URL</label>
+              <input id="ai-base" name="baseUrl" value="${esc(ai.baseUrl || prov.defaultBaseUrl)}" placeholder="http://localhost:11434/v1">
+            </div>
+            <div class="field">
+              <label for="ai-model">Model name</label>
+              <input id="ai-model" name="model" list="ollama-models" value="${esc(ai.model || (prov.models[0] || 'llama3.2'))}" placeholder="e.g. llama3.2">
+              <datalist id="ollama-models">
+                ${(prov.models || []).map(m => `<option value="${m}">`).join('')}
+              </datalist>
+            </div>
+          </div>
+          <div class="row gap">
+            <button type="button" class="btn sm" data-action="scan-ollama-models">${icon.sparkle} Scan installed Ollama models</button>
+            <span class="ai-help-text">Ollama is free from <a href="https://ollama.com" target="_blank" rel="noopener noreferrer">ollama.com</a>. Start with <code>ollama run llama3.2</code></span>
+          </div>` : ''}
+
+          ${ai.provider === 'gemini' || ai.provider === 'openai' || ai.provider === 'anthropic' ? `
+          <div class="field">
+            <label for="ai-key">API Key</label>
+            <input id="ai-key" name="apiKey" type="password" autocomplete="off" value="${esc(ai.apiKey || '')}" placeholder="${esc(prov.keyHint || '')}">
+            <p class="ai-help-text">Your key stays in this browser's private local storage. It is never included in project files or sent to your partners.</p>
+          </div>
+          <div class="field">
+            <label for="ai-model">Model</label>
+            <input id="ai-model" name="model" list="model-list" value="${esc(ai.model || (prov.models[0] || ''))}" placeholder="${esc(prov.models[0] || 'model name')}">
+            <datalist id="model-list">
+              ${(prov.models || []).map(m => `<option value="${m}">`).join('')}
+            </datalist>
+            <p class="ai-help-text">Recommended default: <strong>${esc(prov.models[0] || 'standard')}</strong> (leave blank to use default).</p>
+          </div>` : ''}
+
+          ${ai.provider === 'compatible' ? `
+          <div class="field">
+            <label for="ai-base">Server Base URL</label>
+            <input id="ai-base" name="baseUrl" value="${esc(ai.baseUrl || prov.defaultBaseUrl || '')}" placeholder="https://openrouter.ai/api/v1">
+          </div>
+          <div class="field">
+            <label for="ai-key">API Key (optional)</label>
+            <input id="ai-key" name="apiKey" type="password" autocomplete="off" value="${esc(ai.apiKey || '')}" placeholder="API key if required">
+          </div>
+          <div class="field">
+            <label for="ai-model">Model ID</label>
+            <input id="ai-model" name="model" value="${esc(ai.model || '')}" placeholder="e.g. meta-llama/llama-3.2-3b-instruct">
+          </div>` : ''}
+
+          <div class="row gap" style="margin-top: var(--space-2);">
+            <button type="submit" class="btn primary" data-action="save-ai">Save settings</button>
+            ${ai.provider !== 'none' ? `<button type="button" class="btn" data-action="test-ai">Test connection</button>` : ''}
+          </div>
         </form>
       </section>
       <section class="card">
@@ -135,8 +260,60 @@ app.register({
     app.go(`#/p/${p.id}/overview`);
     toast('Sample loaded. You are viewing it as the U.S. partner. Switch in the sidebar.');
   },
+  async 'scan-ai'(d, el) {
+    app._aiScanning = true;
+    app.render();
+    try {
+      const rep = await detectLocalAndBrowserAI();
+      app._aiScanReport = rep;
+      const count = (rep.chrome.available ? 1 : 0) + (rep.ollama.available ? 1 : 0) + (rep.lmstudio.available ? 1 : 0);
+      if (count > 0) {
+        toast(`Found ${count} local/browser AI option(s) on your machine.`, 'ok');
+      } else {
+        toast('Scan complete. No local models running right now.', 'info');
+      }
+    } catch (e) {
+      toast('Scan error: ' + e.message, 'warn');
+    } finally {
+      app._aiScanning = false;
+      app.render();
+    }
+  },
+  'use-detected-ai'(d, el) {
+    const prov = el.dataset.provider;
+    const model = el.dataset.model || '';
+    const base = el.dataset.base || '';
+    const s = S.settings.get();
+    s.ai.provider = prov;
+    if (model) s.ai.model = model;
+    if (base) s.ai.baseUrl = base;
+    S.settings.save(s);
+    toast(`Configured ${PROVIDERS[prov]?.label.split(' (')[0] || prov}!`, 'ok');
+    app.render();
+  },
+  async 'scan-ollama-models'(d, el) {
+    el = el || document.querySelector('[data-action=scan-ollama-models]');
+    if (el) { el.disabled = true; el.textContent = 'Scanning Ollama...'; }
+    try {
+      const rep = await detectLocalAndBrowserAI();
+      if (rep.ollama.available && rep.ollama.models.length) {
+        const s = S.settings.get();
+        s.ai.model = rep.ollama.models[0];
+        s.ai.baseUrl = rep.ollama.baseUrl;
+        S.settings.save(s);
+        toast(`Found Ollama models: ${rep.ollama.models.join(', ')}. Set to ${s.ai.model}.`, 'ok');
+      } else {
+        toast('Could not find running Ollama models. Is Ollama running on port 11434?', 'warn');
+      }
+    } catch (e) {
+      toast('Scan failed: ' + e.message, 'error');
+    } finally {
+      app.render();
+    }
+  },
   'save-ai'(d, el) {
     const f = document.getElementById('ai-form');
+    if (!f) return;
     const s = S.settings.get();
     const data = Object.fromEntries(new FormData(f).entries());
     const changedProvider = data.provider !== s.ai.provider;
@@ -149,10 +326,15 @@ app.register({
   async 'test-ai'(d, el) {
     app.actions['save-ai']();
     el = document.querySelector('[data-action=test-ai]');
-    el.disabled = true; el.textContent = 'Testing…';
-    try { await testConnection(); toast('Connection works.', 'ok'); }
-    catch (e) { toast('Connection failed: ' + e.message, 'error'); }
-    finally { el.disabled = false; el.textContent = 'Test connection'; }
+    if (el) { el.disabled = true; el.textContent = 'Testing connection...'; }
+    try {
+      await testConnection();
+      toast('Connection works! Your AI assistant is ready.', 'ok');
+    } catch (e) {
+      toast('Connection test failed: ' + e.message, 'error');
+    } finally {
+      if (el) { el.disabled = false; el.textContent = 'Test connection'; }
+    }
   },
   async install() {
     if (deferredInstall) { deferredInstall.prompt(); deferredInstall = null; }

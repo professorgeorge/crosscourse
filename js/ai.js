@@ -4,16 +4,146 @@ import { settings, STAGES } from './store.js';
 import { termOverlap, addDays } from './time.js';
 
 export const PROVIDERS = {
-  none: { label: 'No AI (template suggestions only)', models: [] },
-  openai: { label: 'OpenAI', models: ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'gpt-4o'], keyHint: 'sk-…' },
-  anthropic: { label: 'Anthropic (Claude)', models: ['claude-sonnet-4-5', 'claude-haiku-4-5', 'claude-opus-4-1'], keyHint: 'sk-ant-…' },
-  gemini: { label: 'Google Gemini', models: ['gemini-2.5-flash', 'gemini-2.5-pro'], keyHint: 'AIza…' },
-  compatible: { label: 'OpenAI-compatible endpoint (OpenRouter, Ollama, institutional gateway)', models: [], keyHint: 'optional for local models' }
+  none: {
+    label: 'No AI (Built-in pedagogical templates)',
+    badge: '100% Free & Private',
+    desc: 'No setup required. Crosscourse includes structured pedagogical templates for all 6 co-design stages.',
+    models: []
+  },
+  chrome: {
+    label: 'Google Chrome Built-in AI (Gemini Nano)',
+    badge: 'Free & On-Device',
+    desc: 'Runs completely inside Google Chrome on your device. Zero setup, zero keys, zero data leaves your computer.',
+    models: ['gemini-nano']
+  },
+  ollama: {
+    label: 'Local AI on your Computer (Ollama / LM Studio)',
+    badge: 'Free & Private',
+    desc: 'Runs locally on your computer. Completely private, no API keys needed, works offline.',
+    models: ['llama3.2', 'llama3.1', 'mistral', 'gemma2', 'qwen2.5', 'phi3'],
+    defaultBaseUrl: 'http://localhost:11434/v1',
+    keyHint: 'Not required for local models'
+  },
+  gemini: {
+    label: 'Google Gemini',
+    badge: 'Generous Free Tier',
+    desc: 'Fast, high-quality cloud models from Google. Generous free tier with no credit card required.',
+    models: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.5-pro'],
+    keyHint: 'AIza...',
+    getKeyUrl: 'https://aistudio.google.com/app/apikey',
+    getKeyLabel: 'Get a free Google Gemini key (takes 30 seconds)'
+  },
+  openai: {
+    label: 'OpenAI (ChatGPT)',
+    badge: 'Cloud AI',
+    desc: 'Industry-standard models from OpenAI.',
+    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-4.1-mini'],
+    keyHint: 'sk-...',
+    getKeyUrl: 'https://platform.openai.com/api-keys',
+    getKeyLabel: 'Get an OpenAI API key'
+  },
+  anthropic: {
+    label: 'Anthropic (Claude)',
+    badge: 'Cloud AI',
+    desc: 'Claude 3.5 Haiku and Sonnet models known for nuanced writing.',
+    models: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022', 'claude-sonnet-4-5'],
+    keyHint: 'sk-ant-...',
+    getKeyUrl: 'https://console.anthropic.com/settings/keys',
+    getKeyLabel: 'Get an Anthropic key'
+  },
+  compatible: {
+    label: 'Custom University Server / OpenRouter',
+    badge: 'Institutional Gateway',
+    desc: 'Connect to an OpenAI-compatible institutional proxy, private campus cluster, or OpenRouter.',
+    models: [],
+    defaultBaseUrl: 'https://openrouter.ai/api/v1',
+    keyHint: 'API key if required by your institution'
+  }
 };
 
 export function aiConfig() { return settings.get().ai; }
-export function aiEnabled() { const c = aiConfig(); return c.provider !== 'none' && (c.apiKey || c.provider === 'compatible'); }
-export function aiLabel() { const c = aiConfig(); return c.provider === 'none' ? 'Templates (no AI)' : `${PROVIDERS[c.provider]?.label.split(' (')[0]} · ${c.model || PROVIDERS[c.provider].models[0] || 'model'}`; }
+export function aiEnabled() {
+  const c = aiConfig();
+  if (!c || c.provider === 'none') return false;
+  if (c.provider === 'chrome') return true;
+  if (c.provider === 'ollama') return true;
+  return Boolean(c.apiKey || c.provider === 'compatible');
+}
+export function aiLabel() {
+  const c = aiConfig();
+  if (!c || c.provider === 'none') return 'Templates (no AI)';
+  if (c.provider === 'chrome') return 'Chrome Built-in AI';
+  if (c.provider === 'ollama') return `Ollama (${c.model || 'local'})`;
+  const p = PROVIDERS[c.provider];
+  const name = p ? p.label.split(' (')[0] : c.provider;
+  const m = c.model || p?.models?.[0] || 'default';
+  return `${name} · ${m}`;
+}
+
+export async function detectLocalAndBrowserAI() {
+  const report = {
+    chrome: { available: false, status: 'unavailable', message: '' },
+    ollama: { available: false, models: [], baseUrl: 'http://localhost:11434/v1' },
+    lmstudio: { available: false, models: [], baseUrl: 'http://localhost:1234/v1' }
+  };
+
+  // 1. Chrome Built-in AI check (Prompt API / Gemini Nano)
+  try {
+    if (typeof window !== 'undefined') {
+      if (window.ai?.languageModel) {
+        const caps = await window.ai.languageModel.capabilities();
+        if (caps.available === 'readily') {
+          report.chrome = { available: true, status: 'ready', message: 'Gemini Nano is built-in and ready in this browser.' };
+        } else if (caps.available === 'after-download') {
+          report.chrome = { available: true, status: 'downloading', message: 'Gemini Nano is available in Chrome (model downloading in background).' };
+        }
+      } else if (window.ai?.assistant) {
+        const caps = await window.ai.assistant.capabilities();
+        if (caps.available === 'readily' || caps.available === 'after-download') {
+          report.chrome = { available: true, status: caps.available, message: 'Chrome Built-in Assistant detected.' };
+        }
+      }
+    }
+  } catch (e) {
+    console.debug('Chrome AI check:', e);
+  }
+
+  // 2. Local Ollama check
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 1200);
+    const res = await fetch('http://localhost:11434/api/tags', { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (res.ok) {
+      const data = await res.json();
+      const names = (data.models || []).map(m => m.name.replace(/:latest$/, ''));
+      if (names.length) {
+        report.ollama = { available: true, models: names, baseUrl: 'http://localhost:11434/v1' };
+      }
+    }
+  } catch (e) {
+    console.debug('Ollama check:', e);
+  }
+
+  // 3. Local LM Studio check
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 1200);
+    const res = await fetch('http://localhost:1234/v1/models', { signal: ctrl.signal });
+    clearTimeout(tid);
+    if (res.ok) {
+      const data = await res.json();
+      const names = (data.data || []).map(m => m.id);
+      if (names.length) {
+        report.lmstudio = { available: true, models: names, baseUrl: 'http://localhost:1234/v1' };
+      }
+    }
+  } catch (e) {
+    console.debug('LM Studio check:', e);
+  }
+
+  return report;
+}
 
 const SYSTEM = `You are the design-support assistant inside Crosscourse, a tool that helps international teaching partners co-design collaborative international learning experiences WITH one another.
 Principles you must follow:
@@ -103,43 +233,118 @@ function parseJSON(text) {
 
 async function callProvider(system, user) {
   const c = aiConfig();
-  const model = c.model || PROVIDERS[c.provider]?.models[0];
-  let res, data;
-  if (c.provider === 'openai' || c.provider === 'compatible') {
-    const base = c.provider === 'openai' ? 'https://api.openai.com/v1' : (c.baseUrl || '').replace(/\/$/, '');
-    if (!base) throw new Error('Set a base URL for the OpenAI-compatible endpoint in Settings.');
-    res = await fetch(base + '/chat/completions', {
-      method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, c.apiKey ? { Authorization: 'Bearer ' + c.apiKey } : {}),
-      body: JSON.stringify({ model, temperature: 0.6, messages: [{ role: 'system', content: system }, { role: 'user', content: user }], ...(c.provider === 'openai' ? { response_format: { type: 'json_object' } } : {}) })
-    });
+  const p = PROVIDERS[c.provider];
+  const model = c.model || p?.models[0] || 'default';
+
+  if (c.provider === 'chrome') {
+    if (typeof window === 'undefined' || (!window.ai?.languageModel && !window.ai?.assistant)) {
+      throw new Error('Chrome Built-in AI was not found in this browser. To use it, open Google Chrome (version 128+) and enable chrome://flags/#prompt-api-for-gemini-nano.');
+    }
+    let session = null;
+    try {
+      if (window.ai?.languageModel) {
+        session = await window.ai.languageModel.create({ systemPrompt: system });
+      } else {
+        session = await window.ai.assistant.create({ systemPrompt: system });
+      }
+      return await session.prompt(user);
+    } catch (err) {
+      throw new Error(`Chrome Built-in AI error: ${err.message}`);
+    } finally {
+      try { session?.destroy?.(); } catch {}
+    }
+  }
+
+  if (c.provider === 'ollama' || c.provider === 'openai' || c.provider === 'compatible') {
+    let base = '';
+    if (c.provider === 'openai') {
+      base = 'https://api.openai.com/v1';
+    } else if (c.provider === 'ollama') {
+      base = (c.baseUrl || p?.defaultBaseUrl || 'http://localhost:11434/v1').replace(/\/$/, '');
+    } else {
+      base = (c.baseUrl || p?.defaultBaseUrl || '').replace(/\/$/, '');
+    }
+    if (!base) throw new Error('Please enter a server Base URL in AI settings.');
+
+    let res, data;
+    try {
+      res = await fetch(base + '/chat/completions', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, c.apiKey ? { Authorization: 'Bearer ' + c.apiKey } : {}),
+        body: JSON.stringify({
+          model,
+          temperature: 0.6,
+          messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+          ...(c.provider === 'openai' ? { response_format: { type: 'json_object' } } : {})
+        })
+      });
+    } catch (err) {
+      if (c.provider === 'ollama') {
+        throw new Error(`Could not connect to Ollama at ${base}. Please ensure Ollama is running on your machine (e.g. run "ollama serve"). Tip: If blocked by browser CORS, launch Ollama with: OLLAMA_ORIGINS=* ollama serve`);
+      }
+      throw new Error(`Could not connect to ${base}: ${err.message}`);
+    }
     data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error?.message || `Provider error ${res.status}`);
+    if (!res.ok) {
+      throw new Error(data.error?.message || `Server returned error status ${res.status}`);
+    }
     return data.choices?.[0]?.message?.content;
   }
+
   if (c.provider === 'anthropic') {
-    res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': c.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model, max_tokens: 6000, system, messages: [{ role: 'user', content: user }] })
-    });
+    if (!c.apiKey) throw new Error('Please enter your Anthropic API key.');
+    let res, data;
+    try {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': c.apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({ model, max_tokens: 6000, system, messages: [{ role: 'user', content: user }] })
+      });
+    } catch (err) {
+      throw new Error(`Connection to Anthropic failed: ${err.message}`);
+    }
     data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error?.message || `Provider error ${res.status}`);
+    if (!res.ok) throw new Error(data.error?.message || `Anthropic returned error status ${res.status}`);
     return data.content?.map(b => b.text || '').join('');
   }
+
   if (c.provider === 'gemini') {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(c.apiKey)}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.6 } })
-    });
+    if (!c.apiKey) throw new Error('Please enter your Google Gemini API key. You can get one free at aistudio.google.com/app/apikey.');
+    let res, data;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(c.apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: system }] },
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.6 }
+        })
+      });
+    } catch (err) {
+      throw new Error(`Connection to Google Gemini failed: ${err.message}`);
+    }
     data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error?.message || `Provider error ${res.status}`);
+    if (!res.ok) {
+      const msg = data.error?.message || `Error ${res.status}`;
+      if (res.status === 400 || res.status === 403) {
+        throw new Error(`Google Gemini rejected the API key: ${msg}. Please ensure the key was copied correctly from Google AI Studio.`);
+      }
+      throw new Error(msg);
+    }
     return data.candidates?.[0]?.content?.parts?.map(x => x.text).join('');
   }
+
   throw new Error('No AI provider configured.');
 }
 
 export async function testConnection() {
-  const out = await callProvider('Reply with JSON only.', 'Return {"ok":true}');
+  const out = await callProvider('Reply with JSON only.', 'Return {"ok":true,"message":"Connected successfully"}');
   return parseJSON(out);
 }
 

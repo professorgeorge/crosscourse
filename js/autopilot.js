@@ -612,6 +612,14 @@ Your evaluation includes two complementary layers:
 2. **Individual Reflection (50%):** Evaluated locally by your home professor on your individual learning memo and collaboration journal.
 
 ---
+
+### Consortium Institutional Signatures (Fill after download)
+
+- **Course Developer / Instructional Designer:** ________________________________ (Signature & Date)
+- **Lead Campus Faculty Instructor (${ps[0]?.institution || 'Lead Campus'}):** ________________________________ (Signature & Date)
+${ps.slice(1).map((x, i) => `- **Partner Campus ${i + 2} Faculty Instructor (${x.institution}):** ________________________________ (Signature & Date)`).join('\n')}
+
+---
 *Produced with Crosscourse. Conceptualized and developed by Professor Babu George (https://www.linkedin.com/in/beingbabu/).*
 `;
 }

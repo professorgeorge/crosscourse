@@ -205,7 +205,24 @@ export function packageHTML(p, rel, studentOnly = false) {
     ${sec('7. Review report', `<p>${F.filter(f => f.severity === 'blocker').length} blockers · ${F.filter(f => f.severity === 'discuss').length} items for discussion · ${F.filter(f => f.severity === 'missing').length} missing evidence.</p><ul>${F.filter(f => f.severity !== 'ok').slice(0, 40).map(f => `<li><strong>${esc(DIMENSIONS.find(d => d[0] === f.dimension)?.[1])}:</strong> ${esc(f.title)}: ${esc(f.detail)}</li>`).join('')}</ul>
       <h3>Counterfactual collaboration test</h3><ul>${counterfactual(p).map(r => `<li>${esc(r.partner.institution)}: ${r.direct.length} activities need this cohort directly; ${r.unprotected.length} affected activities lack a contingency.</li>`).join('')}</ul>`)}
     ${sec('8. Approval record', `<table><thead><tr><th>Decision</th><th>Type</th><th>Status</th>${ps.map(x => `<th>${esc(x.institution)}</th>`).join('')}</tr></thead><tbody>${p.decisions.map(d => `<tr><td>${esc(d.title)}</td><td>${esc(d.type)}</td><td>${esc(decisionStatus(p, d).status)}</td>${ps.map(x => `<td>${esc(d.approvals?.[x.id]?.status || 'Not set')}${d.approvals?.[x.id]?.at ? '<br><small>' + new Date(d.approvals[x.id].at).toLocaleDateString() + '</small>' : ''}</td>`).join('')}</tr>`).join('')}</tbody></table>`)}
-    ${p.glossary.length ? sec('9. Glossary', `<table><tbody>${p.glossary.map(g => `<tr><th>${esc(g.term)}</th><td>${Object.entries(g.definitions || {}).map(([k, v]) => `<em>${esc(k.replace(/_/g, ' '))}:</em> ${esc(v)}`).join('<br>')}</td></tr>`).join('')}</tbody></table>`) : ''}`;
+    ${p.glossary.length ? sec('9. Glossary', `<table><tbody>${p.glossary.map(g => `<tr><th>${esc(g.term)}</th><td>${Object.entries(g.definitions || {}).map(([k, v]) => `<em>${esc(k.replace(/_/g, ' '))}:</em> ${esc(v)}`).join('<br>')}</td></tr>`).join('')}</tbody></table>`) : ''}
+    ${sec('10. Consortium Signatures & Institutional Verification (Fill after download)', `
+      <p>By signing below, course developers and institutional faculty representatives verify approval of this cross-border curriculum package and authorize launch across respective campus learning environments.</p>
+      <div style="margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:24px;">
+        <div style="border-top:1px solid #444;padding-top:8px;">
+          <strong>Course Developer / Curriculum Architect</strong><br>
+          <span style="font-size:0.85rem;color:#666;">Name & Signature: _______________________</span><br>
+          <span style="font-size:0.85rem;color:#666;">Date: _______________</span>
+        </div>
+        ${ps.map((x, i) => `
+        <div style="border-top:1px solid #444;padding-top:8px;">
+          <strong>${i === 0 ? 'Lead Campus Faculty Instructor' : `Partner Campus ${i + 1} Faculty Instructor`}</strong><br>
+          <span style="font-size:0.85rem;color:#444;">${esc(x.institution)} (${esc(x.country)})</span><br>
+          <span style="font-size:0.85rem;color:#666;">Name & Signature: _______________________</span><br>
+          <span style="font-size:0.85rem;color:#666;">Date: _______________</span>
+        </div>`).join('')}
+      </div>
+    `)};
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(p.title)}: ${studentOnly ? 'Student guide' : 'Course design package'}</title><meta name="viewport" content="width=device-width,initial-scale=1">
   <style>body{font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:#1f2328;max-width:900px;margin:40px auto;padding:0 24px}h1{font-size:28px;margin:0 0 4px}h2{font-size:20px;border-bottom:1px solid #ddd;padding-bottom:6px;margin-top:36px}h3{font-size:17px;margin:20px 0 6px}h4{font-size:15px;margin:14px 0 4px}table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}th,td{border:1px solid #ddd;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f5f2ec}.meta{color:#555;font-size:14px}.draft{background:#fbeee6;color:#7a3612;padding:8px 12px;border-radius:6px;font-weight:600}.act{break-inside:avoid;margin:14px 0}@media print{body{margin:0}a{color:inherit}}</style></head><body>
   <h1>${esc(p.title)}</h1><p class="meta">${studentOnly ? 'Student guide' : 'Course design package'} · ${ps.map(x => esc(x.institution)).join(' × ')} · ${rel ? `Release <strong>${esc(rel.label)}</strong> · ${new Date(rel.at).toLocaleDateString()}` : 'Generated ' + new Date().toLocaleDateString()}</p>

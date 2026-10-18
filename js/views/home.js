@@ -61,15 +61,15 @@ app.view('home', {
                   <div class="grid3 gap">
                     <div class="field" style="margin: 0;">
                       <label class="small" for="uni-1-inst"><strong>University Name</strong></label>
-                      <input id="uni-1-inst" name="uni_1_inst" required placeholder="e.g. Alcorn State University">
+                      <input id="uni-1-inst" name="uni_1_inst" required placeholder="e.g. Lead University / Your Campus">
                     </div>
                     <div class="field" style="margin: 0;">
                       <label class="small" for="uni-1-country">Country (Optional)</label>
-                      <input id="uni-1-country" name="uni_1_country" placeholder="e.g. United States">
+                      <input id="uni-1-country" name="uni_1_country" placeholder="e.g. Country">
                     </div>
                     <div class="field" style="margin: 0;">
-                      <label class="small" for="uni-1-prof">Lead Professor Name</label>
-                      <input id="uni-1-prof" name="uni_1_prof" placeholder="e.g. Professor Name">
+                      <label class="small" for="uni-1-prof">Lead Professor Name (Optional)</label>
+                      <input id="uni-1-prof" name="uni_1_prof" placeholder="e.g. Lead Professor Name">
                     </div>
                   </div>
                 </div>
@@ -85,15 +85,15 @@ app.view('home', {
                   <div class="grid3 gap">
                     <div class="field" style="margin: 0;">
                       <label class="small" for="uni-2-inst"><strong>University Name</strong></label>
-                      <input id="uni-2-inst" name="uni_2_inst" required placeholder="e.g. Kyoto University">
+                      <input id="uni-2-inst" name="uni_2_inst" required placeholder="e.g. Partner University 2">
                     </div>
                     <div class="field" style="margin: 0;">
                       <label class="small" for="uni-2-country">Country (Optional)</label>
-                      <input id="uni-2-country" name="uni_2_country" placeholder="e.g. Japan">
+                      <input id="uni-2-country" name="uni_2_country" placeholder="e.g. Country">
                     </div>
                     <div class="field" style="margin: 0;">
                       <label class="small" for="uni-2-prof">Colleague Name (Optional)</label>
-                      <input id="uni-2-prof" name="uni_2_prof" placeholder="e.g. Dr. Colleague Name">
+                      <input id="uni-2-prof" name="uni_2_prof" placeholder="e.g. Colleague Name">
                     </div>
                   </div>
                 </div>

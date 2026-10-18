@@ -6,6 +6,7 @@ import { fmtDate } from '../time.js';
 import { head, statusBadge, approvalBtn } from './project.js';
 import { propose, proposalsFor } from './proposals.js';
 import { commentsBlock } from './govern.js';
+import { runTask } from '../ai.js';
 
 const pn = (p, id) => p.partners.find(x => x.id === id);
 const active = p => p.partners.filter(x => x.status !== 'withdrawn');
@@ -13,7 +14,7 @@ const active = p => p.partners.filter(x => x.status !== 'withdrawn');
 // ================= Shared outcomes =================
 app.view('outcomes', {
   render({ p }) {
-    return `<div class="page">${head('Shared learning outcomes', 'What students will learn together, mapped onto each partner’s local course so the collaboration counts everywhere.', `<button class="btn" data-action="ai-outcomes">${icon.sparkle} Propose outcomes</button><button class="btn primary" data-action="add-outcome">${icon.plus} Add outcome</button>`)}
+    return `<div class="page">${head('Shared learning outcomes', 'What students will learn together, mapped onto each partner’s local course so the collaboration counts everywhere.', `<button class="btn primary" data-action="ai-draft-outcomes">${icon.sparkle} 1-Click AI Draft Outcomes</button><button class="btn" data-action="ai-outcomes">${icon.sparkle} Propose outcomes</button><button class="btn secondary" data-action="add-outcome">${icon.plus} Add outcome</button>`)}
       ${renderCoach({
         stage: 'Stage 4: Learning Outcomes',
         title: 'Outcomes Alignment Coach',
@@ -152,10 +153,16 @@ function activityEditor(p, id) {
           <h3 class="sub">Who contributes what</h3>
           <p class="hint">Interdependence lives here. State what each cohort’s students bring (evidence, interpretation, critique or decisions), not just “participates”.</p>
           ${ps.map(x => `<div class="contrib-row"><label class="check"><input type="checkbox" data-model="${A}.participants" data-array-value="${x.id}" data-rerender ${(a.participants || []).includes(x.id) ? 'checked' : ''}>${chip(x, { small: true })}</label>
-            ${(a.participants || []).includes(x.id) ? `<div class="grid-contrib">${field('Contribution', `${A}.contributions.${x.id}`, a.contributions?.[x.id] || '', { type: 'textarea', rows: 2 })}${field('Student hours', `${A}.workload.${x.id}`, a.workload?.[x.id] ?? '', { type: 'number', step: '0.5', min: 0 })}</div>` : ''}</div>`).join('')}
+            ${(a.participants || []).includes(x.id) ? `<div class="grid-contrib">${field('Contribution', `${A}.contributions.${x.id}`, a.contributions?.[x.id] || '', { type: 'textarea', rows: 2, action: `<button type="button" class="btn xs ghost text-accent" data-action="ai-draft-cohort-role" data-id="${a.id}" data-pid="${x.id}" title="Draft suggested cohort role with AI">${icon.sparkle} AI Draft</button>` })}${field('Student hours', `${A}.workload.${x.id}`, a.workload?.[x.id] ?? '', { type: 'number', step: '0.5', min: 0 })}</div>` : ''}</div>`).join('')}
         </section>
         <section class="card">
-          <div class="section-head"><h2>Student instructions</h2><button class="btn sm" data-action="ai-instructions" data-id="${a.id}">${icon.sparkle} Draft instructions</button></div>
+          <div class="section-head">
+            <h2>Student instructions</h2>
+            <div class="row gap">
+              <button class="btn sm primary" data-action="ai-quick-instructions" data-id="${a.id}">${icon.sparkle} 1-Click AI Generate</button>
+              <button class="btn sm secondary" data-action="ai-instructions" data-id="${a.id}">${icon.sparkle} Draft as Proposal</button>
+            </div>
+          </div>
           ${proposalsFor({ ...p, proposals: p.proposals.filter(x => x.activityId === a.id) }, ['instructions'])}
           ${field('Instructions (Markdown supported)', `${A}.instructions`, a.instructions, { type: 'textarea', rows: 8 })}
           ${a.instructions ? `<details><summary>Preview</summary><div class="prose">${md(a.instructions)}</div></details>` : ''}
@@ -205,6 +212,57 @@ app.register({
     return propose('designs', {}, {}, btn);
   },
   'ai-instructions'(d, btn) { return propose('instructions', { id: d.id }, { activityId: d.id }, btn); },
+  async 'ai-draft-cohort-role'(d, btn) {
+    const p = app.p;
+    const a = p.activities.find(y => y.id === d.id);
+    const partner = p.partners.find(y => y.id === d.pid);
+    if (!a || !partner) return;
+    const oldHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Drafting...'; }
+    try {
+      const res = await runTask('partnerContribution', p, {
+        partnerName: partner.name || partner.institution,
+        institution: partner.institution,
+        courseTitle: partner.course?.title || p.title,
+        discipline: partner.course?.discipline || ''
+      });
+      const text = res?.result?.contributes || `Situated evidence, local institutional policy comparisons, and regional perspectives from ${partner.institution}.`;
+      app.mutate(pp => {
+        const act = pp.activities.find(y => y.id === d.id);
+        if (act) {
+          if (!act.contributions) act.contributions = {};
+          act.contributions[d.pid] = text;
+        }
+      }, `Drafted contribution for ${partner.institution}`, { kind: 'activities', id: a.id });
+      toast(`Drafted contribution for ${partner.institution}!`, 'ok');
+    } catch (err) {
+      toast('AI generation failed: ' + err.message, 'warn');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = oldHtml; }
+    }
+  },
+  async 'ai-quick-instructions'(d, btn) {
+    const p = app.p;
+    const a = p.activities.find(y => y.id === d.id);
+    if (!a) return;
+    const oldHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Generating...'; }
+    try {
+      const res = await runTask('instructions', p, { id: a.id });
+      const text = res?.result?.instructions || '';
+      if (text) {
+        app.mutate(pp => {
+          const act = pp.activities.find(y => y.id === d.id);
+          if (act) act.instructions = text;
+        }, `Generated instructions for ${a.title}`, { kind: 'activities', id: a.id });
+        toast(`Student instructions generated for ${a.title}!`, 'ok');
+      }
+    } catch (err) {
+      toast('AI generation failed: ' + err.message, 'warn');
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = oldHtml; }
+    }
+  },
   'add-activity'() {
     const ids = active(app.p).map(x => x.id);
     const a = { id: S.uid('act_'), title: 'New activity', stage: 'compare', summary: '', instructions: '', sync: false, start: '', end: '', participants: ids, contributions: {}, workload: {}, owner: app.me?.id || '', dependsOn: [], outcomes: [], tools: '', contingency: '', accessibility: '', evidence: {}, status: 'draft', updatedAt: S.now(), updatedBy: app.me?.id };

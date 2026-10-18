@@ -62,7 +62,8 @@ export function field(label, path, value, o = {}) {
   else if (o.type === 'select') control = `<select ${common}>${o.options.map(([v, l]) => `<option value="${attr(v)}" ${String(v) === String(value ?? '') ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
   else if (o.type === 'checkbox') return `<label class="check"><input type="checkbox" ${common} ${value ? 'checked' : ''}><span>${esc(label)}</span></label>`;
   else control = `<input type="${o.type || 'text'}" ${common} value="${attr(value)}" ${o.list ? `list="${o.list}"` : ''} ${o.min != null ? `min="${o.min}"` : ''} ${o.step ? `step="${o.step}"` : ''}>`;
-  return `<div class="field ${o.cls || ''}"><label for="${id}">${esc(label)}${o.badge || ''}</label>${control}${o.hint ? `<p class="hint">${esc(o.hint)}</p>` : ''}</div>`;
+  const labelHtml = o.action ? `<div class="row items-center justify-between" style="width:100%;margin-bottom:4px;"><label for="${id}">${esc(label)}${o.badge || ''}</label>${o.action}</div>` : `<label for="${id}">${esc(label)}${o.badge || ''}</label>`;
+  return `<div class="field ${o.cls || ''}">${labelHtml}${control}${o.hint ? `<p class="hint">${esc(o.hint)}</p>` : ''}</div>`;
 }
 
 export function chip(p, { small = false, me = false } = {}) {

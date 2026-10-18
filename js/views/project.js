@@ -588,7 +588,7 @@ app.view('frame', {
   render({ p }) {
     const b = p.brief;
     const kinds = Object.entries(S.DIFF_KINDS);
-    return `<div class="page">${head('Design brief', 'Frame a learning challenge that becomes possible only because your cohorts work together.', `<button class="btn" data-action="ai-brief">${icon.sparkle} Draft shared brief</button><button class="btn" data-action="ai-common-ground">${icon.sparkle} Surface common ground & differences</button>`)}
+    return `<div class="page">${head('Design brief', 'Frame a learning challenge that becomes possible only because your cohorts work together.', `<button class="btn primary" data-action="ai-refine-driving-question">${icon.sparkle} 1-Click AI Refine Vision</button><button class="btn" data-action="ai-brief">${icon.sparkle} Draft as Proposal</button><button class="btn" data-action="ai-common-ground">${icon.sparkle} Surface common ground & differences</button>`)}
       ${renderCoach({
         stage: 'Stage 2: Design Brief',
         title: 'Framing & Driving Question Coach',
@@ -662,7 +662,7 @@ const CHARTER = [
 app.view('charter', {
   render({ p }) {
     const c = p.charter;
-    const actions = `<button class="btn" data-action="ai-charter">${icon.sparkle} Propose charter draft</button>${approvalBtn('charter', 'charter', 'Partnership charter', c.status)}`;
+    const actions = `<button class="btn primary" data-action="ai-refine-charter">${icon.sparkle} 1-Click AI Auto-Fill Terms</button><button class="btn" data-action="ai-charter">${icon.sparkle} Propose charter draft</button>${approvalBtn('charter', 'charter', 'Partnership charter', c.status)}`;
     return `<div class="page narrow-ish">${head('Partnership charter', 'Agree how you will work together before designing what students will do.', actions)}
       <div class="row gap"><span>Status: ${statusBadge(c.status)}</span></div>
       ${renderCoach({

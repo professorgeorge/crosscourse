@@ -33,13 +33,13 @@ app.view('home', {
     return `<div class="page home">
       <section class="home-hero">
         <div class="row between wrap gap" style="align-items: center; margin-bottom: var(--space-2);">
-          <p class="eyebrow" style="margin: 0;">Autonomous International Course Co-Design</p>
+          <p class="eyebrow" style="margin: 0;">Multi-Campus &amp; International Course Design Studio</p>
           <button type="button" class="btn sm" data-action="open-user-manual" style="background: rgba(29, 92, 99, 0.08); border: 1px solid rgba(29, 92, 99, 0.25); color: var(--color-primary); font-weight: 500;">
             ${icon.book} User Manual &amp; Practical Guide
           </button>
         </div>
-        <h1>Autonomous AI Co-Design for International Courses Across Partner Universities.</h1>
-        <p class="lede">Specify your partner universities (two or more, up to 9) and collaboration scope (either conversationally in natural language or through structured choices), and AI autonomously co-develops the complete, approved course deliverables ready for your classroom.</p>
+        <h1>AI-Powered Course Co-Design for Universities and Academic Consortia</h1>
+        <p class="lede">Design, reconcile, and export complete collaborative courses across 2 to 9 partner institutions. Instantly generate standards-aligned LMS cartridges, publication-ready course handbooks, rubrics, and synchronized multi-campus schedules.</p>
 
         <!-- Natural Language & Structured AI Co-Design Studio Card -->
         <div class="ai-prompt-studio card">
@@ -928,7 +928,7 @@ app.register({
 
           <div class="card" style="margin-bottom: var(--space-3); border-left: 4px solid #b4532a; background: var(--color-surface-2);">
             <h3 style="margin: 0 0 var(--space-2); font-size: 1.05rem;">3. 1-Click LMS Upload (Canvas / Blackboard / Moodle)</h3>
-            <p class="small" style="margin-bottom: var(--space-2);">Crosscourse exports native <strong>IMS Common Cartridges (.imscc)</strong> containing complete weekly modules, assignments, and SpeedGrader rubrics:</p>
+            <p class="small" style="margin-bottom: var(--space-2);">Crosscourse exports native <strong>IMS Common Cartridges (.imscc)</strong> containing complete weekly modules, assignments, and interactive scoring rubrics:</p>
             <ul class="stack gap-sm" style="margin: 0; padding-left: 1.25rem; font-size: 0.92rem; line-height: 1.5;">
               <li><strong>Canvas:</strong> Go to Course Settings &rarr; <em>Import Course Content</em> &rarr; Content Type: <strong>Common Cartridge 1.x Package</strong> &rarr; Select the downloaded <code>.imscc</code> file &rarr; Import.</li>
               <li><strong>Blackboard:</strong> Go to Packages &amp; Utilities &rarr; <em>Import Package / View Logs</em> &rarr; Select <code>.imscc</code> file &rarr; Submit.</li>

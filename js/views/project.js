@@ -308,7 +308,7 @@ app.view('overview', {
                 <span class="muted small">IMS Common Cartridge (.IMSCC)</span>
               </div>
               <h3 style="margin: 0 0 6px; font-size: 1.1rem;">LMS Course Cartridge</h3>
-              <p class="muted small" style="line-height: 1.4;">Universal 1-click import package (.imscc) with complete weekly modules, assignments, student instructions, and SpeedGrader rubrics.</p>
+              <p class="muted small" style="line-height: 1.4;">Universal 1-click import package (.imscc) with complete weekly modules, assignments, student instructions, and interactive scoring rubrics.</p>
             </div>
             <div class="row gap wrap" style="width: 100%;">
               <button class="btn primary" data-action="dl-pack-lms-imscc" style="flex: 1;">
@@ -328,7 +328,7 @@ app.view('overview', {
                 <span class="muted small">HTML / PDF</span>
               </div>
               <h3 style="margin: 0 0 6px; font-size: 1.1rem;">1. Master Course Handbook &amp; Syllabus</h3>
-              <p class="muted small" style="line-height: 1.4;">Comprehensive standalone document with driving challenge, alignment matrix across all ${p.partners.length} universities, policies, weekly curriculum arc, SpeedGrader rubrics, and a detachable Confidential Instructor Appendix.</p>
+              <p class="muted small" style="line-height: 1.4;">Comprehensive standalone document with driving challenge, alignment matrix across all ${p.partners.length} universities, policies, weekly curriculum arc, 4-tier assessment rubrics, and a detachable Confidential Instructor Appendix.</p>
             </div>
             <div class="row gap wrap" style="width: 100%;">
               <button class="btn primary" data-action="open-dossier-full" style="flex: 1;">

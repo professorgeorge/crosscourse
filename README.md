@@ -1,8 +1,8 @@
-# Crosscourse: International Course & Consortium Co-Designer
+# Crosscourse: AI-Powered Course Co-Design for Universities & Academic Consortia
 
-An AI-assisted co-design studio and collaborative workspace for creating shared international courses across partner universities (2 to 9 campuses in a consortium).
+An AI-assisted course co-design studio and collaborative workspace for creating shared courses across universities and academic consortia (2 to 9 partner institutions).
 
-Specify two or more partner universities, course duration, and collaboration format (course segment or whole new course), either conversationally in natural language or through structured choices, and Crosscourse autonomously co-develops complete, approved, classroom-ready deliverables.
+Specify your partner institutions, course duration, and collaboration scope (either conversationally in natural language or through structured choices), and Crosscourse co-develops complete, standards-aligned, classroom-ready deliverables.
 
 Crosscourse is a static Progressive Web App (PWA). There is no server and no account system: every project runs directly in the browser, can be hosted free on GitHub Pages, and can be installed on desktop or mobile.
 
@@ -78,7 +78,7 @@ Crosscourse provides a complete, first-class methodology to co-develop an intern
   - **Cross-Country Mobility:** Choose 100% fully virtual exchange, hybrid with a 1-week reciprocal student field study and immersion visit on partner campus, or hybrid with faculty cross-country exchange colloquium.
   - **Flexible Expression:** Customizations can be chosen via intuitive dropdown lists or specified naturally directly in the prompting text.
 - **Zero Intermediate Intervention:** Generates final approved deliverables automatically:
-  1. Complete LMS Course Cartridge (.imscc for Canvas, Blackboard, Moodle, and Brightspace with SpeedGrader rubrics)
+  1. Complete LMS Course Cartridge (.imscc for Canvas, Blackboard, Moodle, and Brightspace with interactive scoring rubrics)
   2. Complete Course Syllabus & Implementation Guide (HTML & print to PDF)
   3. Student-Facing Onboarding & Assignment Handout (Markdown / LMS-ready)
   4. Institutional Partnership Charter & Agreement
@@ -110,7 +110,7 @@ Plain ES modules, no build step, no framework.
 ## Classroom & LMS Integrations
 
 Crosscourse natively packages courses into **IMS Common Cartridge (`.imscc` / `.zip`)**:
-- **Canvas:** Import via *Course Settings* → *Import Course Content* → *Common Cartridge 1.x Package*. Modules, weekly activity pages, instructions, and SpeedGrader rubrics are automatically generated in your course shell.
+- **Canvas:** Import via *Course Settings* → *Import Course Content* → *Common Cartridge 1.x Package*. Modules, weekly activity pages, instructions, and interactive assessment rubrics are automatically generated in your course shell.
 - **Moodle:** Import via *Course Reuse* → *Restore* or *Import Common Cartridge*.
 - **Blackboard Learn:** Import via *Packages and Utilities* → *Import Package / View Logs*.
 - **D2L Brightspace:** Import via *Course Admin* → *Import/Export/Copy Components*.

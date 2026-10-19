@@ -350,7 +350,7 @@ const DOSSIER_STAGE_INFO = {
  * Builds the Comprehensive Master Course Handbook & Syllabus HTML document.
  * Formatted for publication-grade printing or direct "Save as PDF" via the browser print dialog.
  * Serves as a full, standalone, non-LMS alternative containing all course content, learning outcomes,
- * policies, weekly curriculum arc, SpeedGrader rubrics, and a detachable Confidential Instructor Appendix.
+ * policies, weekly curriculum arc, 4-tier assessment rubrics, and a detachable Confidential Instructor Appendix.
  */
 export function buildCourseDossierHTML(p, opts = {}) {
   const ps = active(p);
@@ -891,7 +891,7 @@ export function buildCourseDossierHTML(p, opts = {}) {
         <div class="callout-title">The Sovereign Grading Model</div>
         <p>This consortium decouples shared evaluation criteria from local institutional grade calculation:</p>
         <ul>
-          <li><strong>50% Shared Collaborative Team Deliverables:</strong> Evaluated using unified consortium SpeedGrader rubrics assessing comparative rigor, empirical integration, and cross-border dialogue.</li>
+          <li><strong>50% Shared Collaborative Team Deliverables:</strong> Evaluated using unified consortium assessment rubrics assessing comparative rigor, empirical integration, and cross-border dialogue.</li>
           <li><strong>50% Individual Sovereign Reflection and Fieldwork:</strong> Evaluated and recorded directly by each student\'s home institution faculty instructor according to departmental requirements.</li>
         </ul>
       </div>
@@ -1001,10 +1001,10 @@ export function buildCourseDossierHTML(p, opts = {}) {
       }).join('')}
     </section>
 
-    <!-- Section 6: SpeedGrader Rubric Matrices -->
+    <!-- Section 6: Comprehensive Assessment Rubrics -->
     <section class="page-break">
-      <h2>6. Comprehensive Assessment Architecture and SpeedGrader Rubrics</h2>
-      <p>All collaborative milestone deliverables are evaluated using the official four-tier SpeedGrader rubrics. Evaluations focus on comparative rigor, critical hypothesis revision, and evidence quality:</p>
+      <h2>6. Comprehensive Assessment Architecture and Rubrics</h2>
+      <p>All collaborative milestone deliverables are evaluated using the official four-tier assessment rubrics. Evaluations focus on comparative rigor, critical hypothesis revision, and evidence quality:</p>
 
       ${p.assessments.map((s, idx) => `
       <div class="keep-together" style="margin-bottom: 28px;">
@@ -1434,7 +1434,7 @@ export function openDownloadPackModal(p, isCelebration = false) {
               <h3 style="margin:0;">LMS Course Cartridge (Canvas / Blackboard / Moodle / Brightspace)</h3>
               <span class="badge" style="background:#1d5c63;color:#fff;">Universal LMS Standard</span>
             </div>
-            <p class="muted small">Complete IMS Common Cartridge (.imscc) bundle containing full weekly module pages, student assignments, SpeedGrader rubrics, syllabus, and institutional charter. Ready to upload directly into Canvas ("Common Cartridge 1.x Package"), Blackboard, or Moodle.</p>
+            <p class="muted small">Complete IMS Common Cartridge (.imscc) bundle containing full weekly module pages, student assignments, interactive scoring rubrics, syllabus, and institutional charter. Ready to upload directly into Canvas ("Common Cartridge 1.x Package"), Blackboard, or Moodle.</p>
             <div class="row gap wrap">
               <button class="btn primary sm" data-action="dl-pack-lms-imscc">${icon.package} Download LMS Cartridge (.imscc)</button>
               <button class="btn sm" data-action="dl-pack-lms-zip">${icon.download} Download Web Package (.zip)</button>
@@ -1449,7 +1449,7 @@ export function openDownloadPackModal(p, isCelebration = false) {
               <h3 style="margin:0;">Master Course Handbook &amp; Syllabus (PDF / Print)</h3>
               <span class="badge" style="background:#0f5c65;color:#fff;">Comprehensive Standalone Document</span>
             </div>
-            <p class="muted small">Complete non-LMS alternative: institutional course syllabus, driving challenge, policies and netiquette, 50/50 sovereign grading architecture, chronological weekly curriculum with student directions, 4-tier SpeedGrader rubrics, and a detachable Confidential Instructor Appendix. Formatted for high-quality printing or instant Save as PDF.</p>
+            <p class="muted small">Complete non-LMS alternative: institutional course syllabus, driving challenge, policies and netiquette, 50/50 sovereign grading architecture, chronological weekly curriculum with student directions, 4-tier assessment rubrics, and a detachable Confidential Instructor Appendix. Formatted for high-quality printing or instant Save as PDF.</p>
             <div class="row gap wrap">
               <button class="btn primary sm" data-action="dl-pack-dossier-pdf-full">${icon.eye} View &amp; Print Master PDF (Complete)</button>
               <button class="btn sm" data-action="dl-pack-dossier-pdf-student">${icon.eye} Print Student Handbook (Clean)</button>

@@ -1,8 +1,8 @@
 // Crosscourse LMS Course Cartridge (.imscc / .zip) Generator
 // Produces 100% specification-compliant IMS Common Cartridge packages
 // ready for 1-click import into Canvas, Blackboard Learn, Moodle, and D2L Brightspace.
-// Implements Quality Matters (QM) Higher Education Rubric (7th Edition) standards,
-// OLC/OSCQR online course design benchmarks, WCAG 2.1 AA accessibility, and SpeedGrader rubrics.
+// Implements Higher Education Course Quality Standards, Universal Design for Learning (UDL),
+// WCAG 2.1 AA accessibility benchmarks, and interactive assessment rubrics.
 
 import { esc, md } from './ui.js';
 import * as T from './time.js';
@@ -126,7 +126,7 @@ const active = p => p.partners.filter(x => x.status !== 'withdrawn');
 const slug = s => (s || 'crosscourse').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40).toLowerCase();
 
 /**
- * Quality Matters (QM) Compliant Embedded Stylesheet.
+ * Higher Education Course Quality Standards Embedded Stylesheet.
  * Enforces WCAG 2.1 AA contrast ratios (min 4.5:1 for normal text, 3:1 for large),
  * responsive typography, semantic layout hierarchy, accessible callouts, and clean print styles.
  */
@@ -216,7 +216,7 @@ function lmsThemeCSS() {
       opacity: 0.95;
     }
 
-    /* Headings & Typography Hierarchy (QM 8.1 / 8.2) */
+    /* Headings & Typography Hierarchy */
     h2 {
       color: var(--primary-dark);
       font-size: 1.4rem;
@@ -245,34 +245,34 @@ function lmsThemeCSS() {
       margin-bottom: 6px;
     }
 
-    /* Quality Matters Callout Boxes */
-    .qm-callout {
+    /* Pedagogical Callout Boxes */
+    .lms-callout {
       border-radius: 8px;
       padding: 18px 22px;
       margin: 24px 0;
       border-left: 5px solid;
     }
-    .qm-callout-info {
+    .lms-callout-info {
       background: var(--info-light);
       border-color: var(--info);
       color: #0c4a6e;
     }
-    .qm-callout-tip {
+    .lms-callout-tip {
       background: var(--primary-light);
       border-color: var(--primary);
       color: #134e4a;
     }
-    .qm-callout-warning {
+    .lms-callout-warning {
       background: var(--warning-light);
       border-color: var(--warning);
       color: #78350f;
     }
-    .qm-callout-success {
+    .lms-callout-success {
       background: var(--success-light);
       border-color: var(--success);
       color: #14532d;
     }
-    .qm-callout-title {
+    .lms-callout-title {
       font-weight: 750;
       font-size: 1.02rem;
       margin-bottom: 6px;
@@ -298,7 +298,7 @@ function lmsThemeCSS() {
       margin-bottom: 12px;
     }
 
-    /* Step-by-Step Task Scaffolding (QM 5.1 / 5.2) */
+    /* Step-by-Step Task Scaffolding */
     .step-grid {
       display: flex;
       flex-direction: column;
@@ -375,7 +375,7 @@ function lmsThemeCSS() {
       line-height: 1.55;
     }
 
-    /* Accessible Tables (QM 8.3) */
+    /* Accessible Tables */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -420,7 +420,7 @@ function lmsThemeCSS() {
       color: #92400e;
     }
 
-    /* Checklists for Student Self-Verification (QM 3.5) */
+    /* Checklists for Student Self-Verification */
     .checklist {
       list-style: none;
       padding: 0;
@@ -489,13 +489,13 @@ function lmsThemeCSS() {
       .lms-banner { background: none; color: #000; border-left: none; padding: 0 0 16px; border-bottom: 2px solid #000; }
       .lms-banner h1 { color: #000; font-size: 18pt; }
       .lms-badge, .lms-meta { color: #333; }
-      .qm-callout, .card, .step-card, .cohort-card { box-shadow: none; border-color: #999; }
+      .lms-callout, .card, .step-card, .cohort-card { box-shadow: none; border-color: #999; }
     }
   `;
 }
 
 /**
- * Stage-specific pedagogical verbs, descriptions and MLO templates aligned with Quality Matters (QM 2.1, 2.2).
+ * Stage-specific pedagogical verbs, descriptions and module learning objective templates aligned with Bloom's taxonomy.
  */
 const STAGE_PEDAGOGY = {
   trust: {
@@ -537,7 +537,7 @@ const STAGE_PEDAGOGY = {
 };
 
 /**
- * Builds HTML for "Start Here: Welcome & Course Orientation" (Quality Matters General Standard 1).
+ * Builds HTML for "Start Here: Welcome & Course Orientation" (Course Quality Standards: Orientation & Navigation).
  */
 function buildLmsStartHere(p) {
   const ps = active(p);
@@ -553,7 +553,7 @@ function buildLmsStartHere(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Module 0 · Start Here</span>
-      <span class="lms-badge">QM Standard 1 Aligned</span>
+      <span class="lms-badge">Course Quality Standards Aligned</span>
       <span class="lms-badge">${ps.length} Campuses</span>
     </div>
     <h1>Welcome to ${esc(p.title)}</h1>
@@ -562,15 +562,15 @@ function buildLmsStartHere(p) {
     </div>
   </div>
 
-  <h2>1. Course Welcome & Collaborative Purpose (QM 1.2)</h2>
+  <h2>1. Course Welcome & Collaborative Purpose</h2>
   <p>Welcome! In this course, you will not simply learn <em>about</em> international topics from a textbook; you will actively investigate real-world challenges <strong>in direct partnership with student colleagues in other countries</strong>. Each university cohort brings unique regional evidence, situated cultural perspectives, and localized community data that enrich the learning of all participants.</p>
 
-  <div class="qm-callout qm-callout-info">
-    <div class="qm-callout-title">The Central Driving Investigation</div>
+  <div class="lms-callout lms-callout-info">
+    <div class="lms-callout-title">The Central Driving Investigation</div>
     <p style="margin: 0; font-size: 1.08rem; font-style: italic;">"${esc(p.brief.question || 'How do situated perspectives across partner institutions illuminate key challenges in this field?')}"</p>
   </div>
 
-  <h2>2. How This Course is Structured (QM 1.1)</h2>
+  <h2>2. How This Course is Structured</h2>
   <div class="card">
     <p>This course is organized into structured weekly modules following a purposeful 6-stage arc of international co-design:</p>
     <ol>
@@ -583,7 +583,7 @@ function buildLmsStartHere(p) {
     </ol>
   </div>
 
-  <h2>3. Action Checklist: Your First 48 Hours (QM 1.1)</h2>
+  <h2>3. Action Checklist: Your First 48 Hours</h2>
   <ul class="checklist">
     <li class="checklist-item">
       <span class="checklist-box"></span>
@@ -607,9 +607,9 @@ function buildLmsStartHere(p) {
     </li>
   </ul>
 
-  <h2>4. Netiquette & Cross-Cultural Communication Code (QM 1.3)</h2>
-  <div class="qm-callout qm-callout-tip">
-    <div class="qm-callout-title">Core Principles of Mutual Respect Across Borders</div>
+  <h2>4. Netiquette & Cross-Cultural Communication Code</h2>
+  <div class="lms-callout lms-callout-tip">
+    <div class="lms-callout-title">Core Principles of Mutual Respect Across Borders</div>
     <ul>
       <li><strong>The 48-Hour Communication Rule:</strong> Always acknowledge messages from your international teammates within 48 hours (excluding scheduled university breaks). Even a brief <em>"Received, reviewing now"</em> maintains team momentum.</li>
       <li><strong>Linguistic Inclusivity & Patience:</strong> For many students, English is a second or third language. We evaluate reasoning, insight, and empirical evidence rather than grammatical perfection. Avoid localized idioms, sports metaphors, or culture-specific slang.</li>
@@ -618,7 +618,7 @@ function buildLmsStartHere(p) {
     </ul>
   </div>
 
-  <h2>5. Minimum Technology & Digital Literacy Requirements (QM 1.5, 1.6)</h2>
+  <h2>5. Minimum Technology & Digital Literacy Requirements</h2>
   <table>
     <thead>
       <tr>
@@ -651,7 +651,7 @@ function buildLmsStartHere(p) {
     </tbody>
   </table>
 
-  <h2>6. Technical Support by Participating Institution (QM 1.7)</h2>
+  <h2>6. Technical Support by Participating Institution</h2>
   <table>
     <thead>
       <tr>
@@ -671,7 +671,7 @@ function buildLmsStartHere(p) {
   </table>
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Higher Education Rubric Standard 1 Aligned.<br>
+    Crosscourse LMS Cartridge Export · Higher Education Course Quality Standards Aligned.<br>
     Start Here Orientation Guide for All Participating Campuses.
   </div>
 </body>
@@ -679,7 +679,7 @@ function buildLmsStartHere(p) {
 }
 
 /**
- * Builds HTML for Syllabus page inside the LMS cartridge (Quality Matters General Standards 1, 2, 3, 5).
+ * Builds HTML for Syllabus page inside the LMS cartridge (Course Quality Standards: Objectives, Assessment & Interaction).
  */
 function buildLmsSyllabus(p) {
   const ps = active(p);
@@ -696,7 +696,7 @@ function buildLmsSyllabus(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Official Syllabus</span>
-      <span class="lms-badge">QM Standards 1 &amp; 2 Aligned</span>
+      <span class="lms-badge">Learning Outcomes Aligned</span>
       <span class="lms-badge">${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks</span>
     </div>
     <h1>${esc(p.title)}</h1>
@@ -706,15 +706,15 @@ function buildLmsSyllabus(p) {
     </div>
   </div>
 
-  <h2>1. Course Overview & Central Driving Inquiry (QM 1.2)</h2>
-  <div class="qm-callout qm-callout-info">
-    <div class="qm-callout-title">Central Driving Question</div>
+  <h2>1. Course Overview & Central Driving Inquiry</h2>
+  <div class="lms-callout lms-callout-info">
+    <div class="lms-callout-title">Central Driving Question</div>
     <p style="margin: 0; font-size: 1.1rem; font-style: italic;">"${esc(p.brief.question || 'How do situated perspectives across partner institutions illuminate key challenges in this field?')}"</p>
   </div>
   <p><strong>Shared Disciplinary Challenge:</strong> ${esc(p.brief.challenge || p.title)}</p>
   <p><strong>Why International Collaboration:</strong> ${esc(p.brief.whyInternational || 'Each student cohort holds situated regional evidence, localized institutional frameworks, and cultural perspectives that neither cohort could access alone.')}</p>
 
-  <h2>2. Participating Institutions & Faculty Contacts (QM 1.8)</h2>
+  <h2>2. Participating Institutions & Faculty Contacts</h2>
   <table>
     <thead>
       <tr>
@@ -735,7 +735,7 @@ function buildLmsSyllabus(p) {
     </tbody>
   </table>
 
-  <h2>3. Measurable Course Learning Outcomes (CLOs) (QM 2.1, 2.3)</h2>
+  <h2>3. Measurable Course Learning Outcomes (CLOs)</h2>
   <p>Upon successful completion of this international collaborative course, students from all participating universities will be able to:</p>
   <table>
     <thead>
@@ -757,7 +757,7 @@ function buildLmsSyllabus(p) {
     </tbody>
   </table>
 
-  <h2>4. Outcomes Alignment Matrix (QM 2.4, 3.1)</h2>
+  <h2>4. Outcomes Alignment Matrix</h2>
   <p>This matrix maps how course learning outcomes are systematically developed through weekly module activities and evaluated through authentic assessments:</p>
   <table>
     <thead>
@@ -781,7 +781,7 @@ function buildLmsSyllabus(p) {
     </tbody>
   </table>
 
-  <h2>5. Regular and Substantive Interaction (RSI) Plan (QM 5.3)</h2>
+  <h2>5. Regular and Substantive Interaction (RSI) Plan</h2>
   <div class="card">
     <p>To ensure robust faculty presence and substantive interaction across international cohorts, instructors commit to the following schedule:</p>
     <ul>
@@ -792,7 +792,7 @@ function buildLmsSyllabus(p) {
     </ul>
   </div>
 
-  <h2>6. Weekly Arc of Collaboration (QM 1.2, 2.2)</h2>
+  <h2>6. Weekly Arc of Collaboration</h2>
   <table>
     <thead>
       <tr>
@@ -815,17 +815,17 @@ function buildLmsSyllabus(p) {
     </tbody>
   </table>
 
-  <h2>7. Dual-Layer Grading Architecture & Sovereign Scales (QM 3.2, 3.3)</h2>
-  <div class="qm-callout qm-callout-tip">
-    <div class="qm-callout-title">The Sovereign Grading Philosophy</div>
+  <h2>7. Dual-Layer Grading Architecture & Sovereign Scales</h2>
+  <div class="lms-callout lms-callout-tip">
+    <div class="lms-callout-title">The Sovereign Grading Philosophy</div>
     <p>This consortium decouples <strong>shared evaluation standards</strong> from <strong>local grade weighting</strong>:</p>
     <ul>
-      <li><strong>50% Shared Collaborative Team Deliverables:</strong> Evaluated using the unified SpeedGrader rubrics measuring comparative rigor, empirical evidence, and cross-cultural synthesis.</li>
+      <li><strong>50% Shared Collaborative Team Deliverables:</strong> Evaluated using the unified assessment rubrics measuring comparative rigor, empirical evidence, and cross-cultural synthesis.</li>
       <li><strong>50% Individual Sovereign Reflection & Local Mastery:</strong> Evaluated and weighted by each student\'s home institution faculty instructor according to local degree requirements.</li>
     </ul>
   </div>
 
-  <h2>8. Academic Integrity & Responsible AI Policy (QM 1.4)</h2>
+  <h2>8. Academic Integrity & Responsible AI Policy</h2>
   <div class="card">
     <p><strong>Originality and Cross-Border Attribution:</strong> All data, interviews, and community observations contributed by international peers must be formally cited. Appropriating a teammate's empirical data without attribution violates consortium academic integrity policies.</p>
     <p><strong>Generative AI Guidelines:</strong> AI tools may be used for language editing, brainstorming, and translation assistance. However, all regional case studies and empirical claims must be based on genuine local investigations. AI-generated fabrications of local community data will result in immediate assignment failure.</p>
@@ -849,14 +849,14 @@ function buildLmsSyllabus(p) {
   </div>
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Higher Education Rubric Standards 1, 2, 3, and 5 Aligned.
+    Crosscourse LMS Cartridge Export · Higher Education Course Quality Standards Aligned.
   </div>
 </body>
 </html>`;
 }
 
 /**
- * Builds HTML for Student Onboarding Guide inside the LMS cartridge (Quality Matters General Standards 1 & 5).
+ * Builds HTML for Student Onboarding Guide inside the LMS cartridge (Course Quality Standards: Learner Interaction & Support).
  */
 function buildLmsStudentGuide(p) {
   const ps = active(p);
@@ -872,7 +872,7 @@ function buildLmsStudentGuide(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Student Guide</span>
-      <span class="lms-badge">QM Standard 1.3 &amp; 5.4</span>
+      <span class="lms-badge">Collaboration &amp; Interaction</span>
     </div>
     <h1>Student Onboarding &amp; Collaboration Guide</h1>
     <div class="lms-meta">
@@ -880,15 +880,15 @@ function buildLmsStudentGuide(p) {
     </div>
   </div>
 
-  <h2>Why Are We Collaborating Internationally? (QM 1.2)</h2>
+  <h2>Why Are We Collaborating Internationally?</h2>
   <p>In today's interconnected world, critical global problems (in public health, environmental policy, business ethics, and governance) are deeply shaped by regional, cultural, and political contexts. By teaming up with students living in another country, you will analyze real-world issues through <strong>authentic comparative evidence</strong> rather than textbook theory.</p>
 
-  <div class="qm-callout qm-callout-info">
-    <div class="qm-callout-title">The Central Challenge You Will Address Together</div>
+  <div class="lms-callout lms-callout-info">
+    <div class="lms-callout-title">The Central Challenge You Will Address Together</div>
     <p style="margin: 0; font-size: 1.05rem;">"${esc(p.brief.question || 'How do situated perspectives across partner institutions illuminate key challenges in this field?')}"</p>
   </div>
 
-  <h2>The 4 Pillars of Successful Cross-Border Teamwork (QM 5.4)</h2>
+  <h2>The 4 Pillars of Successful Cross-Border Teamwork</h2>
   <div class="step-grid">
     <div class="step-card">
       <div class="step-header">
@@ -927,9 +927,9 @@ function buildLmsStudentGuide(p) {
     </div>
   </div>
 
-  <h2>What to Do if an Overseas Partner is Disrupted (QM 1.4)</h2>
-  <div class="qm-callout qm-callout-warning">
-    <div class="qm-callout-title">Contingency &amp; Academic Protection Policy</div>
+  <h2>What to Do if an Overseas Partner is Disrupted</h2>
+  <div class="lms-callout lms-callout-warning">
+    <div class="lms-callout-title">Contingency &amp; Academic Protection Policy</div>
     <p>International collaborations sometimes face unforeseen events: campus closures, server outages, connectivity disruptions, or local national emergencies. If your overseas teammate experiences a disruption:</p>
     <ul>
       <li>Notify your instructor immediately via your campus LMS messaging.</li>
@@ -950,14 +950,14 @@ function buildLmsStudentGuide(p) {
   </div>
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Standards 1.3 &amp; 5.4 Aligned.
+    Crosscourse LMS Cartridge Export · Course Quality Standards Aligned.
   </div>
 </body>
 </html>`;
 }
 
 /**
- * Builds HTML for Consortium Charter inside the LMS cartridge (Quality Matters General Standards 1 & 7).
+ * Builds HTML for Consortium Charter inside the LMS cartridge (Institutional Governance & Learner Support).
  */
 function buildLmsCharter(p) {
   const ps = active(p);
@@ -974,7 +974,7 @@ function buildLmsCharter(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Governance Accord</span>
-      <span class="lms-badge">QM Standard 1.4</span>
+      <span class="lms-badge">Institutional Governance</span>
     </div>
     <h1>Consortium Partnership Charter</h1>
     <div class="lms-meta">
@@ -1060,7 +1060,7 @@ function buildLmsCharter(p) {
 }
 
 /**
- * Builds HTML for Cross-Cultural Glossary page inside the LMS cartridge (Quality Matters General Standards 4 & 8).
+ * Builds HTML for Cross-Cultural Glossary page inside the LMS cartridge (Instructional Materials & Accessibility).
  */
 function buildLmsGlossary(p) {
   const terms = p.glossary || [];
@@ -1076,7 +1076,7 @@ function buildLmsGlossary(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Reference</span>
-      <span class="lms-badge">QM Standards 4.1 &amp; 8.3</span>
+      <span class="lms-badge">Instructional Clarity</span>
     </div>
     <h1>Cross-Cultural Disciplinary Glossary</h1>
     <div class="lms-meta">
@@ -1122,7 +1122,7 @@ function buildLmsGlossary(p) {
 }
 
 /**
- * Builds HTML for Institutional Support Services & Accessibility Statement (Quality Matters General Standards 7 & 8).
+ * Builds HTML for Institutional Support Services & Accessibility Statement (Universal Accessibility & Student Support).
  */
 function buildLmsSupportAccessibility(p) {
   const ps = active(p);
@@ -1138,7 +1138,7 @@ function buildLmsSupportAccessibility(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Student Resources</span>
-      <span class="lms-badge">QM Standards 7 &amp; 8 Aligned</span>
+      <span class="lms-badge">Accessibility &amp; Student Support</span>
     </div>
     <h1>Institutional Support Services &amp; Accessibility Statement</h1>
     <div class="lms-meta">
@@ -1146,7 +1146,7 @@ function buildLmsSupportAccessibility(p) {
     </div>
   </div>
 
-  <h2>1. Accessibility & Universal Design for Learning (UDL) (QM 8.2, 8.3, 8.4)</h2>
+  <h2>1. Accessibility & Universal Design for Learning (UDL)</h2>
   <div class="card">
     <p>Our consortium is committed to ensuring full digital inclusion and accessibility for all students, conforming to <strong>Web Content Accessibility Guidelines (WCAG) 2.1 Level AA</strong> standards:</p>
     <ul>
@@ -1157,7 +1157,7 @@ function buildLmsSupportAccessibility(p) {
     </ul>
   </div>
 
-  <h2>2. Requesting Disability & Academic Accommodations (QM 7.2)</h2>
+  <h2>2. Requesting Disability & Academic Accommodations</h2>
   <p>Students with documented disabilities or requiring academic accommodations should coordinate with their home campus accessibility office. Faculty at all participating institutions will honor approved accommodations with complete confidentiality:</p>
   <table>
     <thead>
@@ -1177,7 +1177,7 @@ function buildLmsSupportAccessibility(p) {
     </tbody>
   </table>
 
-  <h2>3. Academic Support & Writing Centers (QM 7.3)</h2>
+  <h2>3. Academic Support & Writing Centers</h2>
   <p>Writing across borders and disciplines is an acquired skill. Students are strongly encouraged to utilize campus academic centers:</p>
   <table>
     <thead>
@@ -1197,14 +1197,14 @@ function buildLmsSupportAccessibility(p) {
     </tbody>
   </table>
 
-  <h2>4. Mental Health, Counseling & Student Wellbeing (QM 7.4)</h2>
-  <div class="qm-callout qm-callout-info">
-    <div class="qm-callout-title">Student Wellbeing Across Borders</div>
+  <h2>4. Mental Health, Counseling & Student Wellbeing</h2>
+  <div class="lms-callout lms-callout-info">
+    <div class="lms-callout-title">Student Wellbeing Across Borders</div>
     <p>Cross-border academic teamwork can be demanding. If you experience academic stress, personal crisis, or health challenges, please reach out to your local campus Counseling and Psychological Services. Your instructor is always available to discuss deadline adjustments and support options.</p>
   </div>
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Standards 7 &amp; 8 Aligned.
+    Crosscourse LMS Cartridge Export · Universal Accessibility & Student Support Aligned.
   </div>
 </body>
 </html>`;
@@ -1212,13 +1212,13 @@ function buildLmsSupportAccessibility(p) {
 
 /**
  * Builds HTML for each weekly collaborative activity page inside the LMS cartridge.
- * Adheres strictly to Quality Matters General Standards 2, 3, 4, and 5:
- * - Measurable Module Learning Objectives (QM 2.2, 2.4)
- * - Required Instructional Materials & Case Data (QM 4.1, 4.2)
- * - Scaffolded Collaborative Task Directions (QM 5.1, 5.2, 5.4)
- * - Cohort Interdependence & Workload Allocation (QM 5.2)
- * - Resilience & Fallback Plan (QM 1.4)
- * - SpeedGrader Rubric Alignment & Self-Verification Checklist (QM 3.1, 3.5)
+ * Adheres strictly to Higher Education Course Quality Standards:
+ * - Measurable Module Learning Objectives
+ * - Required Instructional Materials & Case Data
+ * - Scaffolded Collaborative Task Directions
+ * - Cohort Interdependence & Workload Allocation
+ * - Resilience & Fallback Plan
+ * - Assessment Rubric Alignment & Self-Verification Checklist
  */
 function buildLmsActivity(p, a, weekNum) {
   const ps = active(p);
@@ -1252,10 +1252,10 @@ function buildLmsActivity(p, a, weekNum) {
     </div>
   </div>
 
-  <h2>1. Module Overview & Pedagogical Purpose (QM 1.2, 5.1)</h2>
+  <h2>1. Module Overview & Pedagogical Purpose</h2>
   <p>${esc(a.summary || 'In this collaborative milestone, students from all participating universities collaborate to advance their shared inquiry through situated investigation and cross-border synthesis.')}</p>
 
-  <h2>2. Measurable Module Learning Objectives (MLOs) (QM 2.2, 2.4)</h2>
+  <h2>2. Measurable Module Learning Objectives (MLOs)</h2>
   <div class="card">
     <p>By the conclusion of this weekly module, you will be able to:</p>
     <ul>
@@ -1270,7 +1270,7 @@ function buildLmsActivity(p, a, weekNum) {
     </ul>
   </div>
 
-  <h2>3. Required Preparation & Instructional Resources (QM 4.1, 4.2)</h2>
+  <h2>3. Required Preparation & Instructional Resources</h2>
   <div class="card">
     <h3 class="card-title">Before Joining Your International Team</h3>
     <ul>
@@ -1280,7 +1280,7 @@ function buildLmsActivity(p, a, weekNum) {
     </ul>
   </div>
 
-  <h2>4. Scaffolded Step-by-Step Task Directions (QM 5.1, 5.4)</h2>
+  <h2>4. Scaffolded Step-by-Step Task Directions</h2>
   <div class="step-grid">
     <div class="step-card">
       <div class="step-header">
@@ -1321,7 +1321,7 @@ function buildLmsActivity(p, a, weekNum) {
     </ol>`}
   </div>
 
-  <h2>6. Campus Cohort Interdependence: Who Contributes What (QM 5.2)</h2>
+  <h2>6. Campus Cohort Interdependence: Who Contributes What</h2>
   <p>To ensure equity and eliminate passive freeloading, students from each campus have distinct required contributions:</p>
   <div class="cohort-grid">
     ${ps.map(x => `
@@ -1335,14 +1335,14 @@ function buildLmsActivity(p, a, weekNum) {
     </div>`).join('')}
   </div>
 
-  <h2>7. Fallback & Resilience Contingency (QM 1.4)</h2>
-  <div class="qm-callout qm-callout-warning">
-    <div class="qm-callout-title">If Your International Partner Cohort is Delayed</div>
+  <h2>7. Fallback & Resilience Contingency</h2>
+  <div class="lms-callout lms-callout-warning">
+    <div class="lms-callout-title">If Your International Partner Cohort is Delayed</div>
     <p style="margin:0;">${esc(a.contingency || 'If your international partner cohort experiences unexpected campus disruption or delays, proceed with your local case data and activate the instructor-curated secondary case dossier. No student will be penalized for partner delays.')}</p>
   </div>
 
-  <h2>8. Pre-Submission Self-Verification Checklist (QM 3.5)</h2>
-  <p>Before submitting your team deliverable, ensure your submission meets all Quality Matters evaluation criteria:</p>
+  <h2>8. Pre-Submission Self-Verification Checklist</h2>
+  <p>Before submitting your team deliverable, ensure your submission meets all assignment evaluation criteria:</p>
   <ul class="checklist">
     <li class="checklist-item">
       <span class="checklist-box"></span>
@@ -1362,11 +1362,11 @@ function buildLmsActivity(p, a, weekNum) {
     </li>
   </ul>
 
-  <h2>9. Grading Rubric Alignment (QM 3.1, 3.3)</h2>
-  <p>This assignment is evaluated using the official <strong>SpeedGrader Consortium Rubric</strong> (viewable in the Assessment module). Evaluation criteria focus on comparative integration, analytical rigor, and respectful intercultural critique.</p>
+  <h2>9. Grading Rubric Alignment</h2>
+  <p>This assignment is evaluated using the official <strong>Consortium Assessment Rubric</strong> (viewable in the Assessment module). Evaluation criteria focus on comparative integration, analytical rigor, and respectful intercultural critique.</p>
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Standards 2, 3, 4, and 5 Aligned.<br>
+    Crosscourse LMS Cartridge Export · Higher Education Course Quality Standards Aligned.<br>
     Module Activity Week ${weekNum} · ${esc(a.title)}.
   </div>
 </body>
@@ -1374,7 +1374,7 @@ function buildLmsActivity(p, a, weekNum) {
 }
 
 /**
- * Builds HTML for Grading Policy & Sovereign Institutional Framework (Quality Matters Standards 3.2 & 3.4).
+ * Builds HTML for Grading Policy & Sovereign Institutional Framework (Transparent Assessment Architecture).
  */
 function buildLmsGradingPolicy(p) {
   const ps = active(p);
@@ -1390,7 +1390,7 @@ function buildLmsGradingPolicy(p) {
   <div class="lms-banner">
     <div class="lms-badge-row">
       <span class="lms-badge gold">Grading Policy</span>
-      <span class="lms-badge">QM Standards 3.2 &amp; 3.4</span>
+      <span class="lms-badge">Assessment Architecture</span>
     </div>
     <h1>Course Grading Architecture &amp; Sovereign Weighting</h1>
     <div class="lms-meta">
@@ -1398,7 +1398,7 @@ function buildLmsGradingPolicy(p) {
     </div>
   </div>
 
-  <h2>1. Dual-Layer Grading Architecture (QM 3.2)</h2>
+  <h2>1. Dual-Layer Grading Architecture</h2>
   <p>In international collaborations, institutional grading regulations, GPA scales, and credit requirements vary widely across partner countries. Crosscourse resolves this through an equitable <strong>Dual-Layer Grading System</strong>:</p>
 
   <div class="step-grid">
@@ -1408,7 +1408,7 @@ function buildLmsGradingPolicy(p) {
         <span class="step-time">50% Consortium Weight</span>
       </div>
       <div class="step-title">Collaborative Team Products (Shared Rubric)</div>
-      <p style="margin:0; font-size:0.92rem;">Joint team deliverables, comparative case matrices, and co-created artifacts are evaluated using shared SpeedGrader rubrics. Faculty instructors calibrate their evaluations together to ensure parity.</p>
+      <p style="margin:0; font-size:0.92rem;">Joint team deliverables, comparative case matrices, and co-created artifacts are evaluated using shared 4-tier assessment rubrics. Faculty instructors calibrate their evaluations together to ensure parity.</p>
     </div>
 
     <div class="step-card">
@@ -1421,7 +1421,7 @@ function buildLmsGradingPolicy(p) {
     </div>
   </div>
 
-  <h2>2. Sovereign Institutional Grading Scales (QM 3.2)</h2>
+  <h2>2. Sovereign Institutional Grading Scales</h2>
   <table>
     <thead>
       <tr>
@@ -1440,7 +1440,7 @@ function buildLmsGradingPolicy(p) {
     </tbody>
   </table>
 
-  <h2>3. Late Submission & Revision Policy (QM 3.2)</h2>
+  <h2>3. Late Submission & Revision Policy</h2>
   <div class="card">
     <ul>
       <li><strong>Cross-Border Grace Period:</strong> Because teams operate across time zones, submissions are accepted up to 24 hours after the deadline with prior notice to team members and instructor.</li>
@@ -1448,21 +1448,21 @@ function buildLmsGradingPolicy(p) {
     </ul>
   </div>
 
-  <h2>4. Feedback & Grading Turnaround Standard (QM 5.3)</h2>
-  <div class="qm-callout qm-callout-success">
-    <div class="qm-callout-title">Our Commitment to Timely Feedback</div>
+  <h2>4. Feedback & Grading Turnaround Standard</h2>
+  <div class="lms-callout lms-callout-success">
+    <div class="lms-callout-title">Our Commitment to Timely Feedback</div>
     <p style="margin:0;">All team submissions and reflective milestone assignments will be evaluated with detailed rubric feedback within <strong>7 calendar days</strong> of submission, allowing students to integrate insights into subsequent modules.</p>
   </div>
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Standards 3.2 &amp; 3.4 Aligned.
+    Crosscourse LMS Cartridge Export · Transparent Assessment Architecture Aligned.
   </div>
 </body>
 </html>`;
 }
 
 /**
- * Builds HTML for SpeedGrader rubrics & evaluation blueprint inside the LMS cartridge (Quality Matters General Standard 3).
+ * Builds HTML for interactive rubrics & evaluation blueprint inside the LMS cartridge (Comprehensive Assessment Rubrics).
  */
 function buildLmsRubrics(p) {
   const as = p.assessments || [];
@@ -1472,25 +1472,25 @@ function buildLmsRubrics(p) {
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Assessment Architecture & SpeedGrader Rubrics</title>
+  <title>Assessment Architecture & Interactive Rubrics</title>
   <style>${lmsThemeCSS()}</style>
 </head>
 <body>
   <div class="lms-banner">
     <div class="lms-badge-row">
-      <span class="lms-badge gold">SpeedGrader Rubrics</span>
-      <span class="lms-badge">QM Standard 3.3 Aligned</span>
+      <span class="lms-badge gold">Interactive Rubrics</span>
+      <span class="lms-badge">Assessment Standards Aligned</span>
     </div>
-    <h1>Consortium Assessment &amp; SpeedGrader Rubrics</h1>
+    <h1>Consortium Assessment &amp; Interactive Rubrics</h1>
     <div class="lms-meta">
       Calibrated evaluation matrices for collaborative deliverables, peer critique, and intercultural inquiry.
     </div>
   </div>
 
-  <h2>Assessment Design Philosophy (QM 3.1, 3.3)</h2>
+  <h2>Assessment Design Philosophy</h2>
   <p>Assessments in this consortium evaluate analytical reasoning, comparative evidence, and respectful engagement, <strong>not English fluency or localized dialect</strong>. Every student has an equitable opportunity to demonstrate mastery regardless of background.</p>
 
-  <h2>SpeedGrader Interactive Rubric Matrices (QM 3.3)</h2>
+  <h2>Interactive Assessment Rubric Matrices</h2>
   ${as.length ? as.map((s, idx) => `
   <div class="card" style="margin-bottom: 36px;">
     <h3 style="margin-top:0; color:var(--primary); font-size:1.25rem;">
@@ -1508,7 +1508,7 @@ function buildLmsRubrics(p) {
           <th style="width:19%;">Exemplary (4 Pts)</th>
           <th style="width:19%;">Proficient (3 Pts)</th>
           <th style="width:19%;">Developing (2 Pts)</th>
-          <th style="width:19%;">Unsatisfactory (0–1 Pts)</th>
+          <th style="width:19%;">Unsatisfactory (0-1 Pts)</th>
         </tr>
       </thead>
       <tbody>
@@ -1535,12 +1535,12 @@ function buildLmsRubrics(p) {
     </div>
   </div>`).join('') : `
   <div class="card">
-    <p>Standard Quality Matters (QM) aligned rubric applied across all weekly milestones.</p>
+    <p>Standard course quality aligned rubric applied across all weekly milestones.</p>
   </div>
   `}
 
   <div class="footer">
-    Crosscourse LMS Cartridge Export · Quality Matters (QM) Standard 3.3 Aligned SpeedGrader Rubrics.
+    Crosscourse LMS Cartridge Export · Course Quality Standards Aligned Rubrics.
   </div>
 </body>
 </html>`;
@@ -1593,12 +1593,12 @@ function buildImsManifestXML(p, files) {
 
   orgItems += `
       <item identifier="mod_assessment">
-        <title>Consortium Assessment &amp; SpeedGrader Rubrics</title>
+        <title>Consortium Assessment &amp; Interactive Rubrics</title>
         <item identifier="item_grading_policy" identifierref="res_grading_policy">
           <title>Course Grading Architecture &amp; Sovereign Weighting Policy</title>
         </item>
         <item identifier="item_rubrics" identifierref="res_rubrics">
-          <title>Assessment Architecture &amp; SpeedGrader Rubrics</title>
+          <title>Assessment Architecture &amp; Interactive Rubrics</title>
         </item>
       </item>
   `;
@@ -1654,7 +1654,7 @@ function buildImsManifestXML(p, files) {
           <lom:string language="en">${esc(p.title)}</lom:string>
         </lom:title>
         <lom:description>
-          <lom:string language="en">Quality Matters (QM) Higher Education Rubric compliant international consortium course co-designed with Crosscourse.</lom:string>
+          <lom:string language="en">Higher Education Course Quality Standards aligned consortium course co-designed with Crosscourse.</lom:string>
         </lom:description>
       </lom:general>
     </lom:lom>
@@ -1686,7 +1686,7 @@ export function buildLmsCartridgeFiles(p) {
   files.push({ name: 'glossary.html', content: buildLmsGlossary(p) });
   files.push({ name: 'support_accessibility.html', content: buildLmsSupportAccessibility(p) });
 
-  // Assessments & SpeedGrader Module
+  // Assessments & Rubrics Module
   files.push({ name: 'assessments/grading_policy.html', content: buildLmsGradingPolicy(p) });
   files.push({ name: 'assessments/rubrics.html', content: buildLmsRubrics(p) });
 
@@ -1708,7 +1708,7 @@ export function buildLmsCartridgeFiles(p) {
   // Canvas-specific course settings text indicator
   files.push({
     name: 'course_settings/canvas_export.txt',
-    content: `Crosscourse Course Export for Canvas / Blackboard / Moodle / Brightspace\nTitle: ${p.title}\nStandard: Quality Matters (QM) Higher Ed 7th Ed & IMS CC 1.1\nExported: ${new Date().toISOString()}\n`
+    content: `Crosscourse Course Export for Canvas / Blackboard / Moodle / Brightspace\nTitle: ${p.title}\nStandard: Higher Education Course Quality Standards & IMS CC 1.1\nExported: ${new Date().toISOString()}\n`
   });
 
   return files;

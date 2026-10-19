@@ -305,252 +305,972 @@ export async function showAutopilotProgressModal(p, onComplete) {
 }
 
 /**
- * Builds the complete Syllabus & Implementation Package HTML.
+ * Stage descriptions, verbs, and pedagogical objectives for course documents.
  */
-export function buildSyllabusHTML(p) {
+const DOSSIER_STAGE_INFO = {
+  trust: {
+    label: 'Establish Trust and Working Norms',
+    verb: 'Establish and synthesize',
+    objective: 'Establish cross-cultural communication agreements, align baseline collaboration expectations, and build team psychological safety across participating campuses.',
+    focus: 'Team charters, introductory video memos, timezone reconciliation, and intercultural baseline interviews.'
+  },
+  local: {
+    label: 'Investigate Locally',
+    verb: 'Investigate and document',
+    objective: 'Investigate, collect, and critically document situated empirical case evidence and localized regional data within the home institution\'s community.',
+    focus: 'Primary local field observations, policy archives, community datasets, and institutional case studies.'
+  },
+  compare: {
+    label: 'Compare and Identify Divergences',
+    verb: 'Contrast and analyze',
+    objective: 'Contrast regional case studies with international partner data, identifying structural similarities, key institutional divergences, and unexamined cultural assumptions.',
+    focus: 'Cross-border comparative matrices, dialectical analysis of local vs. global factors, and assumption testing.'
+  },
+  critique: {
+    label: 'Constructive Peer Critique',
+    verb: 'Evaluate and challenge',
+    objective: 'Critically evaluate international peer hypotheses through respectful academic critique, and iteratively refine own frameworks based on partner feedback.',
+    focus: 'Structured peer reviews, alternative hypothesis testing, and evidentiary defense.'
+  },
+  cocreate: {
+    label: 'Collaborative Co-Creation',
+    verb: 'Co-design and synthesize',
+    objective: 'Co-produce a unified, classroom-ready disciplinary artifact that integrates multi-campus evidence and could not have been produced by a single institution alone.',
+    focus: 'Joint white papers, integrated policy briefs, comparative prototype designs, and shared digital repositories.'
+  },
+  reflect: {
+    label: 'Intercultural and Disciplinary Reflection',
+    verb: 'Reflect and articulate',
+    objective: 'Critically reflect on cross-cultural collaboration dynamics, articulating personal epistemological growth, intercultural competence gains, and ongoing global challenges.',
+    focus: 'Individual reflective essays, metacognitive learning logs, and consortium portfolio evaluations.'
+  }
+};
+
+/**
+ * Builds the Comprehensive Master Course Handbook & Syllabus HTML document.
+ * Formatted for publication-grade printing or direct "Save as PDF" via the browser print dialog.
+ * Serves as a full, standalone, non-LMS alternative containing all course content, learning outcomes,
+ * policies, weekly curriculum arc, SpeedGrader rubrics, and a detachable Confidential Instructor Appendix.
+ */
+export function buildCourseDossierHTML(p, opts = {}) {
   const ps = active(p);
   const acts = p.activities.slice().sort((a, b) => (a.start || '9').localeCompare(b.start || '9'));
   const ov = T.termOverlap(ps);
   const outIdx = id => p.outcomes.findIndex(o => o.id === id) + 1;
-  const rel = p.releases[0] || { label: 'R1-AUTOPILOT', at: S.now() };
+  const rel = p.releases[0] || { label: 'R1-RELEASE', at: S.now() };
+  const initialMode = opts.mode || (opts.studentOnly ? 'student' : (opts.instructorOnly ? 'instructor' : 'full'));
 
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>${esc(p.title)}: International Course Syllabus & Co-Design Package</title>
+  <title>${esc(p.title)}: Master Course Handbook and Syllabus</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     :root {
-      --primary: #1d5c63;
-      --text: #1f2328;
-      --bg: #fdfdfc;
-      --card: #f8f6f0;
-      --border: #e2ddd5;
+      --ink: #0f172a;
+      --ink-secondary: #334155;
+      --ink-muted: #64748b;
+      --brand: #0f5c65;
+      --brand-dark: #083338;
+      --brand-light: #f0fdfa;
+      --accent: #1e40af;
+      --border: #cbd5e1;
+      --border-subtle: #e2e8f0;
+      --surface: #f8fafc;
+      --surface-warm: #fcfbf9;
+      --warning: #b45309;
+      --warning-light: #fffbeb;
+      --success: #15803d;
+      --success-light: #f0fdf4;
     }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: var(--text);
-      background: var(--bg);
-      max-width: 920px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--ink);
+      background: #ffffff;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 32px 24px;
+      padding: 24px 20px 80px;
+      -webkit-font-smoothing: antialiased;
     }
-    .no-print {
+
+    /* Interactive Non-Print Control Toolbar */
+    .no-print.control-toolbar {
       position: sticky;
       top: 0;
-      background: var(--bg);
-      padding: 12px 0;
-      border-bottom: 2px solid var(--border);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 18px;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       display: flex;
+      flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
-      z-index: 100;
+      gap: 12px;
+      z-index: 1000;
     }
-    .print-btn {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 10px 18px;
+    .toolbar-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .toolbar-left strong {
+      font-size: 0.95rem;
+      color: var(--brand);
+    }
+    .toolbar-left span {
+      font-size: 0.8rem;
+      color: var(--ink-muted);
+    }
+    .toolbar-center {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: var(--surface);
+      padding: 4px;
       border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+    .view-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
       font-weight: 600;
-      font-size: 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      color: var(--ink-secondary);
+      user-select: none;
+    }
+    .view-pill:hover {
+      background: rgba(15, 92, 101, 0.08);
+    }
+    .view-pill input {
+      margin: 0;
       cursor: pointer;
     }
-    .print-btn:hover { background: #154349; }
-    h1 { font-size: 32px; color: var(--primary); margin: 0 0 8px; line-height: 1.2; }
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
-    .badge-ok { background: #d4edda; color: #155724; }
-    .badge-live { background: #cce5ff; color: #004085; }
-    .badge-async { background: #e2e3e5; color: #383d41; }
-    .meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 20px 0; }
-    .meta-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
-    h2 { font-size: 22px; border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-top: 36px; color: var(--primary); }
-    h3 { font-size: 18px; margin: 20px 0 6px; }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
-    th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top; }
-    th { background: var(--card); font-weight: 600; }
-    .act-box { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 6px; padding: 16px; margin: 16px 0; break-inside: avoid; }
-    .rubric-table th { background: #f0ede6; }
-    .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: #666; text-align: center; }
+    .toolbar-right {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-action {
+      background: var(--brand);
+      color: #ffffff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .btn-action:hover { background: var(--brand-dark); }
+    .btn-action.secondary {
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--border);
+    }
+    .btn-action.secondary:hover { background: var(--border-subtle); }
+
+    /* View Filtering Modes */
+    body.view-student .instructor-only { display: none !important; }
+    body.view-instructor .student-handbook { display: none !important; }
+
+    /* Academic Publication Header */
+    .doc-header {
+      border-bottom: 3px solid var(--brand);
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+    .doc-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .doc-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border: 1px solid;
+    }
+    .doc-badge.primary { background: var(--brand-light); color: var(--brand); border-color: var(--brand); }
+    .doc-badge.secondary { background: var(--surface); color: var(--ink-secondary); border-color: var(--border); }
+    .doc-badge.accent { background: #eff6ff; color: var(--accent); border-color: var(--accent); }
+
+    h1.doc-title {
+      font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+      line-height: 1.22;
+      margin: 0 0 10px;
+    }
+    .doc-subtitle {
+      font-size: 1.1rem;
+      color: var(--ink-secondary);
+      margin: 0 0 14px;
+      font-style: italic;
+    }
+
+    /* Headings */
+    h2 {
+      font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+      font-size: 1.35rem;
+      color: var(--brand-dark);
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 6px;
+      margin-top: 36px;
+      margin-bottom: 14px;
+    }
+    h3 {
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-top: 22px;
+      margin-bottom: 10px;
+    }
+    p, ul, ol {
+      margin-top: 0;
+      margin-bottom: 14px;
+    }
+    li { margin-bottom: 5px; }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 9px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--surface);
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 0.88rem;
+    }
+    tr:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    /* Callout & Card Blocks */
+    .callout {
+      border-radius: 6px;
+      padding: 16px 18px;
+      margin: 18px 0;
+      border-left: 4px solid var(--brand);
+      background: var(--surface);
+    }
+    .callout.info {
+      border-left-color: var(--accent);
+      background: #f0f7ff;
+    }
+    .callout.warning {
+      border-left-color: var(--warning);
+      background: var(--warning-light);
+    }
+    .callout-title {
+      font-weight: 700;
+      font-size: 0.98rem;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .activity-card {
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--brand);
+      border-radius: 6px;
+      padding: 16px 18px;
+      margin: 18px 0;
+      background: #ffffff;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .activity-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .activity-title {
+      font-size: 1.12rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin: 0;
+    }
+    .activity-meta {
+      font-size: 0.84rem;
+      color: var(--ink-muted);
+      font-weight: 600;
+    }
+
+    .step-box {
+      background: var(--surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 8px 0;
+      font-size: 0.92rem;
+    }
+    .step-title {
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin-bottom: 4px;
+    }
+
+    /* Verification Signatures Block */
+    .signatures-block {
+      margin-top: 36px;
+      padding: 20px;
+      border: 1.5px dashed var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .sig-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 18px;
+    }
+    .sig-item {
+      border-top: 1px solid #475569;
+      padding-top: 8px;
+      font-size: 0.88rem;
+    }
+    .sig-line {
+      margin-top: 18px;
+      color: var(--ink-muted);
+      font-size: 0.84rem;
+    }
+
+    /* Appendix Banner */
+    .appendix-banner {
+      background: #0f172a;
+      color: #ffffff;
+      padding: 24px;
+      border-radius: 6px;
+      margin: 40px 0 24px;
+      border-left: 6px solid var(--warning);
+    }
+    .appendix-banner h2 {
+      color: #ffffff;
+      border-bottom: 1px solid rgba(255,255,255,0.25);
+      margin-top: 0;
+      padding-bottom: 8px;
+    }
+    .appendix-note {
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+
+    /* Print Stylesheet */
     @media print {
       .no-print { display: none !important; }
-      body { padding: 0; max-width: 100%; }
-      .act-box { border-left-color: #000; }
+      body {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 10pt !important;
+        line-height: 1.45 !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+      }
+      h1.doc-title { font-size: 18pt !important; color: #000000 !important; }
+      h2 { font-size: 13pt !important; color: #000000 !important; border-bottom: 1px solid #000 !important; }
+      h3 { font-size: 11pt !important; color: #000000 !important; }
+      table { font-size: 9pt !important; }
+      th { background: #f0f0f0 !important; color: #000 !important; }
+      th, td { border: 1px solid #777 !important; padding: 6px 8px !important; }
+      .doc-badge { border: 1px solid #444 !important; color: #000 !important; background: none !important; }
+      .activity-card { border: 1px solid #666 !important; border-left: 3px solid #000 !important; margin: 12px 0 !important; padding: 10px !important; }
+      .callout { border-left-color: #000 !important; background: none !important; border: 1px solid #777 !important; }
+      .appendix-banner { background: none !important; color: #000 !important; border: 2px solid #000 !important; border-left: 6px solid #000 !important; }
+      .appendix-banner h2 { color: #000 !important; border-bottom: 1px solid #000 !important; }
+      .appendix-note { color: #333 !important; }
+      .keep-together, .activity-card, .signatures-block, table, tr { break-inside: avoid; page-break-inside: avoid; }
     }
   </style>
 </head>
-<body>
-  <div class="no-print">
-    <div><strong>Crosscourse Approved Course Syllabus</strong> <span class="badge badge-ok">Ready for Classroom</span></div>
-    <button class="print-btn" onclick="window.print()">Print or Save as PDF</button>
+<body class="view-${initialMode}">
+
+  <!-- Interactive Control Toolbar (Hidden During Printing) -->
+  <div class="no-print control-toolbar">
+    <div class="toolbar-left">
+      <strong>Master Course Handbook and Syllabus</strong>
+      <span>Official Multi-Campus Curriculum Package (Print / PDF Alternative)</span>
+    </div>
+
+    <div class="toolbar-center">
+      <label class="view-pill">
+        <input type="radio" name="dossier-mode" value="full" ${initialMode === 'full' ? 'checked' : ''} onchange="setDossierView('full')">
+        Complete Master Document (Includes Appendix)
+      </label>
+      <label class="view-pill">
+        <input type="radio" name="dossier-mode" value="student" ${initialMode === 'student' ? 'checked' : ''} onchange="setDossierView('student')">
+        Student Handbook (Classroom Clean)
+      </label>
+      <label class="view-pill">
+        <input type="radio" name="dossier-mode" value="instructor" ${initialMode === 'instructor' ? 'checked' : ''} onchange="setDossierView('instructor')">
+        Instructor Dossier (Faculty Only)
+      </label>
+    </div>
+
+    <div class="toolbar-right">
+      <button type="button" class="btn-action" onclick="window.print()">
+        Print or Save as PDF
+      </button>
+      <button type="button" class="btn-action secondary" onclick="downloadCurrentHTML()">
+        Download HTML
+      </button>
+    </div>
   </div>
 
-  <header>
-    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
-      <span class="badge badge-ok">${rel.label} Approved Release</span>
-      <span class="badge ${p.durationWeeks <= 7 ? 'badge-live' : 'badge-ok'}">${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Semester'})</span>
-      <span class="badge ${p.visitFormat === 'student-visit' || p.visitFormat === 'faculty-visit' ? 'badge-ok' : 'badge-async'}">
-        ${p.visitFormat === 'student-visit' ? 'In-Person Student Field Study & Immersion' : (p.visitFormat === 'faculty-visit' ? 'Faculty Cross-Country Exchange' : '100% Fully Virtual')}
-      </span>
+  <!-- Document Header / Official Title Block -->
+  <header class="doc-header">
+    <div class="doc-badge-row">
+      <span class="doc-badge primary">${esc(rel.label)} Approved Release</span>
+      <span class="doc-badge secondary">${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks (${p.durationWeeks <= 7 ? 'Accelerated Intensive' : 'Full Academic Semester'})</span>
+      <span class="doc-badge accent">${esc(p.visitFormat === 'student-visit' ? 'Blended with Student Field Immersion' : (p.visitFormat === 'faculty-visit' ? 'Blended with Faculty Colloquium' : '100% Fully Virtual Exchange'))}</span>
     </div>
-    <h1>${esc(p.title)}</h1>
-    <p class="meta" style="font-size: 16px; color: #555; margin: 4px 0 16px;">
-      ${p.mode === 'course' ? 'Co-Developed International Course' : 'Shared International Collaborative Module'} · ${p.durationWeeks || (p.mode === 'course' ? 14 : 5)} Weeks · Approved for Classroom Implementation
+
+    <h1 class="doc-title">${esc(p.title)}</h1>
+    <p class="doc-subtitle">
+      ${p.mode === 'course' ? 'Co-Developed International Course' : 'Shared International Collaborative Module'} : Official Consortium Curriculum Package
     </p>
+
+    <!-- Consortium Institutional Directory Table -->
+    <table>
+      <thead>
+        <tr>
+          <th>Participating Campus</th>
+          <th>Designated Faculty Instructor</th>
+          <th>Local Department / Course Code</th>
+          <th>Time Zone</th>
+          <th>Working Language</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${ps.map((x, idx) => `
+        <tr>
+          <td>
+            <strong>${esc(x.institution)}</strong><br>
+            <small style="color:var(--ink-muted);">${esc(x.city ? `${x.city}, ${x.country}` : x.country)} (${idx === 0 ? 'Lead Campus' : 'Partner Campus ' + (idx + 1)})</small>
+          </td>
+          <td>
+            <strong>${esc(x.name || 'Designated Instructor')}</strong><br>
+            <small style="color:var(--ink-muted);">${esc(x.email || 'Via Campus Directory')}</small>
+          </td>
+          <td>${esc(x.course.title || 'Departmental Course')} ${esc(x.course.code || '')}<br><small style="color:var(--ink-muted);">${esc(x.course.level || 'Undergraduate')}</small></td>
+          <td><code>${esc(x.timezone)}</code></td>
+          <td>${esc(x.language || 'English')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
   </header>
 
-  <div class="meta-grid">
-    ${ps.map(x => `
-      <div class="meta-card">
-        <strong>${esc(x.institution)}</strong> (${esc(x.country)})
-        <div style="font-size: 14px; margin-top: 4px;">Faculty: <strong>${esc(x.name)}</strong></div>
-        <div style="font-size: 13px; color: #555;">Course: ${esc(x.course.title)} (${esc(x.course.code)})</div>
-        <div style="font-size: 13px; color: #555;">Time Zone: ${esc(x.timezone)} · Language: ${esc(x.language)}</div>
+  <!-- STUDENT HANDBOOK SECTION (INCLUDED IN FULL AND STUDENT VIEWS) -->
+  <main class="student-handbook">
+
+    <!-- Section 1: Framework and Driving Inquiry -->
+    <section>
+      <h2>1. Course Overview and Driving Inquiry</h2>
+      <div class="callout">
+        <div class="callout-title">Central Driving Investigation</div>
+        <p style="margin: 0; font-size: 1.05rem; font-style: italic;">"${esc(p.brief.question || 'How do situated perspectives across partner institutions illuminate key challenges in this field?')}"</p>
       </div>
-    `).join('')}
-  </div>
 
-  <h2>1. Course Rationale & Driving Challenge</h2>
-  <p><strong>Core Challenge:</strong> ${esc(p.brief.challenge)}</p>
-  <p><strong>Driving Question:</strong> ${esc(p.brief.question)}</p>
-  <p><strong>Why International Collaboration is Essential:</strong> ${esc(p.brief.whyInternational)}</p>
-  <p><strong>Pedagogical Value Test:</strong> ${esc(p.brief.counterfactual)}</p>
+      <p><strong>Shared Disciplinary Challenge:</strong> ${esc(p.brief.challenge || p.title)}</p>
+      <p><strong>Why International Cross-Border Collaboration is Essential:</strong> ${esc(p.brief.whyInternational || 'Each student cohort holds situated regional evidence, localized institutional frameworks, and cultural perspectives that neither cohort could access alone.')}</p>
+      <p><strong>Pedagogical Value Rationale:</strong> ${esc(p.brief.counterfactual || 'If students investigated this challenge in isolation without international partners, findings would remain limited to single-nation assumptions without direct comparative testing.')}</p>
+    </section>
 
-  <h2>2. Shared Learning Outcomes & Curriculum Mapping</h2>
-  <table>
-    <thead>
-      <tr>
-        <th style="width: 50px;">#</th>
-        <th>Shared Learning Outcome</th>
-        <th>Type</th>
-        <th>Evidence Artifact</th>
-        ${ps.map(x => `<th>${esc(x.institution)} Mapping</th>`).join('')}
-      </tr>
-    </thead>
-    <tbody>
-      ${p.outcomes.map((o, i) => `
-        <tr>
-          <td><strong>O${i + 1}</strong></td>
-          <td>${esc(o.text)}</td>
-          <td><span class="badge ${o.type === 'intercultural' ? 'badge-ok' : 'badge-async'}">${esc(o.type)}</span></td>
-          <td>${esc(o.evidence)}</td>
-          ${ps.map(x => `<td>${(o.mappings?.[x.id] || []).map(id => esc(x.course.localOutcomes.find(l => l.id === id)?.text || '')).join('<br>') || 'Direct Curriculum Credit'}</td>`).join('')}
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
+    <!-- Section 2: Outcomes and Curriculum Alignment -->
+    <section>
+      <h2>2. Course Learning Outcomes and Academic Alignment Matrix</h2>
+      <p>Upon successful completion of this international collaborative course, students from all participating universities will be able to:</p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 12%;">Outcome #</th>
+            <th style="width: 16%;">Domain</th>
+            <th>Observable Learning Outcome (Bloom\'s Taxonomy)</th>
+            <th style="width: 30%;">Observable Evidence Benchmark</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${p.outcomes.map((o, idx) => `
+          <tr>
+            <td><strong>CLO O${idx + 1}</strong></td>
+            <td><span class="doc-badge secondary">${esc(o.type || 'Disciplinary')}</span></td>
+            <td>${esc(o.text)}</td>
+            <td>${esc(o.evidence || 'Collaborative team deliverable and individual reflection')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
 
-  <h2>3. Collaborative Learning Sequence & Weekly Schedule</h2>
-  <p><em>Shared Teaching Window: ${ov.ok ? `${T.fmtDate(ov.start)} to ${T.fmtDate(ov.end)} (${ov.weeks} shared weeks)` : 'Aligned schedule'}</em></p>
+      <h3>Curriculum Credit Mapping Across Participating Universities</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Course Learning Outcome</th>
+            ${ps.map(x => `<th>${esc(x.institution)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${p.outcomes.map((o, idx) => `
+          <tr>
+            <td><strong>CLO O${idx + 1}:</strong> ${esc(o.text.slice(0, 60))}${o.text.length > 60 ? '...' : ''}</td>
+            ${ps.map(x => `<td>${(o.mappings?.[x.id] || []).map(id => esc(x.course.localOutcomes.find(l => l.id === id)?.text || '')).join('<br>') || 'Direct Program Degree Credit'}</td>`).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </section>
 
-  ${acts.map((a, i) => `
-    <div class="act-box">
-      <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px;">
-        <h3 style="margin: 0;">Week ${i + 1}: ${esc(a.title)}</h3>
-        <div>
-          <span class="badge ${a.sync ? 'badge-live' : 'badge-async'}">${a.sync ? 'Live Session' : 'Asynchronous'}</span>
-          <span style="font-size: 13px; color: #666; margin-left: 8px;">${T.fmtDate(a.start)} - ${T.fmtDate(a.end)}</span>
-        </div>
+    <!-- Section 3: Course Policies and Student Guidelines -->
+    <section>
+      <h2>3. Course Policies, Communication, and Academic Guidelines</h2>
+      
+      <h3>Academic Integrity in Cross-Border Collaborative Work</h3>
+      <div class="callout">
+        <p><strong>Originality and Peer Citation:</strong> All field observations, policy data, and interviews contributed by international student teammates must be formally acknowledged and cited. Presenting an international partner\'s local research notes as your own without explicit attribution constitutes a violation of consortium academic integrity standards.</p>
+        <p style="margin:0;"><strong>Responsible Generative AI Policy:</strong> Generative AI tools may be used for grammatical revision, brainstorming, and translation clarification. However, all regional empirical claims, field observations, and institutional case analyses must represent genuine local research. Fabricating local evidence using artificial intelligence tools will result in assignment failure.</p>
       </div>
-      <p style="margin: 8px 0 12px; font-weight: 500;">${esc(a.summary)}</p>
-      <div style="font-size: 14px; margin-bottom: 8px;">
-        <strong>Cohort Contributions:</strong>
+
+      <h3>Communication Expectations and Response Rhythms</h3>
+      <ul>
+        <li><strong>The 48-Hour Communication Response Standard:</strong> Team members must acknowledge all asynchronous messages from international colleagues within 48 hours, excluding official scheduled university breaks. A brief confirmation keeps collaborative projects moving forward across time zones.</li>
+        <li><strong>Linguistic Inclusivity:</strong> Second-language readers and speakers provide essential regional expertise. All student work is evaluated on analytical reasoning, comparative evidence, and intellectual rigor rather than native English fluency. Idiomatic expressions and localized cultural slang should be avoided in collaborative documents.</li>
+        <li><strong>Asynchronous-First Teamwork:</strong> Course milestones are organized so teammates have at least 24 to 48 hours to contribute before team deadlines. Students are not required to participate in live video sessions outside reasonable local waking hours.</li>
+      </ul>
+
+      <h3>Late Submissions and Formative Resubmission Opportunities</h3>
+      <p>Submissions delayed due to cross-timezone scheduling conflicts receive a standard 24-hour grace window upon prompt notification to the instructor. Formative milestone tasks submitted in Weeks 1 through 3 that earn developing marks may be revised and resubmitted within five business days based on instructor feedback.</p>
+
+      <h3>Digital Accessibility and Accommodations</h3>
+      <p>This course adheres to Web Content Accessibility Guidelines (WCAG) 2.1 Level AA standards. Course materials are provided in multi-modal formats including accessible HTML, printable PDF, and editable markdown. Students requiring academic or technical accommodations should coordinate directly with their home campus accessibility office.</p>
+    </section>
+
+    <!-- Section 4: Dual-Layer Grading Architecture -->
+    <section>
+      <h2>4. Dual-Layer Grading Architecture and Sovereign Institutional Scales</h2>
+      <div class="callout">
+        <div class="callout-title">The Sovereign Grading Model</div>
+        <p>This consortium decouples shared evaluation criteria from local institutional grade calculation:</p>
         <ul>
-          ${(a.participants || []).map(id => `<li><strong>${esc(pn(p, id)?.institution)}:</strong> ${esc(a.contributions?.[id] || 'Active team participation')} (${a.workload?.[id] || 3} hrs/week)</li>`).join('')}
+          <li><strong>50% Shared Collaborative Team Deliverables:</strong> Evaluated using unified consortium SpeedGrader rubrics assessing comparative rigor, empirical integration, and cross-border dialogue.</li>
+          <li><strong>50% Individual Sovereign Reflection and Fieldwork:</strong> Evaluated and recorded directly by each student\'s home institution faculty instructor according to departmental requirements.</li>
         </ul>
       </div>
-      ${a.contingency ? `<div style="font-size: 13px; color: #555; background: #faf8f5; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;"><strong>Asynchronous Contingency:</strong> ${esc(a.contingency)}</div>` : ''}
-      <div style="margin-top: 10px;">
-        <strong>Student Directions:</strong>
-        <div style="font-size: 14px;">${md(a.instructions)}</div>
-      </div>
-    </div>
-  `).join('')}
 
-  <h2>4. Assessment Architecture & Shared Rubric</h2>
-  ${p.assessments.map(s => `
-    <div style="margin-bottom: 24px;">
-      <h3>${esc(s.title)} (${esc(s.layer)} layer)</h3>
-      <p style="font-size: 14px; margin: 4px 0 12px;">Evidence for outcomes: ${(s.outcomes || []).map(id => 'O' + outIdx(id)).join(', ')} · Due date: ${T.fmtDate(s.due)}</p>
-      
-      ${(s.criteria || []).length ? `
-        <table class="rubric-table">
+      <h3>Institutional Grading Scale Conversion Table</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Participating Campus</th>
+            <th>Local Grade Scale</th>
+            <th>Consortium Rating Equivalency</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ps.map(x => `
+          <tr>
+            <td><strong>${esc(x.institution)}</strong> (${esc(x.country)})</td>
+            <td>${esc(x.course.assessmentObligations || 'Official institutional scale (e.g. Letter Grades A-F, ECTS, or 0-10 numerical scale)')}</td>
+            <td>Rubric rating of Exemplary (4 points) corresponds to top-tier marks; Proficient (3 points) corresponds to satisfactory degree mastery.</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+
+      <p><strong>Evaluative Feedback Turnaround:</strong> Instructors commit to returning rubric scores and qualitative evaluative feedback within <strong>seven calendar days</strong> of deliverable submission.</p>
+    </section>
+
+    <!-- Section 5: Weekly Course Curriculum and Activity Arc -->
+    <section>
+      <h2>5. Chronological Weekly Course Curriculum and Student Directions</h2>
+      <p><em>Shared Collaboration Window: ${ov.ok ? `${T.fmtDate(ov.start)} to ${T.fmtDate(ov.end)} (${ov.weeks} shared instructional weeks excluding scheduled breaks).` : 'Aligned consortium schedule.'}</em></p>
+
+      ${acts.map((a, i) => {
+        const stage = a.stage || 'cocreate';
+        const stInfo = DOSSIER_STAGE_INFO[stage] || DOSSIER_STAGE_INFO.cocreate;
+        const linkedCLOs = (a.outcomes || []).map(oid => {
+          const o = p.outcomes.find(x => x.id === oid);
+          const idx = p.outcomes.indexOf(o);
+          return idx >= 0 ? `CLO O${idx + 1}` : null;
+        }).filter(Boolean);
+
+        return `
+        <article class="activity-card">
+          <div class="activity-header">
+            <div>
+              <span class="doc-badge primary">Week ${i + 1}</span>
+              <span class="doc-badge secondary">${esc(stInfo.label)}</span>
+              <span class="doc-badge accent">${a.sync ? 'Synchronous Live Workshop' : 'Asynchronous Team Handoff'}</span>
+            </div>
+            <div class="activity-meta">
+              Dates: ${T.fmtDate(a.start)} to ${T.fmtDate(a.end)} : Effort: ~3 to 5 Hours
+            </div>
+          </div>
+
+          <h3 class="activity-title">${esc(a.title)}</h3>
+          <p style="margin: 8px 0 12px; font-weight: 500;">${esc(a.summary)}</p>
+
+          <div style="margin-bottom: 12px;">
+            <strong>Module Learning Objectives (MLOs):</strong>
+            <ul>
+              <li><strong>MLO ${i + 1}.1:</strong> ${esc(stInfo.verb.charAt(0).toUpperCase() + stInfo.verb.slice(1))} ${esc(a.title.toLowerCase())}: ${esc(stInfo.objective)} ${linkedCLOs.length ? linkedCLOs.map(c => `<span class="doc-badge primary" style="font-size:0.75rem;">${esc(c)}</span>`).join('') : ''}</li>
+              <li><strong>MLO ${i + 1}.2:</strong> Compare local observations with evidence contributed by international peer cohorts.</li>
+            </ul>
+          </div>
+
+          <div class="step-box">
+            <div class="step-title">3-Phase Collaborative Workflow</div>
+            <div style="font-size: 0.9rem;">
+              <p><strong>Phase 1 (Local Preparation, Mid-Week):</strong> Gather situated case notes and regional data within your local home community. Post summaries to your shared team space by Day 3.</p>
+              <p><strong>Phase 2 (Cross-Border Exchange):</strong> Compare regional findings with your international teammates, analyzing divergences and questioning assumptions.</p>
+              <p style="margin:0;"><strong>Phase 3 (Milestone Submission, End-of-Week):</strong> Compile your joint synthesis and submit via your campus assignment portal by Day 7.</p>
+            </div>
+          </div>
+
+          <div style="margin: 14px 0;">
+            <strong>Campus Cohort Responsibilities:</strong>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 32%;">Campus Cohort</th>
+                  <th>Expected Situated Contribution and Evidence</th>
+                  <th style="width: 18%;">Workload Target</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${ps.map(x => `
+                <tr>
+                  <td><strong>${esc(x.institution)}</strong> (${esc(x.country)})</td>
+                  <td>${esc(a.contributions?.[x.id] || 'Situated regional case observations, policy documentation, and comparative critique.')}</td>
+                  <td>${a.workload?.[x.id] ?? 3} Hours</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin: 12px 0;">
+            <strong>Detailed Student Instructions:</strong>
+            <div style="font-size: 0.92rem; background: var(--surface); padding: 12px 14px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+              ${a.instructions ? md(a.instructions) : `<p>Review partner evidence, formulate comparative conclusions, and submit your team report through your campus portal.</p>`}
+            </div>
+          </div>
+
+          ${a.contingency ? `
+          <div class="callout warning" style="margin: 10px 0 0; padding: 10px 14px;">
+            <strong style="color: var(--warning);">Contingency Protocol:</strong> ${esc(a.contingency)}
+          </div>` : ''}
+        </article>`;
+      }).join('')}
+    </section>
+
+    <!-- Section 6: SpeedGrader Rubric Matrices -->
+    <section class="page-break">
+      <h2>6. Comprehensive Assessment Architecture and SpeedGrader Rubrics</h2>
+      <p>All collaborative milestone deliverables are evaluated using the official four-tier SpeedGrader rubrics. Evaluations focus on comparative rigor, critical hypothesis revision, and evidence quality:</p>
+
+      ${p.assessments.map((s, idx) => `
+      <div class="keep-together" style="margin-bottom: 28px;">
+        <h3>Assessment ${idx + 1}: ${esc(s.title)} <small style="font-weight:normal; color:var(--ink-muted);">[${esc(s.layer || 'Collaborative Deliverable')}]</small></h3>
+        <p style="font-size: 0.9rem; color: var(--ink-secondary);">Evidence measure for: ${(s.outcomes || []).map(id => 'CLO O' + outIdx(id)).join(', ')} : Target Submission Date: ${T.fmtDate(s.due)}</p>
+
+        <table>
           <thead>
             <tr>
-              <th style="width: 20%;">Evaluation Criterion</th>
-              <th style="width: 20%;">Exemplary</th>
-              <th style="width: 20%;">Proficient</th>
-              <th style="width: 20%;">Developing</th>
-              <th style="width: 20%;">Beginning</th>
+              <th style="width: 24%;">Evaluation Criterion</th>
+              <th style="width: 19%;">Exemplary (4 Pts)</th>
+              <th style="width: 19%;">Proficient (3 Pts)</th>
+              <th style="width: 19%;">Developing (2 Pts)</th>
+              <th style="width: 19%;">Unsatisfactory (0 to 1 Pt)</th>
             </tr>
           </thead>
           <tbody>
-            ${s.criteria.map(c => `
-              <tr>
-                <td><strong>${esc(c.name)}</strong><br><small style="color: #666;">${esc(c.description)}</small></td>
-                <td>${esc(c.levels?.exemplary)}</td>
-                <td>${esc(c.levels?.proficient)}</td>
-                <td>${esc(c.levels?.developing)}</td>
-                <td>${esc(c.levels?.beginning)}</td>
-              </tr>
-            `).join('')}
+            ${(s.criteria || [
+              { name: 'Comparative Evidence Integration', description: 'Draws on and fairly analyzes situated data from all partner contexts.', levels: { exemplary: 'Seamlessly synthesizes evidence from all campuses with critical nuance.', proficient: 'Accurately integrates evidence from partner contexts.', developing: 'Relies primarily on home context with superficial partner mentions.', beginning: 'Partner context absent or misrepresented.' } },
+              { name: 'Critical Engagement and Revision', description: 'Shows how partner critique revised initial hypotheses.', levels: { exemplary: 'Explicitly demonstrates evolution of thinking in response to international peers.', proficient: 'Substantively addresses partner critique.', developing: 'Acknowledges partner views without revising own stance.', beginning: 'No visible engagement with partner critique.' } },
+              { name: 'Disciplinary Analysis and Rigor', description: 'Methodologically sound reasoning evaluated on depth, not linguistic fluency.', levels: { exemplary: 'Rigorous, well-justified analytical conclusions.', proficient: 'Sound disciplinary reasoning with minor gaps.', developing: 'Partially supported assertions.', beginning: 'Unsupported claims.' } }
+            ]).map(c => `
+            <tr>
+              <td>
+                <strong>${esc(c.name)}</strong><br>
+                <small style="color:var(--ink-muted);">${esc(c.description || '')}</small>
+              </td>
+              <td>${esc(c.levels?.exemplary || 'Consistently exceeds standard with deep comparative insight.')}</td>
+              <td>${esc(c.levels?.proficient || 'Meets full standard with sound evidence and analysis.')}</td>
+              <td>${esc(c.levels?.developing || 'Shows basic effort with noticeable gaps in partner integration.')}</td>
+              <td>${esc(c.levels?.beginning || 'Fails to meet standard; missing critical partner data.')}</td>
+            </tr>`).join('')}
           </tbody>
         </table>
-      ` : ''}
 
-      <div style="background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 14px;">
-        <strong>Local Institutional Grade Weightings:</strong>
-        <ul style="margin: 4px 0 0;">
-          ${ps.map(x => `<li><strong>${esc(x.institution)}:</strong> ${s.local?.[x.id]?.weight ?? 25}% of course grade (${esc(s.local?.[x.id]?.notes || 'Course requirement')})</li>`).join('')}
-        </ul>
-      </div>
+        <div style="font-size: 0.88rem; background: var(--surface); padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border-subtle);">
+          <strong>Local Campus Grade Allocation:</strong> ${ps.map(x => `${esc(x.institution)}: ${s.local?.[x.id]?.weight ?? 25}% of final course grade`).join(' : ')}
+        </div>
+      </div>`).join('')}
+    </section>
+
+    <!-- Section 7: Disciplinary Glossary -->
+    <section>
+      <h2>7. Cross-Cultural Disciplinary Glossary</h2>
+      <p>Key disciplinary terms that carry nuanced, culturally divergent, or policy-specific meanings across our partner countries:</p>
+      ${p.glossary.length ? `
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Term</th>
+            <th>Consortium Definition and Regional Nuance</th>
+            <th style="width: 30%;">Application in Student Assignments</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${p.glossary.map(g => `
+          <tr>
+            <td><strong>${esc(g.term)}</strong></td>
+            <td>${Object.entries(g.definitions || {}).map(([lang, def]) => `<strong>${esc(lang)}:</strong> ${esc(def)}`).join('<br>')}</td>
+            <td>${esc(g.note || 'Agreed baseline terminology for joint student assignments.')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : `
+      <p>Standard international disciplinary definitions apply. When analyzing regional case material, students should clarify institutional differences with international teammates.</p>`}
+    </section>
+
+    <!-- Section 8: Support Services Directory -->
+    <section>
+      <h2>8. Multi-Campus Student Support Services Directory</h2>
+      <p>Academic and institutional support resources available to students across participating universities:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Campus</th>
+            <th>Writing and Academic Tutoring</th>
+            <th>Library Research Support</th>
+            <th>Accessibility and Disability Office</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ps.map(x => `
+          <tr>
+            <td><strong>${esc(x.institution)}</strong> (${esc(x.country)})</td>
+            <td>Campus Writing Center / Academic Success Services</td>
+            <td>University Library Research Consultation Desk</td>
+            <td>Office of Student Accessibility and Accommodations</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- CONFIDENTIAL INSTRUCTOR APPENDIX (INCLUDED IN FULL AND INSTRUCTOR VIEWS) -->
+  <aside class="instructor-only page-break">
+    <div class="appendix-banner">
+      <h2>Confidential Instructor Implementation Dossier and Consortium Accord</h2>
+      <p class="appendix-note">
+        <strong>Notice for Instructors:</strong> This appendix contains inter-institutional governance accords, facilitator rotation schedules, student care escalation paths, and secondary case fallback dossiers. Instructors may detach or omit this section when sharing the course document with enrolled students.
+      </p>
     </div>
-  `).join('')}
 
-  <h2>5. Institutional Partnership Charter & Governance</h2>
-  <table>
-    <tbody>
-      <tr><th style="width: 25%;">Shared Purpose</th><td>${esc(p.charter.purpose)}</td></tr>
-      <tr><th>Decision Rights</th><td>${esc(p.charter.decisionRights)}</td></tr>
-      <tr><th>Languages & Translations</th><td>${esc(p.charter.languages)}</td></tr>
-      <tr><th>Division of Work</th><td>${esc(p.charter.division)}</td></tr>
-      <tr><th>Attribution & Intellectual Property</th><td>${esc(p.charter.attribution)}</td></tr>
-      <tr><th>Student Care & Communication</th><td>${esc(p.charter.studentComms)}</td></tr>
-      <tr><th>Mobility & Travel Protocol</th><td>${esc(p.charter.mobility || '100% Fully Virtual Collaboration. No international travel required.')}</td></tr>
-      <tr><th>Contingency for Disruption</th><td>${esc(p.charter.cohortLoss)}</td></tr>
-    </tbody>
-  </table>
+    <!-- Appendix Section 1: Governance Accord -->
+    <section>
+      <h3>Appendix A: Multilateral Partnership Charter Articles</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 28%;">Charter Governance Article</th>
+            <th>Operational Accord and Policy Agreement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Shared Purpose and Equity</strong></td>
+            <td>${esc(p.charter.purpose || 'Collaborative cross-border student learning characterized by complete institutional parity, mutual respect, and reciprocal knowledge creation.')}</td>
+          </tr>
+          <tr>
+            <td><strong>2. Decision Rights and Quorum</strong></td>
+            <td>${esc(p.charter.decisionRights || 'Consequential shared curriculum modifications require unanimous affirmative consent from all partner faculty. Local grading remains sovereign to each campus.')}</td>
+          </tr>
+          <tr>
+            <td><strong>3. Working Languages and Accommodations</strong></td>
+            <td>${esc(p.charter.languages || 'English is the shared working language, with bilingual submissions, multi-lingual citations, and translation comprehension aids fully supported.')}</td>
+          </tr>
+          <tr>
+            <td><strong>4. Division of Teaching Work</strong></td>
+            <td>${esc(p.charter.division || 'Balanced rotation of live lecture sessions, shared asynchronous workshop moderation, and collaborative rubric calibration.')}</td>
+          </tr>
+          <tr>
+            <td><strong>5. Communication SLA and Rhythms</strong></td>
+            <td>${esc(p.charter.responseTime || 'Faculty commit to responding to asynchronous cross-border inquiries within 3 business days.')}</td>
+          </tr>
+          <tr>
+            <td><strong>6. Intellectual Property and Attribution</strong></td>
+            <td>${esc(p.charter.attribution || 'Open educational licensing under Creative Commons (CC BY-NC 4.0) with mutual institutional attribution to all contributing faculty and universities.')}</td>
+          </tr>
+          <tr>
+            <td><strong>7. Student Privacy and Data Governance</strong></td>
+            <td>${esc(p.charter.studentComms || 'Compliance with FERPA, GDPR, and local privacy laws. No student educational records or personal identifiable data are transferred without explicit consent.')}</td>
+          </tr>
+          <tr>
+            <td><strong>8. Dispute Resolution and Escalation</strong></td>
+            <td>${esc(p.charter.disagreements || 'Documented pedagogical dialogue between instructors; escalating to department chairs or international program deans if unresolved after 7 business days.')}</td>
+          </tr>
+          <tr>
+            <td><strong>9. Contingency and Cohort Protection</strong></td>
+            <td>${esc(p.charter.cohortLoss || 'Archived secondary case dossiers protect student academic continuity if a partner campus suffers disruption or closure.')}</td>
+          </tr>
+          <tr>
+            <td><strong>10. International Mobility Protocol</strong></td>
+            <td>${esc(p.charter.mobility || (p.visitFormat === 'student-visit' ? 'Blended virtual collaboration with a 1-week reciprocal student immersion visit.' : (p.visitFormat === 'faculty-visit' ? 'Blended virtual collaboration with visiting faculty guest colloquium.' : '100% Fully Virtual Exchange. No international travel required.')))}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
-  <div style="margin-top: 2rem; padding: 1.25rem; border: 1px dashed #cbd5e1; border-radius: 6px; background: #f8fafc;">
-    <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem;">Consortium Course Signatures & Institutional Verification (Fill after download)</h3>
-    <p style="margin: 0 0 1rem; font-size: 0.9rem; color: #64748b;">Signatures verifying course adoption, institutional equivalency, and cross-border curriculum alignment.</p>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
-      <div style="padding-top: 0.5rem; border-top: 1px solid #94a3b8;">
-        <strong>Course Developer / Instructional Designer:</strong><br>
-        <span style="display: inline-block; margin-top: 1.5rem; color: #64748b; font-size: 0.85rem;">Signature: __________________________ &nbsp;&nbsp; Date: ___________</span>
+    <!-- Appendix Section 2: Facilitator Rotation & Workload -->
+    <section>
+      <h3>Appendix B: Faculty Facilitation Rotation and Workload Parity</h3>
+      <div class="callout">
+        <p><strong>Balanced Instructional Delivery:</strong> Faculty instructors share facilitation duties throughout the term. Lead lecture and discussion moderation rotate weekly between partner institutions. Virtual office hours are scheduled during daylight overlap windows.</p>
+        <p style="margin:0;"><strong>Grading Calibration:</strong> Instructors conduct a calibration meeting following the Week 2 milestone to review early student submissions and align rubric scoring standards across institutions.</p>
       </div>
-      <div style="padding-top: 0.5rem; border-top: 1px solid #94a3b8;">
-        <strong>Lead Campus Faculty Instructor (${esc(ps[0]?.institution || 'Lead University')}):</strong><br>
-        <span style="display: inline-block; margin-top: 1.5rem; color: #64748b; font-size: 0.85rem;">Signature: __________________________ &nbsp;&nbsp; Date: ___________</span>
-      </div>
-      ${ps.slice(1).map((x, idx) => `
-      <div style="padding-top: 0.5rem; border-top: 1px solid #94a3b8;">
-        <strong>Partner Campus ${idx + 2} Faculty Instructor (${esc(x.institution)}):</strong><br>
-        <span style="display: inline-block; margin-top: 1.5rem; color: #64748b; font-size: 0.85rem;">Signature: __________________________ &nbsp;&nbsp; Date: ___________</span>
-      </div>
-      `).join('')}
-    </div>
-  </div>
+    </section>
 
-  <div class="footer">
-    <p>Formulated and approved in Crosscourse under Release ${esc(rel.label)}.</p>
-    <p>Conceptualized and developed by <a href="https://www.linkedin.com/in/beingbabu/" target="_blank" rel="noopener noreferrer">Professor Babu George</a>.</p>
-  </div>
+    <!-- Appendix Section 3: Counterfactual Resilience Audit -->
+    <section>
+      <h3>Appendix C: Counterfactual Resilience Audit and Fallback Case Dossiers</h3>
+      <p>To ensure academic continuity if an international campus experiences unforeseen disruption (severe weather, connectivity outages, or unexpected calendar alterations), secondary benchmark case dossiers are pre-curated for every module:</p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 20%;">Module</th>
+            <th>Primary Cohort Evidence</th>
+            <th>Secondary Backup Case Dossier (Instructor Curated)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${acts.map((a, i) => `
+          <tr>
+            <td><strong>Week ${i + 1}: ${esc(a.title)}</strong></td>
+            <td>${ps.map(x => `${esc(x.institution)} local cohort case data`).join(' : ')}</td>
+            <td>${esc(a.contingency || 'Curated benchmark case archive accessible through instructor repository. Students analyze secondary dataset without grading penalty.')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Appendix Section 4: Multi-Campus Calendar Reconciliation -->
+    <section>
+      <h3>Appendix D: Multi-Campus Calendar Overlap Reconciliation</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Campus</th>
+            <th>Term Start</th>
+            <th>Term End</th>
+            <th>Scheduled Holidays and Exam Breaks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ps.map(x => `
+          <tr>
+            <td><strong>${esc(x.institution)}</strong> (${esc(x.country)})</td>
+            <td>${esc(x.course.termStart || 'Per academic calendar')}</td>
+            <td>${esc(x.course.termEnd || 'Per academic calendar')}</td>
+            <td>${(x.course.breaks || []).map(b => `${esc(b.label)} (${b.durationDays || 5} days)`).join(', ') || 'Standard national holidays'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Appendix Section 5: Verification Signatures -->
+    <section class="signatures-block">
+      <h3 style="margin-top:0;">Institutional Adoption and Accord Verification</h3>
+      <p style="color:var(--ink-muted); margin-bottom:14px; font-size:0.9rem;">
+        Signatures confirming inter-institutional approval of this curriculum package and authorizing implementation across respective campus learning environments.
+      </p>
+      <div class="sig-grid">
+        <div class="sig-item">
+          <strong>Curriculum Architect / Course Developer:</strong><br>
+          <span style="color:#64748b; font-size:0.85rem;">Name: __________________________________</span>
+          <div class="sig-line">Signature: _______________________ Date: ________</div>
+        </div>
+        ${ps.map((x, i) => `
+        <div class="sig-item">
+          <strong>${i === 0 ? 'Lead Campus Faculty Representative' : 'Partner Campus ' + (i + 1) + ' Faculty Representative'}:</strong><br>
+          <span style="color:#475569; font-size:0.85rem;">${esc(x.institution)} (${esc(x.country)})</span>
+          <div class="sig-line">Signature: _______________________ Date: ________</div>
+        </div>`).join('')}
+      </div>
+    </section>
+  </aside>
+
+  <footer style="margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--border-subtle); font-size: 0.85rem; color: var(--ink-muted); text-align: center;">
+    <p>Crosscourse Master Course Handbook and Syllabus : Formulated under Approved Release ${esc(rel.label)}.</p>
+    <p>Conceptualized and developed by Professor Babu George (<a href="https://www.linkedin.com/in/beingbabu/" target="_blank" rel="noopener noreferrer" style="color:var(--brand);">LinkedIn</a>).</p>
+  </footer>
+
+  <script>
+    function setDossierView(mode) {
+      document.body.className = 'view-' + mode;
+      var radios = document.querySelectorAll('input[name="dossier-mode"]');
+      for (var i = 0; i < radios.length; i++) {
+        radios[i].checked = (radios[i].value === mode);
+      }
+    }
+    function downloadCurrentHTML() {
+      var blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '${slug(p.title)}-master-course-handbook.html';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function() { a.remove(); }, 500);
+    }
+  </script>
 </body>
 </html>`;
+}
+
+/**
+ * Backward-compatible alias for buildCourseDossierHTML.
+ */
+export function buildSyllabusHTML(p, opts = {}) {
+  return buildCourseDossierHTML(p, opts);
 }
 
 /**
@@ -722,14 +1442,18 @@ export function openDownloadPackModal(p, isCelebration = false) {
           </div>
         </div>
 
-        <div class="download-pack-card">
-          <div class="download-card-icon">📄</div>
+        <div class="download-pack-card" style="border: 2px solid #0f5c65; background: #f8fafc;">
+          <div class="download-card-icon">📑</div>
           <div class="download-card-info">
-            <h3>Complete Course Syllabus & Implementation Guide</h3>
-            <p class="muted small">Full institutional syllabus with partner contexts, week-by-week schedule, shared outcomes, assessment rubrics, and faculty charter. Formatted for clean printing or instant Save as PDF.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+              <h3 style="margin:0;">Master Course Handbook &amp; Syllabus (PDF / Print)</h3>
+              <span class="badge" style="background:#0f5c65;color:#fff;">Comprehensive Standalone Document</span>
+            </div>
+            <p class="muted small">Complete non-LMS alternative: institutional course syllabus, driving challenge, policies and netiquette, 50/50 sovereign grading architecture, chronological weekly curriculum with student directions, 4-tier SpeedGrader rubrics, and a detachable Confidential Instructor Appendix. Formatted for high-quality printing or instant Save as PDF.</p>
             <div class="row gap wrap">
-              <button class="btn primary sm" data-action="dl-pack-syllabus-html">${icon.download} Download HTML</button>
-              <button class="btn sm" data-action="dl-pack-syllabus-pdf">${icon.eye} View & Print / Save PDF</button>
+              <button class="btn primary sm" data-action="dl-pack-dossier-pdf-full">${icon.eye} View &amp; Print Master PDF (Complete)</button>
+              <button class="btn sm" data-action="dl-pack-dossier-pdf-student">${icon.eye} Print Student Handbook (Clean)</button>
+              <button class="btn sm" data-action="dl-pack-syllabus-html">${icon.download} Download HTML Document</button>
             </div>
           </div>
         </div>
@@ -797,17 +1521,39 @@ app.register({
     downloadLmsCartridge(p, true);
     toast('Downloaded LMS Web Package (.zip)!', 'ok');
   },
+  'dl-pack-dossier-pdf-full'() {
+    const p = app.p;
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(buildCourseDossierHTML(p, { mode: 'full' }));
+      win.document.close();
+      setTimeout(() => { try { win.print(); } catch {} }, 600);
+    } else {
+      toast('Pop-up blocked. Please allow pop-ups to print, or download the HTML file.', 'warn');
+    }
+  },
+  'dl-pack-dossier-pdf-student'() {
+    const p = app.p;
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(buildCourseDossierHTML(p, { mode: 'student' }));
+      win.document.close();
+      setTimeout(() => { try { win.print(); } catch {} }, 600);
+    } else {
+      toast('Pop-up blocked. Please allow pop-ups to print, or download the HTML file.', 'warn');
+    }
+  },
   'dl-pack-syllabus-html'() {
     const p = app.p;
-    download(`${slug(p.title)}-complete-syllabus.html`, buildSyllabusHTML(p), 'text/html');
+    download(`${slug(p.title)}-master-course-handbook.html`, buildCourseDossierHTML(p, { mode: 'full' }), 'text/html');
   },
   'dl-pack-syllabus-pdf'() {
     const p = app.p;
     const win = window.open('', '_blank');
     if (win) {
-      win.document.write(buildSyllabusHTML(p));
+      win.document.write(buildCourseDossierHTML(p, { mode: 'full' }));
       win.document.close();
-      setTimeout(() => { try { win.print(); } catch {} }, 500);
+      setTimeout(() => { try { win.print(); } catch {} }, 600);
     } else {
       toast('Pop-up blocked. Please allow pop-ups to print, or download the HTML file.', 'warn');
     }

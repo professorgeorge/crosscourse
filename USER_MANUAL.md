@@ -97,7 +97,7 @@ When your course is generated, it opens in the **3-Pillar Course Blueprint**:
 ### Pillar 3: Classroom Deliverables
 Your centralized download hub containing five ready-to-use packages:
 1. **LMS Course Cartridge (.imscc & .zip):** Ready for 1-click import into Canvas, Blackboard, Moodle, or Brightspace.
-2. **Approved Course Syllabus (HTML & Print to PDF):** Complete institutional document with alignment matrix and fillable signature blocks.
+2. **Master Course Handbook & Syllabus (HTML & Print to PDF):** Standalone publication document with driving inquiry, policies, weekly curriculum arc, SpeedGrader rubrics, and a detachable Confidential Instructor Appendix.
 3. **Student Activity Guide & Handouts (Markdown):** Ready to copy or upload into your classroom LMS.
 4. **Consortium Partnership Charter (HTML):** Formal inter-institutional agreement.
 5. **Synchronized Calendar (.ics):** Importable into Google Calendar, Microsoft Outlook, and Apple Calendar.
@@ -107,7 +107,25 @@ Your centralized download hub containing five ready-to-use packages:
 
 ## 6. Exporting to Your LMS (Canvas, Blackboard, Moodle, Brightspace)
 
-Crosscourse generates native **IMS Common Cartridges (.imscc)** for rapid LMS setup:
+Crosscourse generates native **IMS Common Cartridges (.imscc)** designed to conform with **Quality Matters (QM) Higher Education Rubric (7th Edition)** standards and OLC/OSCQR benchmarks:
+
+* **Module 0: Start Here : Course Orientation & Consortium Governance:**
+  * **[START HERE] Course Welcome & Orientation Guide:** Navigation walkthrough, 48-hour getting started checklist, technical prerequisites, and institutional IT help desks (QM Standards 1.1, 1.2, 1.5, 1.6, 1.7).
+  * **Consortium Syllabus & Outcomes Alignment Matrix:** Measurable Course Learning Outcomes (CLOs) mapped to weekly activities and summative assessments, plus a Regular & Substantive Interaction (RSI) faculty presence plan (QM Standards 1.4, 2.1, 2.4, 5.3).
+  * **Student Onboarding & Cross-Border Collaboration Guide:** Cross-cultural netiquette, 48-hour response SLA, linguistic inclusivity norms, and academic contingency protection (QM Standards 1.3, 5.4).
+  * **Consortium Partnership Charter & Governance Accord:** Inter-institutional accord defining decision rights, intellectual property (CC BY-NC), FERPA/GDPR student privacy, and signature blocks.
+  * **Cross-Cultural Disciplinary Glossary:** Terminology clarification for contested or divergent regional concepts (QM Standards 4.1, 8.3).
+  * **Support Services, Accessibility & Accommodations:** Multi-campus directories for Disability Resources, Academic Writing Centers, Libraries, and WCAG 2.1 AA accessibility statements (QM Standards 7 & 8).
+* **Weekly Collaborative Modules (Week 1 to N):**
+  * **Measurable Module Learning Objectives (MLOs):** Concrete Bloom's-based unit objectives explicitly mapped to course outcomes (`[Aligns with CLO O1, O2]`) (QM Standards 2.2, 2.4).
+  * **Required Preparation & Instructional Resources:** Readings and regional case dossiers clearly distinguished from optional materials (QM Standards 4.1, 4.2).
+  * **3-Phase Scaffolded Task Workflow:** Phase 1 (Local Campus Prep) → Phase 2 (Cross-Border Dialectical Synthesis) → Phase 3 (Deliverable Submission) (QM Standards 5.1, 5.2, 5.4).
+  * **Campus Cohort Interdependence Cards:** Dedicated institutional cards detailing what each campus contributes, eliminating passive freeloading (QM Standard 5.2).
+  * **Resilience Contingency:** Guaranteed fallback protocols if an international cohort faces campus closures or connectivity delays (QM Standard 1.4).
+  * **Pre-Submission Self-Verification Checklist:** Formative metacognitive check-in for student teams (QM Standard 3.5).
+* **Consortium Assessment & SpeedGrader Rubrics:**
+  * **Course Grading Architecture & Sovereign Weighting Policy:** Transparent Dual-Layer grading (50% Shared Team Product + 50% Local Sovereign Reflection), grade scale equivalencies, and 7-day grading turnaround SLA (QM Standards 3.2, 3.4).
+  * **SpeedGrader Interactive Rubrics:** Granular 4-tier rubric matrices (Exemplary, Proficient, Developing, Unsatisfactory) evaluating comparative integration, critical revision, and disciplinary rigor (QM Standard 3.3).
 
 ### How to Import into Canvas:
 1. In Crosscourse, navigate to **Pillar 3: Classroom Deliverables** and click **Export Cartridge (.IMSCC)**.
@@ -115,7 +133,7 @@ Crosscourse generates native **IMS Common Cartridges (.imscc)** for rapid LMS se
 3. Click **Import Course Content** on the right side.
 4. Under *Content Type*, select **Common Cartridge 1.x Package**.
 5. Choose the downloaded `.imscc` file, select **All Content**, and click **Import**.
-6. Canvas will automatically create your weekly module arc, assignment pages, student directions, and SpeedGrader rubrics.
+6. Canvas will automatically populate your Module 0 Start Here orientation, weekly task pages, student instructions, and SpeedGrader rubrics.
 
 ### How to Import into Blackboard:
 1. In Blackboard Learn, navigate to **Course Management** -> **Packages and Utilities** -> **Import Package / View Logs**.
@@ -124,6 +142,10 @@ Crosscourse generates native **IMS Common Cartridges (.imscc)** for rapid LMS se
 ### How to Import into Moodle:
 1. In Moodle, go to your course and select **Course Management** (or Gear icon) -> **Restore**.
 2. Upload the `.imscc` file into the backup area and click **Restore**. Follow the on-screen steps to merge the modules into your course.
+
+### How to Import into D2L Brightspace:
+1. In Brightspace, go to **Course Admin** -> **Import/Export/Copy Components**.
+2. Select **Import Components**, choose the `.imscc` file, and proceed with the wizard.
 
 ---
 

@@ -13,7 +13,7 @@ export const head = (title, sub = '', actions = '') => `<header class="page-head
 export const statusBadge = s => badge(({ draft: 'Draft', pending: 'Awaiting approval', approved: 'Approved', changed: 'Changed since approval', objection: 'Objection raised' })[s] || s, 'st-' + s);
 export const approvalBtn = (kind, id, title, status) => status === 'pending' ? `<a class="btn sm" href="#/p/${app.p.id}/decisions">${icon.vote} View approval</a>` : `<button class="btn sm" data-action="request-approval" data-kind="${kind}" data-id="${id}" data-title="${esc(title)}">${icon.vote} ${status === 'approved' ? 'Re-open for approval' : 'Request partner approval'}</button>`;
 
-import { getMobilityLabel, realignProjectArc } from '../autopilot.js';
+import { getMobilityLabel, realignProjectArc, buildCourseDossierHTML } from '../autopilot.js';
 import { downloadLmsCartridge } from '../lms.js';
 
 // ================= Overview (3-Pillar Unified Blueprint) =================
@@ -320,19 +320,24 @@ app.view('overview', {
             </div>
           </div>
 
-          <!-- 1. Syllabus -->
-          <div class="deliverable-card">
+          <!-- 1. Master Course Handbook & Syllabus (PDF/Print) -->
+          <div class="deliverable-card" style="border: 1.5px solid #0f5c65;">
             <div>
               <div class="row between wrap gap" style="margin-bottom: 8px;">
-                <span class="badge badge-ok">Ready to Distribute</span>
+                <span class="badge badge-ok">Print / PDF Alternative</span>
                 <span class="muted small">HTML / PDF</span>
               </div>
-              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">1. Approved Course Syllabus</h3>
-              <p class="muted small" style="line-height: 1.4;">Complete multi-campus syllabus with driving challenge, curriculum alignment matrix across all ${p.partners.length} universities, weekly arc, and 4-level rubric.</p>
+              <h3 style="margin: 0 0 6px; font-size: 1.1rem;">1. Master Course Handbook &amp; Syllabus</h3>
+              <p class="muted small" style="line-height: 1.4;">Comprehensive standalone document with driving challenge, alignment matrix across all ${p.partners.length} universities, policies, weekly curriculum arc, SpeedGrader rubrics, and a detachable Confidential Instructor Appendix.</p>
             </div>
-            <button class="btn primary" data-action="open-syllabus-print" style="width: 100%;">
-              ${icon.download} Print or Save Syllabus PDF
-            </button>
+            <div class="row gap wrap" style="width: 100%;">
+              <button class="btn primary" data-action="open-dossier-full" style="flex: 1;">
+                ${icon.download} Print Master PDF (Complete)
+              </button>
+              <button class="btn" data-action="open-dossier-student" style="flex: 1;">
+                ${icon.eye} Student Handbook (Clean)
+              </button>
+            </div>
           </div>
 
           <!-- 2. Student Guide -->
@@ -727,15 +732,43 @@ app.register({
   'open-syllabus-print'() {
     const p = app.p;
     if (!p) return;
-    const html = packageHTML(p, null, false);
+    const html = buildCourseDossierHTML(p, { mode: 'full' });
     const w = window.open('', '_blank');
     if (w) {
       w.document.open();
       w.document.write(html);
       w.document.close();
-      setTimeout(() => { try { w.print(); } catch (err) {} }, 500);
+      setTimeout(() => { try { w.print(); } catch (err) {} }, 600);
     } else {
-      download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-syllabus.html`, html, 'text/html');
+      download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-master-handbook.html`, html, 'text/html');
+    }
+  },
+  'open-dossier-full'() {
+    const p = app.p;
+    if (!p) return;
+    const html = buildCourseDossierHTML(p, { mode: 'full' });
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { try { w.print(); } catch (err) {} }, 600);
+    } else {
+      download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-master-handbook.html`, html, 'text/html');
+    }
+  },
+  'open-dossier-student'() {
+    const p = app.p;
+    if (!p) return;
+    const html = buildCourseDossierHTML(p, { mode: 'student' });
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { try { w.print(); } catch (err) {} }, 600);
+    } else {
+      download(`${(p.title || 'course').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-student-handbook.html`, html, 'text/html');
     }
   },
   'dl-pack-student-guide'() {
